@@ -145,6 +145,78 @@ const ACC2={
     for(const[at,v]of[[0,.36],[1,.2],[3,.3],[3.5,.18],[4,.22]])S.taiko(t0+at*b,v);
     S.brass(chd[2]+12,t0,b*.5,.03);S.brass(r+12,t0+b*3,b*.6,.03);if(k===0)S.crash(t0,.03);if(k===n-1)for(let j=0;j<6;j++)S.snare(t0+b*3.5+j*b/4,.02+j*.008)}};
 Object.assign(ACC,ACC2);
+/* accompagnements des moments de la journée et des villes */
+const ACC3={
+  // aube : nappe de cordes très douce, harpe qui s'éveille, quelques notes de cristal
+  dawn(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*4,.009);S.strings(chd[2],t0,b*4,.006);
+    [0,1.5,2.5,3.25].forEach((q,j)=>S.harp([chd[0],chd[2],chd[1]+12,chd[2]+12][j]+12,t0+q*b,.016+j*.002,2.4));
+    if(k%2===1)S.harp(chd[2]+36,t0+b*3.5,.01,2.6);if(pass>0)S.choir(chd[1]+12,t0,b*4,.01)},
+  // matin : le thème principal, plus vif : cordes, harpe en croches, timbales et caisse claire légère
+  morning(S,chd,t0,b,k,pass,n){const r=chd[0];for(const m of chd)S.strings(m+12,t0,b*4,.008);S.strings(r-12,t0,b*4,.011);
+    for(let j=0;j<8;j++)S.harp([chd[0],chd[1],chd[2],chd[1]][j%4]+24,t0+j*b/2,j%2?.018:.026,.9);
+    S.timp(t0,.18,hz(r-12));S.timp(t0+b*2,.12,hz(r-12));S.snare(t0+b,.016);S.snare(t0+b*3,.02);for(let j=0;j<4;j++)S.hat(t0+j*b+b/2,.01);
+    if(k===n-1)for(let j=0;j<4;j++)S.timp(t0+b*3+j*b/4,.06+j*.03,hz(r-12));if(k===0&&pass>0)S.crash(t0,.018)},
+  // après-midi : posé, harpe et cordes, sans percussions
+  calm(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*4,.01);for(const m of chd)S.strings(m+12,t0,b*4,.006);
+    for(let j=0;j<8;j++)S.harp([chd[0],chd[2],chd[1]+12,chd[2]][j%4]+12,t0+j*b/2,j%4===0?.022:.015,1.4);if(pass%2===1)S.pad(chd[1]+12,t0,b*4,.008)},
+  // soir : accords tenus, harpe lente, chœur lointain
+  evening(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*4,.011);S.strings(chd[1],t0,b*4,.007);S.strings(chd[2],t0,b*4,.006);
+    S.harp(r+12,t0,.022,2.2);S.harp(chd[1]+12,t0+b,.016,2);S.harp(chd[2]+12,t0+b*2,.018,2.2);S.harp(chd[1]+24,t0+b*3,.012,2);
+    if(pass>0)S.choir(chd[2]+12,t0,b*4,.012);if(k===0)S.timp(t0,.06,hz(r-12))},
+  // nuit : bourdon grave, cœur qui bat, grappes dissonantes, gouttes de harpe dans le noir
+  night(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-24,t0,b*4,.016);S.strings(r-17,t0,b*4,.008);
+    S.taiko(t0,.2);S.taiko(t0+b*.4,.12);if(k%2===1){S.taiko(t0+b*2,.14);S.taiko(t0+b*2.4,.09)}
+    if(k%4===2)S.pad(r+13,t0+b,b*2.5,.008);if(k%4===3)S.choirL(r+6,t0,b*3.5,.012);
+    S.harp(chd[2]+36,t0+b*1.75,.008,2.8);if(k%2===0)S.harp(r+37,t0+b*3.25,.006,3);if(k===5)S.anvil(t0+b*2.5,.008)},
+  // villes : barde médiéval, luth, bourdon de vielle, tambourin, rassurant
+  bard(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*6,.008);S.strings(r-5,t0,b*6,.005);
+    S.pluck(r,t0,.05,.7);for(const m of chd)S.pluck(m+12,t0+2*b,.02,.45);S.pluck(chd[2],t0+3*b,.04,.6);for(const m of chd)S.pluck(m+12,t0+5*b,.018,.45);
+    S.tom(t0,.07,110);S.tom(t0+3*b,.05,120);S.hat(t0+3*b,.014,.12);S.hat(t0+5*b,.009,.06);if(pass%2===1)S.hat(t0+2*b,.008,.05)}};
+Object.assign(ACC,ACC3);
+/* musiques des moments de la journée (dehors) et des villes */
+Object.assign(THEMES,{
+  // « Brume sur les Collines » : aube, douce et mystérieuse
+  aube:{bpm:60,beats:4,acc:'dawn',
+    chords:[ch('A2','C3','E3'),ch('F2','A2','C3'),ch('C3','E3','G3'),ch('G2','B2','D3'),ch('A2','C3','E3'),ch('D3','F3','A3'),ch('F2','A2','C3'),ch('E2','G#2','B2')],
+    melA:mels(['E5:2 A5:2','G5:1.5 F5:.5 E5:2','C5:2 E5:1 G5:1','D5:3 -:1','E5:1 A5:1 B5:1 C6:1','A5:2 F5:2','E5:1.5 D5:.5 C5:2','B4:4']),
+    melB:mels(['A4:2 C5:2','C5:2 A4:2','G4:2 C5:1 E5:1','D5:4','C5:1 E5:1 A5:2','F5:2 D5:2','C5:1.5 B4:.5 A4:2','G#4:4']),
+    lead:'voice',lead2:'flute',mv:.032},
+  // « La Communauté se met en route » : matin, le thème principal plus énergique
+  matin:{bpm:92,beats:4,acc:'morning',chords:THEMES.menu.chords,melA:THEMES.menu.melA,melB:THEMES.menu.melB,lead:'whistle',lead2:'horn',mv:.05},
+  // « Le Marché de Midi » : entraînant, violon et flûte
+  midi:{bpm:118,beats:4,acc:'gallop',
+    chords:[ch('G2','B2','D3'),ch('C3','E3','G3'),ch('G2','B2','D3'),ch('D3','F#3','A3'),ch('E3','G3','B3'),ch('C3','E3','G3'),ch('D3','F#3','A3'),ch('G2','B2','D3')],
+    melA:mels(['D5:.5 G5:.5 B5:1 A5:.5 G5:.5 A5:1','G5:.5 E5:.5 C5:1 E5:1 G5:1','B5:1 D6:.5 B5:.5 A5:1 G5:1','A5:1.5 F#5:.5 D5:2','E5:.5 G5:.5 B5:1 A5:.5 G5:.5 E5:1','C6:1 B5:.5 A5:.5 G5:1 E5:1','D5:.5 E5:.5 F#5:.5 G5:.5 A5:1 F#5:1','G5:3 -:1']),
+    melB:mels(['B4:1 D5:1 G5:2','C5:1 E5:1 G5:2','D5:1 G5:1 B5:2','A5:2 F#5:2','G5:1 E5:1 B4:2','C5:1 E5:1 A5:2','A5:1 G5:1 F#5:1 D5:1','G5:4']),
+    lead:'fiddle',lead2:'whistle',mv:.046},
+  // « Les Prés Tranquilles » : après-midi, plus calme
+  aprem:{bpm:80,beats:4,acc:'calm',
+    chords:[ch('F2','A2','C3'),ch('D3','F3','A3'),ch('Bb2','D3','F3'),ch('C3','E3','G3'),ch('F2','A2','C3'),ch('A2','C3','E3'),ch('Bb2','D3','F3'),ch('C3','E3','G3')],
+    melA:mels(['C5:2 F5:1 G5:1','A5:2 F5:2','D5:1.5 F5:.5 Bb5:2','A5:2 G5:2','F5:1 A5:1 C6:2','C6:1 Bb5:1 A5:2','G5:1 F5:1 D5:1 F5:1','E5:2 G5:2']),
+    melB:mels(['F4:2 A4:2','D5:2 A4:2','Bb4:2 D5:2','C5:2 E5:2','F5:2 C5:2','E5:2 C5:2','D5:2 F5:2','E5:2 C5:2']),
+    lead:'flute',lead2:'fiddle',mv:.04},
+  // « Le Feu du Soir » : soir, calme et chaleureux
+  soir:{bpm:66,beats:4,acc:'evening',
+    chords:[ch('D3','F#3','A3'),ch('B2','D3','G3'),ch('E3','G3','B3'),ch('A2','C#3','E3'),ch('D3','F#3','A3'),ch('F#3','A3','C#4'),ch('G2','B2','D3'),ch('A2','C#3','E3')],
+    melA:mels(['F#5:2 A5:2','G5:1.5 F#5:.5 D5:2','E5:2 G5:1 B5:1','A5:3 -:1','D6:2 C#6:1 A5:1','C#6:2 A5:2','B5:1.5 A5:.5 G5:2','A5:2 E5:2']),
+    melB:mels(['D5:4','D5:2 B4:2','B4:2 E5:2','C#5:4','A4:2 D5:2','C#5:2 F#5:2','D5:2 B4:2','C#5:4']),
+    lead:'fiddle',lead2:'horn',mv:.036},
+  // « Ce qui rôde la nuit » : peur, danger
+  nuit:{bpm:64,beats:4,acc:'night',
+    chords:[ch('D3','F3','A3'),ch('D3','F3','A3'),ch('Eb3','G3','Bb3'),ch('D3','F3','A3'),ch('Bb2','Db3','F3'),ch('A2','C#3','E3'),ch('G2','Bb2','D3'),ch('A2','C#3','E3')],
+    melA:mels(['D4:3 -:1','F4:2 E4:2','Eb4:3 D4:1','D4:4','Db4:2 F4:2','E4:3 -:1','D4:2 Bb3:2','C#4:4']),
+    melB:mels(['-:2 A5:2','Bb5:3 -:1','-:1 G5:1 Bb5:2','A5:4','-:2 Ab5:2','G#5:3 -:1','-:1 D6:1 Bb5:2','A5:4']),
+    lead:'chant',lead2:'whistle',mv:.034},
+  // « La Ballade du Ménestrel » : villes, barde médiéval rassurant (6/8)
+  ville:{bpm:180,beats:6,acc:'bard',
+    chords:[ch('G2','B2','D3'),ch('C3','E3','G3'),ch('F2','A2','C3'),ch('G2','B2','D3'),ch('E3','G3','B3'),ch('C3','E3','G3'),ch('D3','F#3','A3'),ch('G2','B2','D3')],
+    melA:mels(['G5:2 A5:1 B5:2 G5:1','C6:2 B5:1 A5:2 G5:1','A5:2 F5:1 C5:3','D5:2 G5:1 B5:3','E5:2 G5:1 B5:2 A5:1','G5:2 E5:1 C5:3','D5:2 F#5:1 A5:2 F#5:1','G5:6']),
+    melB:mels(['D5:3 B4:3','E5:3 C5:3','F5:2 A5:1 F5:3','G5:3 D5:3','B4:2 E5:1 G5:3','C5:2 E5:1 G5:3','F#5:2 E5:1 D5:3','G4:6']),
+    lead:'flute',lead2:'fiddle',mv:.04}
+});
+/* les moments de la journée se fondent plus lentement l'un dans l'autre */
+const TIME_THEMES=new Set(['aube','matin','midi','aprem','soir','nuit']);
+
 function scheduleBar(T,i,t0,S){const b=60/T.bpm,n=T.chords.length,k=i%n,pass=Math.floor(i/n),chd=T.chords[k];
   ACC[T.acc](S,chd,t0,b,k,pass,n);
   if(T.skip0&&pass===0)return;const M=(pass%2&&T.melB)?T.melB:T.melA,inst=pass%2?T.lead2:T.lead,sh=inst==='horn'||inst==='brass'?-12:0;
@@ -161,7 +233,7 @@ const Music={on:true,vol:.7,c:null,ch:null,S:null,theme:null,want:'menu',bar:0,n
   duck(on){if(this.ducked===on)return;this.ducked=on;this.apply()},
   toggle(){this.on=!this.on;Store.lsSet('dd_music',this.on);this.apply();syncMusicBtn()},
   tick(){const c=this.c;if(!c||c.state!=='running')return;
-    if(this.theme!==this.want){const t=c.currentTime;const g=this.ch.bus.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(0.0001,t+.6);g.linearRampToValueAtTime(1,t+.9);this.theme=this.want;this.bar=0;this.next=t+.75}
+    if(this.theme!==this.want){const t=c.currentTime,fd=TIME_THEMES.has(this.theme)&&TIME_THEMES.has(this.want)?2.4:.6;const g=this.ch.bus.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(0.0001,t+fd);g.linearRampToValueAtTime(1,t+fd+.4);this.theme=this.want;this.bar=0;this.next=t+fd+.15}
     const T=THEMES[this.theme];if(!T||!this.on)return;if(this.next<c.currentTime-1)this.next=c.currentTime+.05;
     while(this.next<c.currentTime+.5){scheduleBar(T,this.bar,this.next,this.S);this.next+=T.beats*60/T.bpm;this.bar++}}
 };

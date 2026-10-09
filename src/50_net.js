@@ -6,7 +6,14 @@ const FB_CONFIG={apiKey:'AIzaSyDQn6cqulpah1EoR_hz8x5IEskq0ZVO-Rs',authDomain:'mi
   databaseURL:'https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app',projectId:'midheim-1a4c1',appId:'1:573879321173:web:09b976a2437460ff478adc'};
 const FB_SDK='https://www.gstatic.com/firebasejs/13.0.0/';
 const FB_ROOM='MIDH'; // une seule salle : chaque partie lancée y est visible tant qu'il reste une place
-let netKind=null,netOn=false;
+let netKind=null,netOn=false,hostBg=false;
+/* l'appli passe en arrière-plan ou revient : on le signale à l'autre joueur, et au retour on remet les compteurs à zéro
+   (sinon, après une pause, l'hôte croit l'invité parti depuis longtemps et le renvoie) */
+document.addEventListener('visibilitychange',()=>{const vis=document.visibilityState==='visible';
+  if(mode==='host'||mode==='guest'||mode==='joining')pres({bg:vis?0:1});
+  if(vis){if(G&&G.guestPeer)G.guestSeen=performance.now();if(hostGoneAt)hostGoneAt=performance.now();if(mode==='joining')joinT=performance.now()}});
+/* fermeture de la page (et non simple pause) : on quitte vraiment la partie à deux, l'autre n'attend pas */
+addEventListener('pagehide',e=>{if(e.persisted)return;if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null,bg:0});else if(mode==='host')pres({r:'m',gp:null,g:null,bg:0})});
 async function initNet(){
   if(window.claude&&window.claude.use){netKind='claude';try{room=await claude.use('room')}catch(e){room=null}if(!room){setNet(false);return}attachRoom(room);return}
   netKind='fb';setNet(false);
@@ -45,21 +52,26 @@ function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
   for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
     const c=CLS[pr.c]?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
     const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
+const PAUSE_WAIT=90000;
 function hostCheckGuest(){
-  if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);if(!gp||!gp.presence||gp.presence.r!=='g'||gp.presence.h!==myPeer){dropGuest()}else{if(G.guestPres!==gp.presence)G.guestSeen=performance.now();G.guestPres=gp.presence}}
+  if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);
+    // invité en pause (appli en arrière-plan, écran verrouillé) : il peut disparaître un moment de la salle, on lui garde sa place
+    if(!gp&&G.guestPres&&G.guestPres.bg&&performance.now()-(G.guestSeen||0)<PAUSE_WAIT)return;
+    if(gp&&gp.presence&&!!gp.presence.bg!==!!(G.guestPres&&G.guestPres.bg)){const nm=clean(gp.presence.n)||'Ton allié';if(gp.presence.bg){Log.ev('à deux','invité en pause');toast(nm+' est en pause, on l’attend.')}else{Log.ev('à deux','invité de retour');toast(nm+' est de retour !')}}
+    if(!gp||!gp.presence||gp.presence.r!=='g'||gp.presence.h!==myPeer){dropGuest()}else{if(G.guestPres!==gp.presence)G.guestSeen=performance.now();G.guestPres=gp.presence}}
   if(!G.guestPeer){const c=peers.find(p=>!p.sameTab&&p.presence&&p.presence.r==='g'&&p.presence.h===myPeer&&CLS[p.presence.c]&&!(G.stale&&G.stale.peer===p.peer&&G.stale.pres===p.presence));if(c)acceptGuest(c)}}
 function acceptGuest(c){const pr=c.presence;const st=pr.st||{};const p=mkPlayer(clean(pr.n)||'Joueur 2',pr.c,{dmg:10,crit:.05,arm:0});p.mhp=100;applyGuestStats(p,st);p.hp=p.mhp;p.lvl=clamp(pr.l|0,1,99);
   const me=G.players[0];const q=freeSpot(me.x+36,me.y);p.x=p.rx=q.x;p.y=p.ry=q.y;
   G.players[1]=p;for(const k in G.gain)G.gain[k][1]=0;G.guestPeer=c.peer;G.guestPres=pr;G.guestSeen=performance.now();G.coop=true;mode='host';paused=false;netT=0;
   pres({gp:c.peer});Log.ev('à deux','invité accepté',p.name,CLS[p.cls].nom,'niv '+p.lvl,'peer '+c.peer.slice(-4));msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
 function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p?p.name:'?');if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';netT=0;pres({gp:null,g:null})}
-function joinHost(peer,name){Log.ev('à deux','rejoindre la partie de',name||'?','peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
+function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',name||'?','peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
   $('#menu').hidden=true;$('#game').hidden=false;$('#joining').hidden=false;
   pres({r:'g',h:peer,n:myName,c:selCls,l:hero.lvl,st:guestStats(),i:null,g:null,gp:null})}
 function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0}}
 function guestCheckHost(){const h=peers.find(p=>p.peer===hostPeer);
   if(!h){if(mode==='guest'&&!hostGoneAt){hostGoneAt=performance.now();Log.warn('à deux','hôte absent de la salle')}if(mode==='joining')endGuest('La partie n’existe plus.');return}
-  hostGoneAt=0;const pr=h.presence||{};
+  hostGoneAt=0;const pr=h.presence||{};if((mode==='guest'||mode==='joining')&&!!pr.bg!==hostBg){hostBg=!!pr.bg;Log.ev('à deux',hostBg?'hôte en pause':'hôte de retour');toast(hostBg?'L’hôte est en pause, on l’attend.':'L’hôte est de retour !')}
   if(mode==='joining'){if(pr.r!=='h'){endGuest('La partie n’existe plus.');return}
     if(pr.gp!==guestCheckHost.gp||!!pr.g!==guestCheckHost.g){guestCheckHost.gp=pr.gp;guestCheckHost.g=!!pr.g;Log.ev('à deux','attente hôte : place '+(pr.gp?(pr.gp===myPeer?'à moi':'prise'):'libre')+(pr.g?' · état reçu':' · pas d’état'))}
     if(pr.gp===myPeer&&pr.g)startGuest(pr);else if(pr.gp&&pr.gp!==myPeer)endGuest('La partie est déjà complète.');return}
@@ -67,7 +79,7 @@ function guestCheckHost(){const h=peers.find(p=>p.peer===hostPeer);
   if(pr.g&&pr.g!==lastStateObj){lastStateObj=pr.g;try{onState(pr.g)}catch(e){Log.err('à deux','état de l’hôte illisible (zone '+(pr.g&&pr.g.z)+')',e)}}}
 
 /* ================= Invité : reconstruction ================= */
-function startGuest(pr){Log.ev('à deux','partie rejointe, zone',pr.g&&pr.g.z,'ep',pr.g&&pr.g.ep);bubbles=[];mode='guest';myIdx=1;G=newWorld();G.coop=true;L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;G.ep=-1;
+function startGuest(pr){hostBg=!!pr.bg;Log.ev('à deux','partie rejointe, zone',pr.g&&pr.g.z,'ep',pr.g&&pr.g.ep);bubbles=[];mode='guest';myIdx=1;G=newWorld();G.coop=true;L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;G.ep=-1;
   $('#joining').hidden=true;lastStateObj=pr.g;try{onState(pr.g,true)}catch(e){Log.err('à deux','premier état illisible',e)}showGame();if(netKind==='fb')setNet(netOn)}
 function onState(s,first){
   if(!s||typeof s!=='object'||typeof s.z!=='string')return;
@@ -93,8 +105,9 @@ function onState(s,first){
   processMsgs(s.m.map(m=>[N(m[0]),String(m[1]==null?'':m[1]).slice(0,140)]));
   applyGains({xp:s.xp|0,g:s.g||[],pt:s.pt||[],gm:s.gm||[],sh:s.sh||[],dc:s.dc|0,ep:s.ep,q:s.q|0})}
 function guestUpdate(dt){G.time+=dt;if(G.m)updateLocal(dt);
-  if(hostGoneAt&&performance.now()-hostGoneAt>3500)endGuest('L’hôte a quitté la partie.')}
-function endGuest(text){if(mode!=='guest'&&mode!=='joining')return;Log.warn('à deux','fin de la partie à deux ('+mode+')',text||'');doSave(true);pres({r:'m',h:null,i:null,st:null});hostPeer=null;hostGoneAt=0;toMenu();if(text)setTimeout(()=>toast(text),50)}
+  if(hostGoneAt&&performance.now()-hostGoneAt>(hostBg?PAUSE_WAIT:3500))endGuest('L’hôte a quitté la partie.')}
+function endGuest(text){if(mode!=='guest'&&mode!=='joining')return;if(endGuest.busy)return;endGuest.busy=1;try{endGuest2(text)}finally{endGuest.busy=0}}
+function endGuest2(text){Log.warn('à deux','fin de la partie à deux ('+mode+')',text||'');doSave(true);pres({r:'m',h:null,i:null,st:null});hostPeer=null;hostGoneAt=0;toMenu();if(text)setTimeout(()=>toast(text),50)}
 function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.players.some(p=>Math.abs(p.x-x)<900&&Math.abs(p.y-y)<900);
   const s={z:G.zd,ep:G.ep,t:r(G.time*10),q:G.q,n:G.night,lv:G.lv,
     p:G.players.map(p=>[r(p.x),r(p.y),Math.ceil(p.hp),p.mhp,p.down?1:0,r(p.rev*40),CLS_IDS.indexOf(p.cls),(p.drT>0?1:0)|(p.shield>0?2:0)|(p.stealthT>0?4:0),Math.round((p.aim||0)*10),Math.round(p.shield||0),p.lk|0]),
@@ -110,7 +123,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
 let netT=0;
 function netTick(dt){if(!room)return;netT-=dt;
   // invité muet depuis 8 s (téléphone éteint, réseau coupé) : on libère sa place
-  if(mode==='host'&&G.guestPeer&&performance.now()-(G.guestSeen||0)>8000){Log.warn('à deux','invité muet depuis 8 s');G.stale={peer:G.guestPeer,pres:G.guestPres};dropGuest();return}
+  if(mode==='host'&&G.guestPeer&&performance.now()-(G.guestSeen||0)>(G.guestPres&&G.guestPres.bg?PAUSE_WAIT:8000)){Log.warn('à deux','invité muet trop longtemps');G.stale={peer:G.guestPeer,pres:G.guestPres};dropGuest();return}
   if(mode==='host'&&netT<=0){netT=.066;pres({g:serialize(),l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='solo'&&netT<=0){netT=3;pres({l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='guest'&&netT<=0){netT=.05;const r=Math.round;const tp=L.tp||aimPoint();

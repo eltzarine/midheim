@@ -313,6 +313,12 @@ with sync_playwright() as pw:
     B.screenshot(path=f'{OUT}/e1_coop_frere.png')
     mp = go(A, "window.__maxPres||0")
     check('À deux : messages réseau sous 4 Ko', 0 < mp <= 4096, mp)
+    # pause : le frère passe l'appli en arrière-plan 20 s ; l'hôte garde sa place et la partie continue au retour
+    go(B, "pres({bg:1})"); A.wait_for_timeout(600)
+    go(A, "G.guestSeen=performance.now()-20000"); A.wait_for_timeout(600)
+    check('À deux : pause de l’allié, sa place est gardée', go(A, "G.players.length===2&&!!G.guestPeer"))
+    go(B, "pres({bg:0})"); A.wait_for_timeout(600)
+    check('À deux : retour de pause, toujours ensemble', go(A, "G.players.length") == 2 and go(B, "mode") == 'guest')
     B.click('#pMenu'); B.click('#bQuit'); A.wait_for_timeout(900)
     check('À deux : le frère quitte, l’hôte continue', go(A, "G.players.length") == 1)
     check('Aucune erreur JavaScript (à deux)', not A.errs and not B.errs, (A.errs + B.errs)[:4])

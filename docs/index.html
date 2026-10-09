@@ -635,7 +635,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='a6359cf1';
+const BUILD='f6effaf3';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
 const g_=f=>{try{return f()}catch(e){return undefined}};
 const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),t0:Date.now(),lines:[],max:400,dirty:false,upT:null,fb:null,
@@ -1021,6 +1021,78 @@ const ACC2={
     for(const[at,v]of[[0,.36],[1,.2],[3,.3],[3.5,.18],[4,.22]])S.taiko(t0+at*b,v);
     S.brass(chd[2]+12,t0,b*.5,.03);S.brass(r+12,t0+b*3,b*.6,.03);if(k===0)S.crash(t0,.03);if(k===n-1)for(let j=0;j<6;j++)S.snare(t0+b*3.5+j*b/4,.02+j*.008)}};
 Object.assign(ACC,ACC2);
+/* accompagnements des moments de la journée et des villes */
+const ACC3={
+  // aube : nappe de cordes très douce, harpe qui s'éveille, quelques notes de cristal
+  dawn(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*4,.009);S.strings(chd[2],t0,b*4,.006);
+    [0,1.5,2.5,3.25].forEach((q,j)=>S.harp([chd[0],chd[2],chd[1]+12,chd[2]+12][j]+12,t0+q*b,.016+j*.002,2.4));
+    if(k%2===1)S.harp(chd[2]+36,t0+b*3.5,.01,2.6);if(pass>0)S.choir(chd[1]+12,t0,b*4,.01)},
+  // matin : le thème principal, plus vif : cordes, harpe en croches, timbales et caisse claire légère
+  morning(S,chd,t0,b,k,pass,n){const r=chd[0];for(const m of chd)S.strings(m+12,t0,b*4,.008);S.strings(r-12,t0,b*4,.011);
+    for(let j=0;j<8;j++)S.harp([chd[0],chd[1],chd[2],chd[1]][j%4]+24,t0+j*b/2,j%2?.018:.026,.9);
+    S.timp(t0,.18,hz(r-12));S.timp(t0+b*2,.12,hz(r-12));S.snare(t0+b,.016);S.snare(t0+b*3,.02);for(let j=0;j<4;j++)S.hat(t0+j*b+b/2,.01);
+    if(k===n-1)for(let j=0;j<4;j++)S.timp(t0+b*3+j*b/4,.06+j*.03,hz(r-12));if(k===0&&pass>0)S.crash(t0,.018)},
+  // après-midi : posé, harpe et cordes, sans percussions
+  calm(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*4,.01);for(const m of chd)S.strings(m+12,t0,b*4,.006);
+    for(let j=0;j<8;j++)S.harp([chd[0],chd[2],chd[1]+12,chd[2]][j%4]+12,t0+j*b/2,j%4===0?.022:.015,1.4);if(pass%2===1)S.pad(chd[1]+12,t0,b*4,.008)},
+  // soir : accords tenus, harpe lente, chœur lointain
+  evening(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*4,.011);S.strings(chd[1],t0,b*4,.007);S.strings(chd[2],t0,b*4,.006);
+    S.harp(r+12,t0,.022,2.2);S.harp(chd[1]+12,t0+b,.016,2);S.harp(chd[2]+12,t0+b*2,.018,2.2);S.harp(chd[1]+24,t0+b*3,.012,2);
+    if(pass>0)S.choir(chd[2]+12,t0,b*4,.012);if(k===0)S.timp(t0,.06,hz(r-12))},
+  // nuit : bourdon grave, cœur qui bat, grappes dissonantes, gouttes de harpe dans le noir
+  night(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-24,t0,b*4,.016);S.strings(r-17,t0,b*4,.008);
+    S.taiko(t0,.2);S.taiko(t0+b*.4,.12);if(k%2===1){S.taiko(t0+b*2,.14);S.taiko(t0+b*2.4,.09)}
+    if(k%4===2)S.pad(r+13,t0+b,b*2.5,.008);if(k%4===3)S.choirL(r+6,t0,b*3.5,.012);
+    S.harp(chd[2]+36,t0+b*1.75,.008,2.8);if(k%2===0)S.harp(r+37,t0+b*3.25,.006,3);if(k===5)S.anvil(t0+b*2.5,.008)},
+  // villes : barde médiéval, luth, bourdon de vielle, tambourin, rassurant
+  bard(S,chd,t0,b,k,pass){const r=chd[0];S.strings(r-12,t0,b*6,.008);S.strings(r-5,t0,b*6,.005);
+    S.pluck(r,t0,.05,.7);for(const m of chd)S.pluck(m+12,t0+2*b,.02,.45);S.pluck(chd[2],t0+3*b,.04,.6);for(const m of chd)S.pluck(m+12,t0+5*b,.018,.45);
+    S.tom(t0,.07,110);S.tom(t0+3*b,.05,120);S.hat(t0+3*b,.014,.12);S.hat(t0+5*b,.009,.06);if(pass%2===1)S.hat(t0+2*b,.008,.05)}};
+Object.assign(ACC,ACC3);
+/* musiques des moments de la journée (dehors) et des villes */
+Object.assign(THEMES,{
+  // « Brume sur les Collines » : aube, douce et mystérieuse
+  aube:{bpm:60,beats:4,acc:'dawn',
+    chords:[ch('A2','C3','E3'),ch('F2','A2','C3'),ch('C3','E3','G3'),ch('G2','B2','D3'),ch('A2','C3','E3'),ch('D3','F3','A3'),ch('F2','A2','C3'),ch('E2','G#2','B2')],
+    melA:mels(['E5:2 A5:2','G5:1.5 F5:.5 E5:2','C5:2 E5:1 G5:1','D5:3 -:1','E5:1 A5:1 B5:1 C6:1','A5:2 F5:2','E5:1.5 D5:.5 C5:2','B4:4']),
+    melB:mels(['A4:2 C5:2','C5:2 A4:2','G4:2 C5:1 E5:1','D5:4','C5:1 E5:1 A5:2','F5:2 D5:2','C5:1.5 B4:.5 A4:2','G#4:4']),
+    lead:'voice',lead2:'flute',mv:.032},
+  // « La Communauté se met en route » : matin, le thème principal plus énergique
+  matin:{bpm:92,beats:4,acc:'morning',chords:THEMES.menu.chords,melA:THEMES.menu.melA,melB:THEMES.menu.melB,lead:'whistle',lead2:'horn',mv:.05},
+  // « Le Marché de Midi » : entraînant, violon et flûte
+  midi:{bpm:118,beats:4,acc:'gallop',
+    chords:[ch('G2','B2','D3'),ch('C3','E3','G3'),ch('G2','B2','D3'),ch('D3','F#3','A3'),ch('E3','G3','B3'),ch('C3','E3','G3'),ch('D3','F#3','A3'),ch('G2','B2','D3')],
+    melA:mels(['D5:.5 G5:.5 B5:1 A5:.5 G5:.5 A5:1','G5:.5 E5:.5 C5:1 E5:1 G5:1','B5:1 D6:.5 B5:.5 A5:1 G5:1','A5:1.5 F#5:.5 D5:2','E5:.5 G5:.5 B5:1 A5:.5 G5:.5 E5:1','C6:1 B5:.5 A5:.5 G5:1 E5:1','D5:.5 E5:.5 F#5:.5 G5:.5 A5:1 F#5:1','G5:3 -:1']),
+    melB:mels(['B4:1 D5:1 G5:2','C5:1 E5:1 G5:2','D5:1 G5:1 B5:2','A5:2 F#5:2','G5:1 E5:1 B4:2','C5:1 E5:1 A5:2','A5:1 G5:1 F#5:1 D5:1','G5:4']),
+    lead:'fiddle',lead2:'whistle',mv:.046},
+  // « Les Prés Tranquilles » : après-midi, plus calme
+  aprem:{bpm:80,beats:4,acc:'calm',
+    chords:[ch('F2','A2','C3'),ch('D3','F3','A3'),ch('Bb2','D3','F3'),ch('C3','E3','G3'),ch('F2','A2','C3'),ch('A2','C3','E3'),ch('Bb2','D3','F3'),ch('C3','E3','G3')],
+    melA:mels(['C5:2 F5:1 G5:1','A5:2 F5:2','D5:1.5 F5:.5 Bb5:2','A5:2 G5:2','F5:1 A5:1 C6:2','C6:1 Bb5:1 A5:2','G5:1 F5:1 D5:1 F5:1','E5:2 G5:2']),
+    melB:mels(['F4:2 A4:2','D5:2 A4:2','Bb4:2 D5:2','C5:2 E5:2','F5:2 C5:2','E5:2 C5:2','D5:2 F5:2','E5:2 C5:2']),
+    lead:'flute',lead2:'fiddle',mv:.04},
+  // « Le Feu du Soir » : soir, calme et chaleureux
+  soir:{bpm:66,beats:4,acc:'evening',
+    chords:[ch('D3','F#3','A3'),ch('B2','D3','G3'),ch('E3','G3','B3'),ch('A2','C#3','E3'),ch('D3','F#3','A3'),ch('F#3','A3','C#4'),ch('G2','B2','D3'),ch('A2','C#3','E3')],
+    melA:mels(['F#5:2 A5:2','G5:1.5 F#5:.5 D5:2','E5:2 G5:1 B5:1','A5:3 -:1','D6:2 C#6:1 A5:1','C#6:2 A5:2','B5:1.5 A5:.5 G5:2','A5:2 E5:2']),
+    melB:mels(['D5:4','D5:2 B4:2','B4:2 E5:2','C#5:4','A4:2 D5:2','C#5:2 F#5:2','D5:2 B4:2','C#5:4']),
+    lead:'fiddle',lead2:'horn',mv:.036},
+  // « Ce qui rôde la nuit » : peur, danger
+  nuit:{bpm:64,beats:4,acc:'night',
+    chords:[ch('D3','F3','A3'),ch('D3','F3','A3'),ch('Eb3','G3','Bb3'),ch('D3','F3','A3'),ch('Bb2','Db3','F3'),ch('A2','C#3','E3'),ch('G2','Bb2','D3'),ch('A2','C#3','E3')],
+    melA:mels(['D4:3 -:1','F4:2 E4:2','Eb4:3 D4:1','D4:4','Db4:2 F4:2','E4:3 -:1','D4:2 Bb3:2','C#4:4']),
+    melB:mels(['-:2 A5:2','Bb5:3 -:1','-:1 G5:1 Bb5:2','A5:4','-:2 Ab5:2','G#5:3 -:1','-:1 D6:1 Bb5:2','A5:4']),
+    lead:'chant',lead2:'whistle',mv:.034},
+  // « La Ballade du Ménestrel » : villes, barde médiéval rassurant (6/8)
+  ville:{bpm:180,beats:6,acc:'bard',
+    chords:[ch('G2','B2','D3'),ch('C3','E3','G3'),ch('F2','A2','C3'),ch('G2','B2','D3'),ch('E3','G3','B3'),ch('C3','E3','G3'),ch('D3','F#3','A3'),ch('G2','B2','D3')],
+    melA:mels(['G5:2 A5:1 B5:2 G5:1','C6:2 B5:1 A5:2 G5:1','A5:2 F5:1 C5:3','D5:2 G5:1 B5:3','E5:2 G5:1 B5:2 A5:1','G5:2 E5:1 C5:3','D5:2 F#5:1 A5:2 F#5:1','G5:6']),
+    melB:mels(['D5:3 B4:3','E5:3 C5:3','F5:2 A5:1 F5:3','G5:3 D5:3','B4:2 E5:1 G5:3','C5:2 E5:1 G5:3','F#5:2 E5:1 D5:3','G4:6']),
+    lead:'flute',lead2:'fiddle',mv:.04}
+});
+/* les moments de la journée se fondent plus lentement l'un dans l'autre */
+const TIME_THEMES=new Set(['aube','matin','midi','aprem','soir','nuit']);
+
 function scheduleBar(T,i,t0,S){const b=60/T.bpm,n=T.chords.length,k=i%n,pass=Math.floor(i/n),chd=T.chords[k];
   ACC[T.acc](S,chd,t0,b,k,pass,n);
   if(T.skip0&&pass===0)return;const M=(pass%2&&T.melB)?T.melB:T.melA,inst=pass%2?T.lead2:T.lead,sh=inst==='horn'||inst==='brass'?-12:0;
@@ -1037,7 +1109,7 @@ const Music={on:true,vol:.7,c:null,ch:null,S:null,theme:null,want:'menu',bar:0,n
   duck(on){if(this.ducked===on)return;this.ducked=on;this.apply()},
   toggle(){this.on=!this.on;Store.lsSet('dd_music',this.on);this.apply();syncMusicBtn()},
   tick(){const c=this.c;if(!c||c.state!=='running')return;
-    if(this.theme!==this.want){const t=c.currentTime;const g=this.ch.bus.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(0.0001,t+.6);g.linearRampToValueAtTime(1,t+.9);this.theme=this.want;this.bar=0;this.next=t+.75}
+    if(this.theme!==this.want){const t=c.currentTime,fd=TIME_THEMES.has(this.theme)&&TIME_THEMES.has(this.want)?2.4:.6;const g=this.ch.bus.gain;g.cancelScheduledValues(t);g.setValueAtTime(g.value,t);g.linearRampToValueAtTime(0.0001,t+fd);g.linearRampToValueAtTime(1,t+fd+.4);this.theme=this.want;this.bar=0;this.next=t+fd+.15}
     const T=THEMES[this.theme];if(!T||!this.on)return;if(this.next<c.currentTime-1)this.next=c.currentTime+.05;
     while(this.next<c.currentTime+.5){scheduleBar(T,this.bar,this.next,this.S);this.next+=T.beats*60/T.bpm;this.bar++}}
 };
@@ -2227,7 +2299,14 @@ const FB_CONFIG={apiKey:'AIzaSyDQn6cqulpah1EoR_hz8x5IEskq0ZVO-Rs',authDomain:'mi
   databaseURL:'https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app',projectId:'midheim-1a4c1',appId:'1:573879321173:web:09b976a2437460ff478adc'};
 const FB_SDK='https://www.gstatic.com/firebasejs/13.0.0/';
 const FB_ROOM='MIDH'; // une seule salle : chaque partie lancée y est visible tant qu'il reste une place
-let netKind=null,netOn=false;
+let netKind=null,netOn=false,hostBg=false;
+/* l'appli passe en arrière-plan ou revient : on le signale à l'autre joueur, et au retour on remet les compteurs à zéro
+   (sinon, après une pause, l'hôte croit l'invité parti depuis longtemps et le renvoie) */
+document.addEventListener('visibilitychange',()=>{const vis=document.visibilityState==='visible';
+  if(mode==='host'||mode==='guest'||mode==='joining')pres({bg:vis?0:1});
+  if(vis){if(G&&G.guestPeer)G.guestSeen=performance.now();if(hostGoneAt)hostGoneAt=performance.now();if(mode==='joining')joinT=performance.now()}});
+/* fermeture de la page (et non simple pause) : on quitte vraiment la partie à deux, l'autre n'attend pas */
+addEventListener('pagehide',e=>{if(e.persisted)return;if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null,bg:0});else if(mode==='host')pres({r:'m',gp:null,g:null,bg:0})});
 async function initNet(){
   if(window.claude&&window.claude.use){netKind='claude';try{room=await claude.use('room')}catch(e){room=null}if(!room){setNet(false);return}attachRoom(room);return}
   netKind='fb';setNet(false);
@@ -2266,21 +2345,26 @@ function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
   for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
     const c=CLS[pr.c]?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
     const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
+const PAUSE_WAIT=90000;
 function hostCheckGuest(){
-  if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);if(!gp||!gp.presence||gp.presence.r!=='g'||gp.presence.h!==myPeer){dropGuest()}else{if(G.guestPres!==gp.presence)G.guestSeen=performance.now();G.guestPres=gp.presence}}
+  if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);
+    // invité en pause (appli en arrière-plan, écran verrouillé) : il peut disparaître un moment de la salle, on lui garde sa place
+    if(!gp&&G.guestPres&&G.guestPres.bg&&performance.now()-(G.guestSeen||0)<PAUSE_WAIT)return;
+    if(gp&&gp.presence&&!!gp.presence.bg!==!!(G.guestPres&&G.guestPres.bg)){const nm=clean(gp.presence.n)||'Ton allié';if(gp.presence.bg){Log.ev('à deux','invité en pause');toast(nm+' est en pause, on l’attend.')}else{Log.ev('à deux','invité de retour');toast(nm+' est de retour !')}}
+    if(!gp||!gp.presence||gp.presence.r!=='g'||gp.presence.h!==myPeer){dropGuest()}else{if(G.guestPres!==gp.presence)G.guestSeen=performance.now();G.guestPres=gp.presence}}
   if(!G.guestPeer){const c=peers.find(p=>!p.sameTab&&p.presence&&p.presence.r==='g'&&p.presence.h===myPeer&&CLS[p.presence.c]&&!(G.stale&&G.stale.peer===p.peer&&G.stale.pres===p.presence));if(c)acceptGuest(c)}}
 function acceptGuest(c){const pr=c.presence;const st=pr.st||{};const p=mkPlayer(clean(pr.n)||'Joueur 2',pr.c,{dmg:10,crit:.05,arm:0});p.mhp=100;applyGuestStats(p,st);p.hp=p.mhp;p.lvl=clamp(pr.l|0,1,99);
   const me=G.players[0];const q=freeSpot(me.x+36,me.y);p.x=p.rx=q.x;p.y=p.ry=q.y;
   G.players[1]=p;for(const k in G.gain)G.gain[k][1]=0;G.guestPeer=c.peer;G.guestPres=pr;G.guestSeen=performance.now();G.coop=true;mode='host';paused=false;netT=0;
   pres({gp:c.peer});Log.ev('à deux','invité accepté',p.name,CLS[p.cls].nom,'niv '+p.lvl,'peer '+c.peer.slice(-4));msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
 function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p?p.name:'?');if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';netT=0;pres({gp:null,g:null})}
-function joinHost(peer,name){Log.ev('à deux','rejoindre la partie de',name||'?','peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
+function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',name||'?','peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
   $('#menu').hidden=true;$('#game').hidden=false;$('#joining').hidden=false;
   pres({r:'g',h:peer,n:myName,c:selCls,l:hero.lvl,st:guestStats(),i:null,g:null,gp:null})}
 function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0}}
 function guestCheckHost(){const h=peers.find(p=>p.peer===hostPeer);
   if(!h){if(mode==='guest'&&!hostGoneAt){hostGoneAt=performance.now();Log.warn('à deux','hôte absent de la salle')}if(mode==='joining')endGuest('La partie n’existe plus.');return}
-  hostGoneAt=0;const pr=h.presence||{};
+  hostGoneAt=0;const pr=h.presence||{};if((mode==='guest'||mode==='joining')&&!!pr.bg!==hostBg){hostBg=!!pr.bg;Log.ev('à deux',hostBg?'hôte en pause':'hôte de retour');toast(hostBg?'L’hôte est en pause, on l’attend.':'L’hôte est de retour !')}
   if(mode==='joining'){if(pr.r!=='h'){endGuest('La partie n’existe plus.');return}
     if(pr.gp!==guestCheckHost.gp||!!pr.g!==guestCheckHost.g){guestCheckHost.gp=pr.gp;guestCheckHost.g=!!pr.g;Log.ev('à deux','attente hôte : place '+(pr.gp?(pr.gp===myPeer?'à moi':'prise'):'libre')+(pr.g?' · état reçu':' · pas d’état'))}
     if(pr.gp===myPeer&&pr.g)startGuest(pr);else if(pr.gp&&pr.gp!==myPeer)endGuest('La partie est déjà complète.');return}
@@ -2288,7 +2372,7 @@ function guestCheckHost(){const h=peers.find(p=>p.peer===hostPeer);
   if(pr.g&&pr.g!==lastStateObj){lastStateObj=pr.g;try{onState(pr.g)}catch(e){Log.err('à deux','état de l’hôte illisible (zone '+(pr.g&&pr.g.z)+')',e)}}}
 
 /* ================= Invité : reconstruction ================= */
-function startGuest(pr){Log.ev('à deux','partie rejointe, zone',pr.g&&pr.g.z,'ep',pr.g&&pr.g.ep);bubbles=[];mode='guest';myIdx=1;G=newWorld();G.coop=true;L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;G.ep=-1;
+function startGuest(pr){hostBg=!!pr.bg;Log.ev('à deux','partie rejointe, zone',pr.g&&pr.g.z,'ep',pr.g&&pr.g.ep);bubbles=[];mode='guest';myIdx=1;G=newWorld();G.coop=true;L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;G.ep=-1;
   $('#joining').hidden=true;lastStateObj=pr.g;try{onState(pr.g,true)}catch(e){Log.err('à deux','premier état illisible',e)}showGame();if(netKind==='fb')setNet(netOn)}
 function onState(s,first){
   if(!s||typeof s!=='object'||typeof s.z!=='string')return;
@@ -2314,8 +2398,9 @@ function onState(s,first){
   processMsgs(s.m.map(m=>[N(m[0]),String(m[1]==null?'':m[1]).slice(0,140)]));
   applyGains({xp:s.xp|0,g:s.g||[],pt:s.pt||[],gm:s.gm||[],sh:s.sh||[],dc:s.dc|0,ep:s.ep,q:s.q|0})}
 function guestUpdate(dt){G.time+=dt;if(G.m)updateLocal(dt);
-  if(hostGoneAt&&performance.now()-hostGoneAt>3500)endGuest('L’hôte a quitté la partie.')}
-function endGuest(text){if(mode!=='guest'&&mode!=='joining')return;Log.warn('à deux','fin de la partie à deux ('+mode+')',text||'');doSave(true);pres({r:'m',h:null,i:null,st:null});hostPeer=null;hostGoneAt=0;toMenu();if(text)setTimeout(()=>toast(text),50)}
+  if(hostGoneAt&&performance.now()-hostGoneAt>(hostBg?PAUSE_WAIT:3500))endGuest('L’hôte a quitté la partie.')}
+function endGuest(text){if(mode!=='guest'&&mode!=='joining')return;if(endGuest.busy)return;endGuest.busy=1;try{endGuest2(text)}finally{endGuest.busy=0}}
+function endGuest2(text){Log.warn('à deux','fin de la partie à deux ('+mode+')',text||'');doSave(true);pres({r:'m',h:null,i:null,st:null});hostPeer=null;hostGoneAt=0;toMenu();if(text)setTimeout(()=>toast(text),50)}
 function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.players.some(p=>Math.abs(p.x-x)<900&&Math.abs(p.y-y)<900);
   const s={z:G.zd,ep:G.ep,t:r(G.time*10),q:G.q,n:G.night,lv:G.lv,
     p:G.players.map(p=>[r(p.x),r(p.y),Math.ceil(p.hp),p.mhp,p.down?1:0,r(p.rev*40),CLS_IDS.indexOf(p.cls),(p.drT>0?1:0)|(p.shield>0?2:0)|(p.stealthT>0?4:0),Math.round((p.aim||0)*10),Math.round(p.shield||0),p.lk|0]),
@@ -2331,7 +2416,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
 let netT=0;
 function netTick(dt){if(!room)return;netT-=dt;
   // invité muet depuis 8 s (téléphone éteint, réseau coupé) : on libère sa place
-  if(mode==='host'&&G.guestPeer&&performance.now()-(G.guestSeen||0)>8000){Log.warn('à deux','invité muet depuis 8 s');G.stale={peer:G.guestPeer,pres:G.guestPres};dropGuest();return}
+  if(mode==='host'&&G.guestPeer&&performance.now()-(G.guestSeen||0)>(G.guestPres&&G.guestPres.bg?PAUSE_WAIT:8000)){Log.warn('à deux','invité muet trop longtemps');G.stale={peer:G.guestPeer,pres:G.guestPres};dropGuest();return}
   if(mode==='host'&&netT<=0){netT=.066;pres({g:serialize(),l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='solo'&&netT<=0){netT=3;pres({l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='guest'&&netT<=0){netT=.05;const r=Math.round;const tp=L.tp||aimPoint();
@@ -3979,7 +4064,10 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',myNam
 function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
 function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
 function pickTheme(){if(Cine.on)return'cine';if(Scene.on&&Scene.def&&Scene.def.music)return Scene.def.music;if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
-  if(G.m.kind==='house'||(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS))))return'town';if(G.m.kind!=='world')return'dungeon';return'explore'}
+  if(G.m.kind==='house')return'town';
+  if(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS)))return'ville';if(G.m.kind!=='world')return'dungeon';
+  // dehors : la musique suit le moment de la journée
+  return({Aube:'aube',Matin:'matin',Midi:'midi','Après-midi':'aprem',Soir:'soir',Nuit:'nuit'})[Sky.label()]||'explore'}
 
 /* ================= Boucle ================= */
 let lastT=performance.now();
@@ -4075,7 +4163,7 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
     ['Le salon de jeu',1,()=>within(initNet(),6000)],
   ]);
   Splash.hide();
-  setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>12000)endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
+  setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>(hostBg?PAUSE_WAIT:12000))endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
 })();
 </script>

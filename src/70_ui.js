@@ -177,7 +177,10 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',myNam
 function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
 function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
 function pickTheme(){if(Cine.on)return'cine';if(Scene.on&&Scene.def&&Scene.def.music)return Scene.def.music;if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
-  if(G.m.kind==='house'||(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS))))return'town';if(G.m.kind!=='world')return'dungeon';return'explore'}
+  if(G.m.kind==='house')return'town';
+  if(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS)))return'ville';if(G.m.kind!=='world')return'dungeon';
+  // dehors : la musique suit le moment de la journée
+  return({Aube:'aube',Matin:'matin',Midi:'midi','Après-midi':'aprem',Soir:'soir',Nuit:'nuit'})[Sky.label()]||'explore'}
 
 /* ================= Boucle ================= */
 let lastT=performance.now();
@@ -273,6 +276,6 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
     ['Le salon de jeu',1,()=>within(initNet(),6000)],
   ]);
   Splash.hide();
-  setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>12000)endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
+  setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>(hostBg?PAUSE_WAIT:12000))endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
 })();
