@@ -74,14 +74,14 @@ function flowDir(e,away){const m=G.m,F=G.flow;if(!F)return null;const tx=Math.fl
 /* ================= Dégâts ================= */
 function pInv(i){const p=G.players[i];if(!p)return true;if(i===0&&mode!=='guest')return L.ivT>0||p.ivT>0;return!!p.iv||p.ivT>0}
 function hurt(p,dmg,src){const i=G.players.indexOf(p);if(p.down||i<0||pInv(i))return;const st=p.st||{};
-  dmg*=(1-(st.arm||0))*(p.drT>0?.5:1)*(p.criT>0?.75:1)*(st.ae==='lath'?.88:1);dmg=Math.max(1,Math.round(dmg));
+  dmg*=Sky.mul()*(1-(st.arm||0))*(p.drT>0?.5:1)*(p.criT>0?.75:1)*(st.ae==='lath'?.88:1);dmg=Math.max(1,Math.round(dmg));
   if(p.shield>0){const a=Math.min(p.shield,dmg);p.shield-=a;dmg-=a;if(dmg<=0){fx(39,p.x,p.y-14,0,i);return}}
   if(src&&src.hp>0){if(st.ae==='feu'&&Math.hypot(src.x-p.x,src.y-p.y)<70)hitEnemy(src,dmg*.3,false);if(st.ae==='talos'&&Math.random()<.15){src.frz=Math.max(src.frz,1);fx(38,src.x,src.y,0)}}
   if(st.ae==='kel'&&p.hp-dmg<=0&&p.kelCd<=0){p.hp=1;p.ivT=2;p.kelCd=90;msg('Le voile de Kelemvor protège '+p.name+' !');fx(37,p.x,p.y,40,i);return}
   p.hp-=dmg;fx(9,p.x,p.y-14,dmg,i);if(p.hp>0&&p.hp<p.mhp*.3&&!p.lowSaid){p.lowSaid=true;sayP(i,'low')}
   if(p.hp<=0){p.hp=0;p.down=true;p.rev=0;p.shield=0;msg(pickL(MJ.down).replace('{n}',p.name)+(G.players.length>1?' Va le relever.':''))}}
 function healP(p,v,show){if(p.down)return;const before=p.hp;p.hp=Math.min(p.mhp,p.hp+v);if(p.hp>p.mhp*.5)p.lowSaid=false;if(show&&p.hp-before>=1)fx(3,p.x,p.y-16,Math.round(p.hp-before))}
-function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0)return;e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
+function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0)return;dmg/=Sky.mul();e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
 function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);let d=r.d*mult*(p.criT>0?1.25:1);

@@ -14,7 +14,8 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
   moonOf(hour,day){const d=hour<6?day-1:day;return((d%5)+5)%5}, // 0 = pleine lune
   period(h){return h<5?'Nuit':h<7?'Aube':h<11?'Matin':h<14?'Midi':h<18?'Après-midi':h<21.5?'Soir':'Nuit'},
   /* off (ms) et force (clé météo) : seulement pour les tests */
-  update(dt){const now=Date.now()+(this.off||0),s=this.at(now);this.secs=(now-SKY_EPOCH)/1000;this.hour=s.hour;this.day=s.day;const h=s.hour;
+  update(dt){if(this.off===undefined&&window.__skyHour!=null){const h=this.at(Date.now()).hour;this.off=((window.__skyHour-h+24)%24)/24*SKY_DAY;this.force=window.__skyWeather||null}
+    const now=Date.now()+(this.off||0),s=this.at(now);this.secs=(now-SKY_EPOCH)/1000;this.hour=s.hour;this.day=s.day;const h=s.hour;
     // météo par tranches de 6 h, avec un fondu d'environ 20 minutes de jeu aux changements
     const bu=s.u*4,b=Math.floor(bu),f=bu-b,cur=SKY_W[this.blockWeather(b)];this.wkey=this.blockWeather(b);
     const edge=.08;let w=cur,nb=null,t=0;if(f>1-edge){nb=SKY_W[this.blockWeather(b+1)];t=(f-(1-edge))/edge*.5}else if(f<edge){nb=SKY_W[this.blockWeather(b-1)];t=(edge-f)/edge*.5}
@@ -25,9 +26,9 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
     // lune : pleine tous les 5 jours
     this.moon=this.moonOf(h,s.day);
     // obscurité selon l'heure
-    const night=[.66,.72,.76,.8,.84][this.moon];let d;
+    const night=[.8,.84,.87,.9,.92][this.moon];let d;
     if(h<4.5||h>=21.5)d=night;else if(h<7)d=night*(1-(h-4.5)/2.5);else if(h<17)d=0;else if(h<19)d=.26*(h-17)/2;else d=.26+(night-.26)*(h-19)/2.5;
-    this.dark=Math.min(.88,d+this.cloud*.06+this.rain*.2+this.storm*.08);
+    this.dark=Math.min(.94,d+this.cloud*.06+this.rain*.2+this.storm*.08);
     this.gold=h>16.5&&h<20.5?Math.sin(Math.PI*(h-16.5)/4):0;this.dawn=h>4.5&&h<7.5?Math.sin(Math.PI*(h-4.5)/3):0;
     this.tint=d>=night*.8?(this.moon===0?'22,34,64':'8,14,34'):this.dawn>.2?'40,30,70':'34,18,52';
     this.lamps=this.dark>.16||this.rain>.6;
@@ -35,7 +36,7 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
     // éclairs
     if(this.storm>.4&&this.flash<=0&&Math.random()<dt*.12){this.flash=1;this.thunder=1.2+Math.random()*1.5}
     this.flash=Math.max(0,this.flash-dt*3.5);if(this.thunder>0){this.thunder-=dt;if(this.thunder<=0)this.boom()}
-    this.audio()},
+    this.watch();this.audio()},
   /* ---- son de la pluie (bruit filtré) et tonnerre ---- */
   audio(){const c=Snd.ctx;if(!c)return;const outdoors=G&&G.m&&G.m.kind==='world'&&(mode==='solo'||mode==='host'||mode==='guest');
     if(!this.rainSrc){try{const src=c.createBufferSource();src.buffer=Snd.nb;src.loop=true;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=1400;const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=300;
@@ -45,11 +46,11 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
     const g=c.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.35,t+.08);g.gain.exponentialRampToValueAtTime(.0001,t+2.6);s.connect(f).connect(g).connect(c.destination);s.start(t);s.stop(t+2.7)}catch(e){}},
   /* ---- ombres des nuages qui glissent sur le sol (coordonnées du monde) ---- */
   drawWorld(x0,y0,x1,y1){const k=this.cloud;if(k<.05)return;const g=ctx,t=this.secs,sp=900;
-    for(let i=0;i<7;i++){const ox=hash2(i,1,93)*sp*4,oy=hash2(i,2,94)*sp*3,cx=((ox+t*14)%(sp*4)),cy=oy%(sp*3);
+    for(let i=0;i<10;i++){const ox=hash2(i,1,93)*sp*4,oy=hash2(i,2,94)*sp*3,cx=((ox+t*14)%(sp*4)),cy=oy%(sp*3);
       // on répète le motif autour de la vue
       const bx=Math.floor((x0-sp)/(sp*4))*(sp*4)+cx,by=Math.floor((y0-sp)/(sp*3))*(sp*3)+cy;
-      for(let X=bx;X<x1+sp;X+=sp*4)for(let Y=by;Y<y1+sp;Y+=sp*3){const r=260+hash2(i,3,95)*220;if(X+r<x0||X-r>x1||Y+r<y0||Y-r>y1)continue;
-        const gr=g.createRadialGradient(X,Y,0,X,Y,r);gr.addColorStop(0,'rgba(20,28,40,'+(.16*k)+')');gr.addColorStop(1,'rgba(20,28,40,0)');g.fillStyle=gr;g.fillRect(X-r,Y-r,r*2,r*2)}}},
+      for(let X=bx;X<x1+sp;X+=sp*4)for(let Y=by;Y<y1+sp;Y+=sp*3){const r=300+hash2(i,3,95)*260;if(X+r<x0||X-r>x1||Y+r<y0||Y-r>y1)continue;
+        const gr=g.createRadialGradient(X,Y,0,X,Y,r);gr.addColorStop(0,'rgba(18,26,38,'+(.34*k)+')');gr.addColorStop(.55,'rgba(18,26,38,'+(.2*k)+')');gr.addColorStop(1,'rgba(20,28,40,0)');g.fillStyle=gr;g.fillRect(X-r,Y-r,r*2,r*2)}}},
   /* ---- pluie, brume, lumière dorée, éclairs (coordonnées de l'écran) ---- */
   drawScreen(dt){const g=ctx,W=cv.width,H=cv.height,s=dpr;g.save();g.setTransform(1,0,0,1,0,0);
     if(this.gold>0){g.fillStyle='rgba(255,130,50,'+(.16*this.gold*(1-this.rain))+')';g.fillRect(0,0,W,H)}
@@ -68,6 +69,15 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
     g.restore()},
   /* ---- textes et icônes ---- */
   label(){return this.period(this.hour)},
+  /* la nuit (21 h 30 – 5 h), dehors, les ennemis sont 4 fois plus forts */
+  isNight(){return this.hour>=21.5||this.hour<5},
+  mul(){return G&&G.m&&G.m.kind==='world'&&this.isNight()?4:1},
+  /* à chaque changement de moment de la journée : tic-tac d'horloge (et annonce la nuit et l'aube) */
+  watch(){const p=this.period(this.hour);if(this.lastP===undefined){this.lastP=p;return}if(p===this.lastP)return;const was=this.lastP;this.lastP=p;
+    const out=G&&G.m&&G.m.kind==='world'&&(mode==='solo'||mode==='host'||mode==='guest');if(!out)return;this.tick();
+    if(p==='Nuit')toast('La nuit tombe : les ennemis sont 4 fois plus forts.');else if(was==='Nuit')toast('Le jour se lève : les ennemis retrouvent leur force normale.');else toast(p==='Midi'?'Il est midi.':p+'.')},
+  tick(){const c=Snd.ctx;if(!c||!Snd.on)return;try{const t0=c.currentTime;for(let k=0;k<4;k++){const t=t0+k*.42,s=c.createBufferSource();s.buffer=Snd.nb;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=k%2?2600:3400;f.Q.value=9;
+      const g=c.createGain();g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.32,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+.05);s.connect(f).connect(g).connect(c.destination);s.start(t);s.stop(t+.06)}}catch(e){}},
   clock(){const h=Math.floor(this.hour),m=Math.floor((this.hour-h)*60/15)*15;return h+' h '+String(m).padStart(2,'0')},
   weatherName(){return this.rain>.5?(this.storm>.5?'Orage':'Pluie'):this.fog>.3?'Brume':this.cloud>.5?'Nuageux':'Beau temps'},
   nextFull(){if(this.moon===0&&(this.hour>=18||this.hour<6))return'Pleine lune cette nuit';const d=(5-this.moonOf(18,this.day))%5;return d===0?'Pleine lune ce soir':d===1?'Pleine lune demain soir':'Pleine lune dans '+d+' jours'},

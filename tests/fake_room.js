@@ -1,3 +1,5 @@
+// les tests jouent toujours à midi, par beau temps (l'horloge du jeu suit l'heure réelle)
+window.__skyHour = 12; window.__skyWeather = 'beau';
 // Salon simulé : relie les onglets du même navigateur via BroadcastChannel,
 // avec la même forme d'API que claude.use("room") (presence / onPeers / onConnection).
 (() => { window.__noStory = true;

@@ -388,6 +388,15 @@ body.scene .skytag{display:none}
 .skyline span{display:inline-flex;align-items:center;gap:6px}
 .skyline svg{width:20px;height:20px}
 .skyline .dim{color:var(--dim)}
+/* mise en page du HUD : fenêtres au-dessus de la mini-carte, messages sous l'en-tête, titres de région plus sobres */
+#hud .over{z-index:30}
+#banner{z-index:8;font-size:clamp(24px,7vw,46px)!important;top:24%!important;padding-inline:24px}
+@media (orientation:landscape) and (max-height:540px){#banner{font-size:clamp(22px,5vw,38px)!important;top:34%!important;padding-inline:120px}}
+@media (orientation:portrait){
+  #toasts{position:fixed!important;top:var(--hudB,150px)!important;bottom:auto!important;left:8px!important;right:var(--miniR,110px)!important;transform:none!important;width:auto!important;justify-items:start}
+  .toast{text-align:left}}
+.skytag.danger{border-color:#c8483c}
+.skytag .x4{color:#ff9a8a}
 /* macaron du menu */
 #menu .macaron{width:84px;height:84px;margin:0 auto 10px;display:block;filter:drop-shadow(0 4px 0 #5a2e14) drop-shadow(0 8px 16px rgba(0,0,0,.45))}
 #menu .copy{text-align:center;margin:4px 0 0;font-family:var(--f-label);font-size:12px;letter-spacing:.2em;color:#e8d6a8;text-shadow:0 1px 2px #000}

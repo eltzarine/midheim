@@ -104,12 +104,16 @@ function buildSkillUI(){const sk=SKILLS[hero.cls],cc=CLS[hero.cls].col;$('#bAtk'
   const pd=el('div','sk');pd.id='skPot';pd.append(el('em',null,'E'),el('span',null,'Potion'));pd.onclick=()=>{potQ=true};bar.append(pd)}
 /* pastille heure + météo sous la mini-carte */
 function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out=G&&G.m&&G.m.kind==='world';t.hidden=!out;if(!out)return;
-  const key=Sky.label()+Sky.weatherName()+Sky.moon+(Sky.hour<5.5||Sky.hour>=21);if(t.dataset.k!==key){t.dataset.k=key;t.innerHTML=Sky.icon()+'<span>'+Sky.label()+'</span>'}
-  const l=mi.offsetLeft+mi.offsetWidth/2-t.offsetWidth/2,tp=mi.offsetTop+mi.offsetHeight-12;t.style.left=Math.round(l)+'px';t.style.top=Math.round(tp)+'px'}
+  const nt=Sky.isNight(),key=Sky.label()+Sky.weatherName()+Sky.moon+(Sky.hour<5.5||Sky.hour>=21)+nt;if(t.dataset.k!==key){t.dataset.k=key;t.innerHTML=Sky.icon()+'<span>'+Sky.label()+'</span>'+(nt?'<span class="x4">×4</span>':'');t.classList.toggle('danger',nt)}
+  // portrait : la mini-carte se cale sous l'en-tête (elle ne recouvre plus la quête), les messages aussi
+  const hudEl=$('#hud'),top=$('#hud .top');if(innerHeight>innerWidth&&top){const hb=top.offsetTop+top.offsetHeight+8;mi.style.top=hb+'px';hudEl.style.setProperty('--hudB',(hb+4)+'px');hudEl.style.setProperty('--miniR',(innerWidth-mi.getBoundingClientRect().left+8)+'px')}
+  else if(mi.style.top){mi.style.top=''}
+  const l=mi.offsetLeft+mi.offsetWidth/2-t.offsetWidth/2,tp=mi.offsetTop+mi.offsetHeight-12;t.style.left=Math.round(Math.max(4,l))+'px';t.style.top=Math.round(tp)+'px'}
 function skyLine(){const night=Sky.hour<5.5||Sky.hour>=21;
   return'<span>'+Sky.icon()+'<b>Jour '+Sky.day+' · '+Sky.label()+'</b> <span class="dim">'+Sky.clock()+'</span></span>'
     +'<span>'+skyIcon(Sky.rain>.5?(Sky.storm>.5?'orage':'pluie'):Sky.fog>.3?'brume':Sky.cloud>.5?'nuages':'soleil')+Sky.weatherName()+'</span>'
-    +'<span>'+skyIcon('lune',Sky.moon)+(night?MOON[Sky.moon]:Sky.nextFull())+'</span>'}
+    +'<span>'+skyIcon('lune',Sky.moon)+(night?MOON[Sky.moon]:Sky.nextFull())+'</span>'
+    +(Sky.isNight()?'<span style="color:#ff9a8a"><b>Nuit : ennemis 4 fois plus forts</b></span>':'<span class="dim">La nuit (21 h 30 – 5 h), les ennemis sont 4 fois plus forts</span>')}
 function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if(hudT>0)return;hudT=.1;const me=myP();if(!me)return;
   $('#meName').textContent=myName+' · '+CLS[hero.cls].nom;$('#meLvl').textContent='Niv '+hero.lvl;
   $('#meHp').style.width=(clamp(me.hp/me.mhp,0,1)*100)+'%';$('#meSh').style.width=(clamp((me.sh||me.shield||0)/me.mhp,0,1)*100)+'%';$('#meMp').style.width=(clamp(L.mp/ST.mmp,0,1)*100)+'%';$('#meXp').style.width=(clamp(hero.xp/xpNeed(hero.lvl),0,1)*100)+'%';
