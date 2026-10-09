@@ -22,7 +22,7 @@ MODULES = [
     '21_bosses.js', '22_story.js', '23_humour.js', '26_maprend.js',
     '30_world.js', '35_dungeons.js', '40_game.js', '45_quests.js', '50_net.js',
     '60_render.js', '61_draw.js', '61_portrait.js', '61_storyui.js', '62_art.js',
-    '63_fx.js', '64_worldart.js', '64_vitrine.js', '65_cine.js', '66_scene.js', '67_splash.js', '68_menu.js', '69_pwa.js', '70_ui.js',
+    '63_fx.js', '64_worldart.js', '64_sky.js', '64_vitrine.js', '65_cine.js', '66_scene.js', '67_splash.js', '68_menu.js', '69_pwa.js', '70_ui.js',
 ]
 
 # Politique de sécurité du site public : tout est dans la page, sauf les polices et la base Firebase.

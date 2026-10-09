@@ -1,16 +1,14 @@
-/* ================= Vitrine graphique : Tarkin au crépuscule =================
-   Essai d'un rendu plus riche, limité à une ville :
-   - crépuscule permanent dans la ville (fondu en y entrant), lumière chaude des lanternes, fenêtres et braseros ;
-   - pavés taillés un par un (joints, usure, mousse, flaques qui reflètent les lumières) ;
-   - villageois qui se promènent (trajets calculés depuis l'heure du monde : les deux joueurs voient les mêmes) ;
-   - lucioles et braises autour des lumières. */
-const VITRINE={town:'tarkin',r:17,fade:6};
-const Vitrine={dusk:0,folk:null,
-  near(tx,ty){const c=PL[VITRINE.town];return Math.hypot(tx-c[0],ty-c[1])<=VITRINE.r},
-  /* intensité du crépuscule autour du joueur (0 dehors, 1 au cœur de la ville) */
-  tick(dt){let k=0;if(G&&G.m&&G.m.kind==='world'){const c=PL[VITRINE.town],d=Math.hypot(L.x/TS-c[0],L.y/TS-c[1]);k=clamp((VITRINE.r+VITRINE.fade-d)/VITRINE.fade,0,1)}
-    this.dusk+=(k-this.dusk)*Math.min(1,dt*1.5)},
-  lit(b){return G.night||(b&&b.town===VITRINE.town&&this.dusk>.3)}
+/* ================= Villes vivantes =================
+   Dans toutes les villes : pavés taillés un par un, lumière chaude des lanternes, fenêtres et portes
+   quand le jour baisse (voir 64_sky.js), villageois qui se promènent en journée (trajets tirés de
+   l'heure du monde : les deux joueurs voient les mêmes passants), lucioles le soir. */
+const VITRINE={r:15};
+const Vitrine={dusk:0,folk:{},
+  /* ville la plus proche d'une case (ou null) */
+  townAt(tx,ty){for(const k in TOWNS){const c=PL[k];if(Math.abs(tx-c[0])<=VITRINE.r&&Math.abs(ty-c[1])<=VITRINE.r&&Math.hypot(tx-c[0],ty-c[1])<=VITRINE.r)return k}return null},
+  near(tx,ty){return!!this.townAt(tx,ty)},
+  tick(dt){this.dusk=Sky.dark},
+  lit(b){return G.night||(b&&b.town&&Sky.lamps)}
 };
 
 /* ---- pavés : chaque pierre dessinée (dans le cache du sol, donc gratuit à l'affichage) ---- */
@@ -34,17 +32,17 @@ function vitrineCobbles(g,px,py,tx,ty){
 }
 
 /* ---- villageois : boucles de promenade sur les pavés, position tirée de l'heure du monde ---- */
-function vitrineFolk(){if(Vitrine.folk)return Vitrine.folk;const m=WORLD,W=m.W,c=PL[VITRINE.town],R=mulberry(2026);
-  const ok=(x,y)=>x>0&&y>0&&x<W&&y<m.H&&!m.sol[y*W+x]&&(m.t[y*W+x]===10||m.t[y*W+x]===7)&&Vitrine.near(x,y);
+function vitrineFolk(town){if(Vitrine.folk[town])return Vitrine.folk[town];const m=WORLD,W=m.W,c=PL[town],R=mulberry(2026+c[0]*31+c[1]);
+  const ok=(x,y)=>x>0&&y>0&&x<W&&y<m.H&&!m.sol[y*W+x]&&(m.t[y*W+x]===10||m.t[y*W+x]===7)&&Math.hypot(x-c[0],y-c[1])<=VITRINE.r;
   const spots=[];for(let y=c[1]-VITRINE.r;y<=c[1]+VITRINE.r;y++)for(let x=c[0]-VITRINE.r;x<=c[0]+VITRINE.r;x++)if(ok(x,y))spots.push([x,y]);
   const path=(a,b)=>{const prev=new Map(),q=[a],key=p=>p[0]+','+p[1];prev.set(key(a),null);
     while(q.length){const p=q.shift();if(p[0]===b[0]&&p[1]===b[1])break;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const n=[p[0]+dx,p[1]+dy];if(!ok(n[0],n[1])||prev.has(key(n)))continue;prev.set(key(n),p);q.push(n)}}
     if(!prev.has(key(b)))return null;const out=[];for(let p=b;p;p=prev.get(key(p)))out.unshift(p);return out};
   const LOOK=[['#7a3b2a','#e9c4a0','capuche'],['#2f5e6a','#d8a880','chapeau'],['#6b5a2a','#f0d0b0','panier'],['#4a3a6a','#c99a70','capuche'],['#8a6a3a','#e9cdb0','chapeau']];
-  const folk=[];for(let i=0;i<5&&spots.length>4;i++){const pts=[];for(let k=0;k<4;k++)pts.push(spots[Math.floor(R()*spots.length)]);
+  const folk=[];const n=TOWNS[town].b.length>=6?5:3;for(let i=0;i<n&&spots.length>4;i++){const pts=[];for(let k=0;k<4;k++)pts.push(spots[Math.floor(R()*spots.length)]);
     let loop=[];for(let k=0;k<pts.length;k++){const p=path(pts[k],pts[(k+1)%pts.length]);if(!p){loop=null;break}loop=loop.concat(k?p.slice(1):p)}
     if(loop&&loop.length>6)folk.push({loop,look:LOOK[i%LOOK.length],spd:.9+R()*.5,ph:R()*loop.length})}
-  return Vitrine.folk=folk}
+  return Vitrine.folk[town]=folk}
 function folkPos(f,t){const n=f.loop.length,u=((t*f.spd+f.ph)%n+n)%n,i=Math.floor(u),fr=u-i,a=f.loop[i],b=f.loop[(i+1)%n];
   return{x:(a[0]+(b[0]-a[0])*fr+.5)*TS,y:(a[1]+(b[1]-a[1])*fr+.5)*TS,dir:b[0]-a[0],walk:u}}
 function drawFolk(g,f,p){const[cloth,skin,kind]=f.look,step=Math.sin(p.walk*Math.PI*2*2),x=p.x,y=p.y,fl=p.dir<0?-1:1;
@@ -60,22 +58,22 @@ function drawFolk(g,f,p){const[cloth,skin,kind]=f.look,step=Math.sin(p.walk*Math
 /* ---- sources de lumière de la ville (lanternes, fenêtres, portes, braseros) ---- */
 function vitrineLights(x0,y0,x1,y1){const m=WORLD,out=[],T=G.time;
   const a=Math.max(0,Math.floor(x0/TS)),b=Math.min(m.W-1,Math.floor(x1/TS)),c=Math.max(0,Math.floor(y0/TS)),d=Math.min(m.H-1,Math.floor(y1/TS));
-  for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){if(m.obj[ty*m.W+tx]!==10||!Vitrine.near(tx,ty))continue;out.push([(tx+.5)*TS+6.5,(ty+1)*TS-34,150,1,tx*3+ty])}
-  for(const bd of m.builds){if(bd.town!==VITRINE.town)continue;const bx=bd.x*TS,by=bd.y*TS,bw=bd.w*TS,bh=bd.h*TS;if(bx>x1+200||bx+bw<x0-200||by>y1+200||by+bh<y0-200)continue;
+  for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){if(m.obj[ty*m.W+tx]!==10)continue;out.push([(tx+.5)*TS+6.5,(ty+1)*TS-34,150,1,tx*3+ty])}
+  for(const bd of m.builds){if(!bd.town||bd.kind==='puits')continue;const bx=bd.x*TS,by=bd.y*TS,bw=bd.w*TS,bh=bd.h*TS;if(bx>x1+200||bx+bw<x0-200||by>y1+200||by+bh<y0-200)continue;
     out.push([(bd.door.x+.5)*TS,bd.door.y*TS-8,bd.kind==='forge'?130:95,.9,bd.x]);
     const dx=(bd.door.x+.5)*TS;for(let k=0;k<bd.w;k++){const cx=bx+k*TS+TS/2;if(Math.abs(cx-dx)<TS*.6)continue;out.push([cx,by+bh*.28,70,.7,bd.x+k*7])}}
   return out}
 /* trous de lumière dans le voile du soir (appelé dans la passe d'obscurité) */
-function vitrineHoles(light,x0,y0,x1,y1){if(Vitrine.dusk<.02)return;const T=G.time;
-  for(const[x,y,r,a,s]of vitrineLights(x0,y0,x1,y1))light(x,y,r*(1+.04*Math.sin(T*7+s)),a*Math.min(1,Vitrine.dusk*1.2))}
+function vitrineHoles(light,x0,y0,x1,y1){if(!Sky.lamps)return;const T=G.time;
+  for(const[x,y,r,a,s]of vitrineLights(x0,y0,x1,y1))light(x,y,r*.8*(1+.04*Math.sin(T*7+s)),a*.5*Math.min(1,Sky.dark*2))}
 /* lueur chaude ajoutée par-dessus (lumière colorée, flaques qui brillent, lucioles) */
-function vitrineGlow(x0,y0,x1,y1){const k=Vitrine.dusk;if(k<.02)return;const g=ctx,T=G.time;g.save();g.globalCompositeOperation='lighter';
+function vitrineGlow(x0,y0,x1,y1){if(!Sky.lamps)return;const k=Math.min(1,Sky.dark*1.8+(Sky.rain>.6?.3:0));if(k<.02)return;const g=ctx,T=G.time;g.save();g.globalCompositeOperation='lighter';
   for(const[x,y,r,a,s]of vitrineLights(x0,y0,x1,y1)){const fl=.85+.15*Math.sin(T*8+s)*Math.sin(T*3.1+s*2),rr=r*.75;
     const gr=g.createRadialGradient(x,y,0,x,y,rr);gr.addColorStop(0,'rgba(255,170,70,'+(.32*a*k*fl)+')');gr.addColorStop(.45,'rgba(255,120,40,'+(.12*a*k*fl)+')');gr.addColorStop(1,'rgba(255,100,30,0)');
     g.fillStyle=gr;g.fillRect(x-rr,y-rr,rr*2,rr*2)}
   g.restore();
   // lucioles autour des lanternes
-  if(Math.random()<k*.25){const ls=vitrineLights(x0,y0,x1,y1).filter(l=>l[2]>=150);if(ls.length){const l=ls[Math.floor(Math.random()*ls.length)];
+  if(Sky.rain<.3&&Math.random()<k*.25){const ls=vitrineLights(x0,y0,x1,y1).filter(l=>l[2]>=150);if(ls.length){const l=ls[Math.floor(Math.random()*ls.length)];
     parts.push({k:'fly',x:l[0]+(Math.random()-.5)*60,y:l[1]+20+Math.random()*40,vx:(Math.random()-.5)*10,vy:-4-Math.random()*6,life:2.5+Math.random()*2,max:4})}}}
 FX2.fly=(q,al)=>{const g=ctx;g.save();g.globalCompositeOperation='lighter';const b=Math.sin(Math.PI*q.life/q.max)*(.6+.4*Math.sin(q.life*9));
   g.fillStyle='rgba(255,230,140,'+(.7*b)+')';g.beginPath();g.arc(q.x,q.y,1.6,0,6.28);g.fill();g.fillStyle='rgba(255,210,120,'+(.15*b)+')';g.beginPath();g.arc(q.x,q.y,6,0,6.28);g.fill();g.restore();

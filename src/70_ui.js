@@ -86,7 +86,7 @@ function equip(i){const it=hero.bag[i];if(!it)return;const old=hero.eq[it.s];her
 /* ================= Carte plein écran et voyage rapide ================= */
 function pctOf(tx,ty){return[(tx+.5)/WORLD.W*100,(ty+.5)/WORLD.H*100]}
 function mark(box,cls,x,y,c){const m=el('div','mk '+cls);m.style.left=x+'%';m.style.top=y+'%';if(c)m.style.setProperty('--c',c);box.append(m);return m}
-function openMap(){const box=$('#bigMarks');box.textContent='';const inWorld=G&&G.m&&G.m.kind==='world';
+function openMap(){$('#mapSky').innerHTML=skyLine();const box=$('#bigMarks');box.textContent='';const inWorld=G&&G.m&&G.m.kind==='world';
   for(const k of Object.keys(WAYPOINTS)){const w=WAYPOINTS[k],[x,y]=pctOf(w.pt[0],w.pt[1]);const known=hero.wp.includes(k);const b=el('button','mk wp'+(known?'':' off'),known?'◆':'?');b.style.left=x+'%';b.style.top=y+'%';b.title=w.nom;b.setAttribute('aria-label',(known?'Voyager vers ':'Lieu inconnu : ')+w.nom);
     b.onclick=()=>travel(k);box.append(b)}
   const o=objTarget();if(o){const[x,y]=pctOf(o.x/TS-.5,o.y/TS-.5);mark(box,'obj',x,y)}
@@ -102,7 +102,15 @@ function buildSkillUI(){const sk=SKILLS[hero.cls],cc=CLS[hero.cls].col;$('#bAtk'
   const bar=$('#skillbar');bar.textContent='';const keysL=['1','2','3','R'];
   sk.forEach((s,i)=>{const d=el('div','sk'+(s.ult?' ult':''));d.id='sk'+i;const ic=el('i','ic');ic.innerHTML=iconSvg(s.id,s.ult?'#f0c95a':cc);d.append(el('em',null,keysL[i]),ic,el('span',null,s.court));d.title=s.nom+' : '+s.desc;d.onclick=()=>{skQ[i]=true};bar.append(d)});
   const pd=el('div','sk');pd.id='skPot';pd.append(el('em',null,'E'),el('span',null,'Potion'));pd.onclick=()=>{potQ=true};bar.append(pd)}
-function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini()}if(hudT>0)return;hudT=.1;const me=myP();if(!me)return;
+/* pastille heure + météo sous la mini-carte */
+function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out=G&&G.m&&G.m.kind==='world';t.hidden=!out;if(!out)return;
+  const key=Sky.label()+Sky.weatherName()+Sky.moon+(Sky.hour<5.5||Sky.hour>=21);if(t.dataset.k!==key){t.dataset.k=key;t.innerHTML=Sky.icon()+'<span>'+Sky.label()+'</span>'}
+  const l=mi.offsetLeft+mi.offsetWidth/2-t.offsetWidth/2,tp=mi.offsetTop+mi.offsetHeight-12;t.style.left=Math.round(l)+'px';t.style.top=Math.round(tp)+'px'}
+function skyLine(){const night=Sky.hour<5.5||Sky.hour>=21;
+  return'<span>'+Sky.icon()+'<b>Jour '+Sky.day+' · '+Sky.label()+'</b> <span class="dim">'+Sky.clock()+'</span></span>'
+    +'<span>'+skyIcon(Sky.rain>.5?(Sky.storm>.5?'orage':'pluie'):Sky.fog>.3?'brume':Sky.cloud>.5?'nuages':'soleil')+Sky.weatherName()+'</span>'
+    +'<span>'+skyIcon('lune',Sky.moon)+(night?MOON[Sky.moon]:Sky.nextFull())+'</span>'}
+function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if(hudT>0)return;hudT=.1;const me=myP();if(!me)return;
   $('#meName').textContent=myName+' · '+CLS[hero.cls].nom;$('#meLvl').textContent='Niv '+hero.lvl;
   $('#meHp').style.width=(clamp(me.hp/me.mhp,0,1)*100)+'%';$('#meSh').style.width=(clamp((me.sh||me.shield||0)/me.mhp,0,1)*100)+'%';$('#meMp').style.width=(clamp(L.mp/ST.mmp,0,1)*100)+'%';$('#meXp').style.width=(clamp(hero.xp/xpNeed(hero.lvl),0,1)*100)+'%';
   const oi=myIdx===0?1:0,o=G.players[oi],ca=$('#cAlly');
@@ -179,7 +187,7 @@ function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(
     parts=parts.filter(q=>q.life>0);if(parts.length>360)parts.splice(0,parts.length-360);
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
-    Vitrine.tick(dt);Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
+    Sky.update(dt);Vitrine.tick(dt);Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
   else if(mode==='menu')MenuBg.draw(dt)}
 
 /* ================= Entrées ================= */
@@ -211,7 +219,7 @@ holdBtn($('#bAtk'),()=>touch.atk=true,()=>touch.atk=false);
 holdBtn($('#bS1'),()=>skQ[0]=true);holdBtn($('#bS2'),()=>skQ[1]=true);holdBtn($('#bS3'),()=>skQ[2]=true);holdBtn($('#bUlt'),()=>skQ[3]=true);
 holdBtn($('#bPot'),()=>potQ=true);holdBtn($('#bAct'),()=>actQ=true);
 document.addEventListener('gesturestart',e=>e.preventDefault());
-$('#mini').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
+$('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pTal').onclick=toggleTalents;$('#bResume').onclick=togglePause;$('#bTalClose').onclick=toggleTalents;
 $('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};

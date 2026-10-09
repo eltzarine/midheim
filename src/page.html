@@ -379,6 +379,15 @@ body.touch .tb.nomp,body.touch .tb.empty{opacity:.28}
 #splash .sp-copy{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0;text-align:center;font-family:var(--f-label);font-size:12px;letter-spacing:.2em;color:var(--dim)}
 @keyframes spIn{from{opacity:0;transform:scale(.88)}}
 #splash .sp-logo svg,#menu .macaron svg{width:100%;height:auto;display:block}
+/* heure et météo : pastille calée sous la mini-carte, et ligne dans la carte */
+.skytag{position:absolute;z-index:6;pointer-events:auto;display:flex;align-items:center;gap:5px;padding:3px 9px 3px 6px;border-radius:99px;background:rgba(19,37,44,.9);border:2px solid var(--bronze);color:var(--parch);font:700 12px/1 var(--f-ui);white-space:nowrap;box-shadow:0 2px 0 #0a1418}
+.skytag svg{width:16px;height:16px;flex:none}
+.skytag .sep{opacity:.5}
+body.scene .skytag{display:none}
+.skyline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;background:var(--deep);border:1px solid var(--edge);border-radius:8px;padding:8px 12px;font-size:14.5px;color:var(--parch)}
+.skyline span{display:inline-flex;align-items:center;gap:6px}
+.skyline svg{width:20px;height:20px}
+.skyline .dim{color:var(--dim)}
 /* macaron du menu */
 #menu .macaron{width:84px;height:84px;margin:0 auto 10px;display:block;filter:drop-shadow(0 4px 0 #5a2e14) drop-shadow(0 8px 16px rgba(0,0,0,.45))}
 #menu .copy{text-align:center;margin:4px 0 0;font-family:var(--f-label);font-size:12px;letter-spacing:.2em;color:#e8d6a8;text-shadow:0 1px 2px #000}
@@ -501,6 +510,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 <div class="over" id="mapBox" hidden>
   <div class="dlg">
     <div class="row sp"><h2>Midheim</h2><button class="btn sm" id="mapClose">Fermer</button></div>
+    <div class="skyline" id="mapSky"></div>
     <div class="mapbox" id="bigMap"><img id="mapImg2" alt="Carte de Midheim"><div id="bigMarks"></div></div>
     <p class="muted" id="mapNote">Les carrés sont les lieux découverts. Touche un lieu découvert pour y voyager.</p>
   </div>
@@ -546,6 +556,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     </div>
     <div id="banner"></div>
     <canvas id="mini" width="120" height="120" aria-label="Carte autour du héros (toucher pour ouvrir la carte)"></canvas>
+    <button type="button" id="skyTag" class="skytag" aria-label="Heure et météo : ouvrir la carte"></button>
     <div id="actHint" hidden></div>
     <div id="skillbar"></div>
     <nav id="mbar" aria-label="Menus"></nav>
