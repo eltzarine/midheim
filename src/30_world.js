@@ -24,9 +24,13 @@ function buildWorld(){
   const passT=v=>v!==0&&v!==1&&v!==5&&v!==8;
   function fits(x,y,w,h,noRoad){for(let yy=y-1;yy<=y+h;yy++)for(let xx=x-1;xx<=x+w;xx++){if(!inb(xx,yy))return false;const i=idx(xx,yy);if(occ[i])return false;
       const inside=xx>=x&&xx<x+w&&yy>=y&&yy<y+h;if(inside&&(!passT(t[i])||(noRoad&&t[i]===7)))return false}
-    const dx=x+(w>>1),dy=y+h;return inb(dx,dy)&&passT(t[idx(dx,dy)])}
+    const dx=x+(w>>1),dy=y+h;if(!inb(dx,dy)||!passT(t[idx(dx,dy)]))return false;
+    // parvis de la porte : 3 de large, libre sur 4 rangs (aucun toit ne le cache), praticable au milieu
+    for(let ay=dy;ay<=dy+3;ay++)for(let ax=dx-1;ax<=dx+1;ax++){if(!inb(ax,ay)||occ[idx(ax,ay)])return false;if(ax===dx&&ay<=dy+2&&!passT(t[idx(ax,ay)]))return false}
+    return true}
   function put(kind,x,y,w,h,label,act,extra){for(let yy=y;yy<y+h;yy++)for(let xx=x;xx<x+w;xx++){const i=idx(xx,yy);occ[i]=1;sol[i]=1;blk[i]=1;obj[i]=0}
     const b=Object.assign({kind,x,y,w,h,label:label||'',act:act||null,door:{x:x+(w>>1),y:y+h}},extra||{});builds.push(b);
+    for(let ay=b.door.y;ay<=b.door.y+2;ay++)for(let ax=b.door.x-1;ax<=b.door.x+1;ax++)if(inb(ax,ay)){occ[idx(ax,ay)]=1;clear[idx(ax,ay)]=1}
     if(act){inter.push({x:(b.door.x+.5)*TS,y:(b.door.y+.3)*TS,r:30,kind:act.startsWith('talk')||act.startsWith('closed')?'talk':'door',act,label,b});clear[idx(b.door.x,b.door.y)]=1}
     return b}
   function placeNear(cx,cy,kind,label,act,extra,pref){const[w,h]=BSIZE[kind]||[3,2];
@@ -90,6 +94,19 @@ function buildWorld(){
   const st=PL.start;
   // route dégagée du camp de départ jusqu'au pont (aucun objet ne bloque le passage)
   for(let y=BR.y0;y<=BR.y1;y++)for(let x=Math.min(PL.start[0],BR.x0)-1;x<=BR.x1+3;x++){const i=idx(x,y);if(obj[i]){obj[i]=0;sol[i]=T_SOLID[t[i]];blk[i]=T_BLOCK[t[i]]}}
+  // accessibilité garantie : toute porte (villes, donjons, monuments) est reliée à pied au départ ;
+  // sinon on ouvre un col au plus court à travers montagnes, arbres et rochers (jamais la mer)
+  {const free=i=>!sol[i];const reach=new Uint8Array(N);const fill=(sx,sy)=>{const q=[idx(sx,sy)];reach[q[0]]=1;
+      while(q.length){const i=q.pop(),x=i%W,y=(i/W)|0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(!reach[j]&&free(j)){reach[j]=1;q.push(j)}}}};
+    fill(st[0],st[1]);
+    const open=i=>{if(t[i]===5||t[i]===1)t[i]=3;obj[i]=0;sol[i]=T_SOLID[t[i]];blk[i]=T_BLOCK[t[i]]};
+    for(const b of builds){if(!b.act)continue;const d=idx(b.door.x,b.door.y);if(reach[d])continue;
+      // plus court chemin (on évite la mer et les bâtiments ; montagne et forêt coûtent plus)
+      const dist=new Float32Array(N).fill(1e9),prev=new Int32Array(N).fill(-1),q=[[0,d]];dist[d]=0;let hit=-1;
+      while(q.length){q.sort((a,c)=>c[0]-a[0]);const[cd,i]=q.pop();if(cd>dist[i])continue;if(reach[i]){hit=i;break}const x=i%W,y=(i/W)|0;
+        for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(t[j]===0||(occ[j]&&sol[j]))continue;
+          const c=cd+(free(j)?1:t[j]===5?4:2);if(c<dist[j]){dist[j]=c;prev[j]=i;q.push([c,j])}}}
+      if(hit<0)continue;for(let i=hit;i!==-1;i=prev[i])if(!free(i))open(i);fill(b.door.x,b.door.y)}}
   WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
     start:{x:(st[0]+.5)*TS,y:(st[1]+.5)*TS},chunks:new Map()};
   return WORLD}

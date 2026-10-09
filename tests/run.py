@@ -42,6 +42,16 @@ with sync_playwright() as pw:
     ctx, pg = page(br, story=True, tag='solo')
     pg.goto(URL); pg.wait_for_timeout(700)
     check('Menu : carte de Midheim et marqueurs', pg.locator('#menuMarks .mk').count() >= 2)
+    # le monde : chaque porte est atteignable à pied depuis le départ, et aucun bâtiment ne la bouche ni ne la cache
+    audit = go(pg, """(()=>{const m=WORLD,W=m.W,H=m.H,free=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&!m.sol[y*W+x];
+      const s=worldFree(PL.start[0],PL.start[1]),sx=Math.floor(s.x/TS),sy=Math.floor(s.y/TS),seen=new Uint8Array(W*H),q=[[sx,sy]];seen[sy*W+sx]=1;
+      while(q.length){const[x,y]=q.pop();for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(free(nx,ny)&&!seen[ny*W+nx]){seen[ny*W+nx]=1;q.push([nx,ny])}}}
+      const bad=[];for(const b of m.builds){if(!b.act)continue;const d=b.door;
+        if(!free(d.x,d.y)||!seen[d.y*W+d.x])bad.push((b.label||b.kind)+' : porte inaccessible');
+        const cov=m.builds.find(o=>o!==b&&d.x>=o.x&&d.x<o.x+o.w&&o.y>d.y&&o.y<=d.y+3);if(cov)bad.push((b.label||b.kind)+' : porte cachée par '+(cov.label||cov.kind))}
+      const placed=Object.keys(TOWNS).filter(k=>m.builds.filter(b=>b.town===k).length!==TOWNS[k].b.length).map(k=>k+' : bâtiment manquant');
+      return bad.concat(placed)})()""")
+    check('Monde : toutes les portes sont accessibles et dégagées', not audit, audit[:5])
     pg.fill('#name', 'César'); pg.click('#bSolo'); pg.wait_for_timeout(900)
     check('Départ dans le monde, côté Wild Realms', go(pg, "G.zd") == 'w' and go(pg, "Math.floor(L.x/TS)") < 55)
     check('Mise en scène d’introduction dans le jeu', go(pg, "Scene.on&&Scene.def.hideP") and go(pg, "Music.want") == 'cine' and pg.is_visible('#scnSkip'))

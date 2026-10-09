@@ -81,25 +81,91 @@ function drawTreeObj(k,tx,ty,alpha){const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS-4,h=has
     g.fillStyle='#d8c06a';g.beginPath();g.ellipse(x-3,y-23,9,4,0,0,6.28);g.fill()}
   else if(k===13){g.fillStyle='#5a3e24';for(const px2 of[-14,0,14]){prism(g,x+px2-2,y-3,4,3,16,'#6b4a2a',{edge:false})}g.strokeStyle='#8a7a6a';g.lineWidth=1;g.beginPath();for(const hh of[-9,-14]){g.moveTo(x-14,y+hh);g.lineTo(x+14,y+hh)}g.stroke()}
   g.globalAlpha=1}
-// maisons : murs de planches, toits en deux pans (tôle ondulée façon image)
+// maisons médiévales : soubassement de pierre, colombages et torchis, toits de tuiles (chaume pour les maisons),
+// fenêtres à petits carreaux et volets, porte cintrée cloutée, cheminée qui fume
+function mixHex(a,b,t){const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);const c=k=>Math.round(((A>>k)&255)*(1-t)+((B>>k)&255)*t);return'#'+((1<<24)|(c(16)<<16)|(c(8)<<8)|c(0)).toString(16).slice(1)}
 function drawBuilding(b,T){const kd=b.kind;if(!(kd==='auberge'||kd==='marchand'||kd==='forge'||kd==='maison'||kd==='temple')){drawBuildingBase(b,T);return}
-  const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,dx=(b.door.x+.5)*TS;const roof=b.roof||'#5a8a6a';const wall=kd==='forge'?'#a89a88':'#d9b98a';
-  g.fillStyle='rgba(50,25,10,.3)';g.beginPath();g.moveTo(x+6,y+h);g.lineTo(x+w+14,y+h);g.lineTo(x+w+24,y+h-10);g.lineTo(x+w+10,y+h-12);g.closePath();g.fill();
-  // façade avant + mur de côté visible
-  g.fillStyle=wall;g.fillRect(x,y,w,h);g.fillStyle=shade(wall,-.22);g.fillRect(x+w-6,y,6,h);g.fillStyle='rgba(90,60,30,.25)';for(let k=4;k<w-6;k+=7)g.fillRect(x+k,y+2,1.2,h-2);
-  g.fillStyle='#5a3e24';g.fillRect(x,y+h-4,w,4);g.fillRect(x,y,3,h);g.fillRect(x+w-9,y,3,h);
-  // fenêtres
-  for(let k=0;k<b.w;k++){const wx=x+k*TS+10;if(Math.abs(wx+6-dx)<22)continue;g.fillStyle='#3a2818';g.fillRect(wx-1,y+h*.3-1,14,12);g.fillStyle=G.night?'#ffd27a':'#7a9aa8';g.fillRect(wx,y+h*.3,12,10);g.fillStyle='rgba(255,255,255,.35)';g.fillRect(wx+1,y+h*.3+1,4,3);g.fillStyle='#3a2818';g.fillRect(wx+5.5,y+h*.3,1,10)}
-  // porte
-  g.fillStyle='#3a2818';g.fillRect(dx-10,y+h-26,20,26);g.fillStyle='#7a5530';g.fillRect(dx-8,y+h-24,16,24);g.fillStyle='rgba(0,0,0,.2)';g.fillRect(dx-8,y+h-24,16,3);g.fillStyle='#e2b65e';g.fillRect(dx+4,y+h-12,2,2);
-  // toit à deux pans
-  const ov=8,rh=h*.62+10,ry=y+6;g.fillStyle=shade(roof,.1);g.beginPath();g.moveTo(x-ov,ry);g.lineTo(x+w*.5,ry-rh);g.lineTo(x+w*.5,ry+2);g.closePath();g.fill();
-  g.fillStyle=shade(roof,-.25);g.beginPath();g.moveTo(x+w*.5,ry-rh);g.lineTo(x+w+ov,ry);g.lineTo(x+w*.5,ry+2);g.closePath();g.fill();
-  g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=1;for(let k=1;k<8;k++){const f=k/8;g.beginPath();g.moveTo(x-ov+(w*.5+ov)*f,ry-rh*f);g.lineTo(x-ov+(w*.5+ov)*f+2,ry+2);g.stroke();g.beginPath();g.moveTo(x+w+ov-(w*.5+ov)*f,ry-rh*f);g.lineTo(x+w+ov-(w*.5+ov)*f-2,ry+2);g.stroke()}
-  g.fillStyle=shade(roof,-.4);g.fillRect(x-ov,ry,w+ov*2,3);
-  if(kd==='forge'){prism(g,x+w-22,ry-rh*.7,10,6,18,'#6a625a');if(Math.random()<.06)parts.push({k:'smoke',x:x+w-17,y:ry-rh*.7-20,vx:4,vy:-14,life:2.5,max:2.5,r:6})}
-  if(b.act&&(kd==='auberge'||kd==='marchand'||kd==='forge')){const sx=dx+22,sy=y+h-30;g.strokeStyle='#3a2818';g.lineWidth=2;g.beginPath();g.moveTo(sx-6,sy-4);g.lineTo(sx+10,sy-4);g.stroke();prism(g,sx-2,sy-2,16,14,0,'#efe6cf',{edge:false});g.strokeStyle='#5a3e24';g.strokeRect(sx-2,sy-2,16,14);
-    g.fillStyle='#3a2818';if(kd==='forge'){g.fillRect(sx+1,sy+2,10,3);g.fillRect(sx+4,sy+5,4,4)}else if(kd==='marchand'){g.beginPath();g.arc(sx+6,sy+5,4,0,6.28);g.fill();g.fillStyle='#e2b65e';g.beginPath();g.arc(sx+6,sy+5,2.5,0,6.28);g.fill()}else{g.fillRect(sx+2,sy+6,10,4);g.fillRect(sx+2,sy+2,3,4)}}}
+  const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,dx=(b.door.x+.5)*TS,hs=hash2(b.x,b.y,3);
+  const thatch=kd==='maison',stoneWall=kd==='forge';
+  const roof=thatch?mixHex('#b8964e',b.roof||'#8a6a3a',.12):mixHex(b.roof||'#7a4a36','#8a4a32',.45);
+  const plaster=({auberge:'#ece0c4',marchand:'#e6dbc2',maison:'#e2d4b4'})[kd]||'#e4d8bc',beam='#4a3220',beamL='#6a4a30';
+  // ombre portée
+  g.fillStyle='rgba(40,22,10,.32)';g.beginPath();g.moveTo(x+4,y+h);g.lineTo(x+w+16,y+h);g.lineTo(x+w+26,y+h-12);g.lineTo(x+w+10,y+h-14);g.closePath();g.fill();
+  // murs
+  const plinth=12,wy=y,wh=h-plinth;
+  if(stoneWall){stoneBlocks(g,x,wy,w,h,'#8d8476',8)}
+  else{g.fillStyle=plaster;g.fillRect(x,wy,w,wh);
+    // torchis un peu irrégulier
+    g.fillStyle='rgba(120,95,60,.10)';for(let k=0;k<b.w*6;k++){const px=x+hash2(b.x+k,b.y,11)*w,py=wy+hash2(b.x,b.y+k,12)*wh;g.fillRect(px,py,3+hash2(k,b.x,13)*5,2)}
+    stoneBlocks(g,x,y+h-plinth,w,plinth,'#8a7f70',6)}
+  g.fillStyle='rgba(0,0,0,.18)';g.fillRect(x+w-6,y,6,h);
+  // colombages : poteaux aux angles et à chaque travée, sablière, croix de Saint-André dans les panneaux pleins
+  const bays=b.w,bw=w/bays,mid=wy+Math.round(wh*(b.h>=3?.48:.5)),win=[];
+  if(!stoneWall){g.fillStyle=beam;g.fillRect(x,wy,w,4);g.fillRect(x,mid-2,w,4);g.fillRect(x,wy+wh-3,w,3);
+    for(let k=0;k<=bays;k++){const px=Math.min(x+w-4,Math.max(x,Math.round(x+k*bw-2)));g.fillRect(px,wy,4,wh)}
+    g.strokeStyle=beam;g.lineWidth=3;
+    for(let k=0;k<bays;k++){const bx=x+k*bw,cx=bx+bw/2,hasDoor=Math.abs(cx-dx)<bw*.6;
+      if(hasDoor)continue;
+      // bas : croix ; haut : fenêtre
+      g.beginPath();g.moveTo(bx+4,mid+3);g.lineTo(bx+bw-4,wy+wh-4);g.moveTo(bx+bw-4,mid+3);g.lineTo(bx+4,wy+wh-4);g.stroke();
+      win.push([cx,wy+(mid-wy)/2+1])}
+    g.fillStyle='rgba(255,255,255,.12)';g.fillRect(x,wy+4,w,1)}
+  else{g.fillStyle=beam;g.fillRect(x,wy,w,5);for(let k=0;k<bays;k++){const cx=x+k*bw+bw/2;if(Math.abs(cx-dx)<bw*.6)continue;win.push([cx,wy+wh*.42])}}
+  // fenêtres : petits carreaux en losange, volets, appui de pierre
+  for(const[cx,cy]of win){const ww=12,wh2=13;
+    g.fillStyle='#5a3a22';g.fillRect(cx-ww/2-6,cy-wh2/2,5,wh2);g.fillRect(cx+ww/2+1,cy-wh2/2,5,wh2);
+    g.fillStyle='rgba(0,0,0,.25)';g.fillRect(cx-ww/2-6,cy-wh2/2,1,wh2);g.fillRect(cx+ww/2+5,cy-wh2/2,1,wh2);
+    g.fillStyle='#2a1c12';g.fillRect(cx-ww/2-1,cy-wh2/2-1,ww+2,wh2+2);
+    g.fillStyle=G.night?'#f6c45a':'#6f8f98';g.fillRect(cx-ww/2,cy-wh2/2,ww,wh2);
+    g.save();g.beginPath();g.rect(cx-ww/2,cy-wh2/2,ww,wh2);g.clip();g.strokeStyle=G.night?'rgba(110,60,10,.55)':'rgba(40,50,55,.55)';g.lineWidth=.8;g.beginPath();
+    for(let k=-ww;k<ww+wh2;k+=4.5){g.moveTo(cx-ww/2+k,cy-wh2/2);g.lineTo(cx-ww/2+k-wh2,cy+wh2/2);g.moveTo(cx-ww/2+k-wh2,cy-wh2/2);g.lineTo(cx-ww/2+k,cy+wh2/2)}g.stroke();g.restore();
+    if(!G.night){g.fillStyle='rgba(255,255,255,.3)';g.fillRect(cx-ww/2+1,cy-wh2/2+1,3,4)}
+    g.fillStyle='#b8ad98';g.fillRect(cx-ww/2-3,cy+wh2/2+1,ww+6,3);
+    if(G.night){g.fillStyle='rgba(255,200,110,.16)';g.beginPath();g.arc(cx,cy,16,0,6.28);g.fill()}}
+  // porte cintrée en planches, pentures et clous, marche de pierre
+  {const dw=20,dh=Math.min(30,h-16),dy0=y+h-dh;g.fillStyle='#a69c8a';g.fillRect(dx-dw/2-3,y+h-3,dw+6,4);
+    const arch=(pad)=>{g.beginPath();g.moveTo(dx-dw/2-pad,y+h);g.lineTo(dx-dw/2-pad,dy0+dw/2);g.arc(dx,dy0+dw/2,dw/2+pad,Math.PI,0);g.lineTo(dx+dw/2+pad,y+h);g.closePath()};
+    g.fillStyle=stoneWall?'#6e665a':beam;arch(3);g.fill();g.fillStyle='#7a5230';arch(0);g.fill();
+    g.save();arch(0);g.clip();g.strokeStyle='rgba(40,24,12,.55)';g.lineWidth=1;for(let k=-dw/2+5;k<dw/2;k+=5){g.beginPath();g.moveTo(dx+k,dy0);g.lineTo(dx+k,y+h);g.stroke()}
+      g.fillStyle='#2e2a28';g.fillRect(dx-dw/2,dy0+dw/2+2,dw-3,2.5);g.fillRect(dx-dw/2,y+h-8,dw-3,2.5);
+      g.fillStyle='rgba(0,0,0,.25)';g.fillRect(dx-dw/2,dy0,dw,4);g.restore();
+    g.fillStyle='#c9a24a';g.beginPath();g.arc(dx+5,y+h-dh*.45,1.6,0,6.28);g.fill()}
+  // toit
+  const ov=7,ey=y+5,rh=Math.round(h*.5+20),ry=ey-rh,inset=thatch?12:9;
+  const slope=()=>{g.beginPath();g.moveTo(x-ov,ey);g.lineTo(x+w+ov,ey);g.lineTo(x+w-inset,ry);g.lineTo(x+inset,ry);g.closePath()};
+  g.fillStyle=shade(roof,-.08);slope();g.fill();
+  g.save();slope();g.clip();
+  if(thatch){ // chaume : mèches de paille, rangs arrondis
+    for(let r=0;r<rh;r+=7){const yy=ry+r;g.fillStyle=shade(roof,(r/rh)*.12-.1);g.fillRect(x-ov,yy,w+ov*2,7);
+      g.strokeStyle=shade(roof,-.3);g.lineWidth=1;g.beginPath();for(let k=x-ov;k<x+w+ov;k+=3){const j=hash2(k,r,21)*3;g.moveTo(k,yy+1+j);g.lineTo(k+1,yy+7)}g.stroke()}}
+  else{ // tuiles : rangs décalés d'écailles arrondies
+    const th=7,tw=9;for(let r=0,row=0;r<rh+th;r+=th,row++){const yy=ry+r;g.fillStyle=shade(roof,(r/rh)*.16-.12);g.fillRect(x-ov,yy,w+ov*2,th);
+      for(let k=x-ov-(row%2)*tw/2;k<x+w+ov;k+=tw){const v=hash2(k|0,row,31);g.fillStyle=shade(roof,(r/rh)*.16-.06+v*.08);g.beginPath();g.moveTo(k,yy);g.lineTo(k+tw,yy);g.lineTo(k+tw,yy+th-2);g.quadraticCurveTo(k+tw/2,yy+th+2,k,yy+th-2);g.closePath();g.fill()}
+      g.fillStyle='rgba(0,0,0,.22)';g.fillRect(x-ov,yy+th-1,w+ov*2,1)}}
+  // côté droit du toit dans l'ombre, lumière sur l'arête gauche
+  g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.moveTo(x+w+ov,ey);g.lineTo(x+w-inset,ry);g.lineTo(x+w-inset-10,ry);g.lineTo(x+w+ov-12,ey);g.closePath();g.fill();
+  g.restore();
+  g.strokeStyle=shade(roof,.18);g.lineWidth=1.5;g.beginPath();g.moveTo(x-ov,ey);g.lineTo(x+inset,ry);g.stroke();
+  // faîtage et bord du toit
+  g.fillStyle=shade(roof,-.35);g.fillRect(x+inset-2,ry-3,w-inset*2+4,thatch?6:4);
+  if(thatch){g.fillStyle=shade(roof,-.18);g.beginPath();g.moveTo(x-ov-2,ey-2);g.lineTo(x+w+ov+2,ey-2);g.lineTo(x+w+ov,ey+4);g.lineTo(x-ov,ey+4);g.closePath();g.fill()}
+  else{g.fillStyle=shade(roof,-.45);g.fillRect(x-ov,ey-1,w+ov*2,3)}
+  // cheminée de pierre
+  if(kd!=='marchand'||hs>.5){const cx=kd==='forge'?x+w-26:x+(hs>.5?w*.72:w*.22),cyy=ry+rh*.25;
+    g.fillStyle='#7d7468';g.fillRect(cx,cyy-18,12,22);g.fillStyle='#5f574d';g.fillRect(cx+8,cyy-18,4,22);g.fillStyle='#958b7c';g.fillRect(cx-2,cyy-21,16,4);
+    g.strokeStyle='rgba(40,32,24,.35)';g.lineWidth=1;for(let r=0;r<3;r++){g.beginPath();g.moveTo(cx,cyy-12+r*6);g.lineTo(cx+12,cyy-12+r*6);g.stroke()}
+    if((kd==='forge'||kd==='auberge'||G.night)&&Math.random()<(kd==='forge'?.07:.03))parts.push({k:'smoke',x:cx+6,y:cyy-24,vx:3+Math.random()*3,vy:-12,life:2.6,max:2.6,r:kd==='forge'?6:4.5})}
+  // forge : lueur du foyer par la porte
+  if(kd==='forge'){const f=.5+.5*Math.sin(T*6+hs*9);g.fillStyle='rgba(255,140,50,'+(.18+.12*f)+')';g.beginPath();g.arc(dx,y+h-10,18,0,6.28);g.fill()}
+  // enseigne suspendue à une potence de fer
+  if(b.act&&(kd==='auberge'||kd==='marchand'||kd==='forge')){const sx=dx+19,sy=y+h-dh_(h)-2,sw=Math.sin(T*1.6+hs*6)*1.2;
+    g.strokeStyle='#2e2a28';g.lineWidth=2;g.beginPath();g.moveTo(sx-6,sy-6);g.lineTo(sx+16,sy-6);g.moveTo(sx-6,sy-6);g.lineTo(sx-6,sy-1);g.moveTo(sx-6,sy+2);g.lineTo(sx+4,sy-6);g.stroke();
+    g.lineWidth=1;g.beginPath();g.moveTo(sx+1,sy-6);g.lineTo(sx+1+sw,sy-1);g.moveTo(sx+13,sy-6);g.lineTo(sx+13+sw,sy-1);g.stroke();
+    const px=sx-1+sw,py=sy-1;g.fillStyle='#6a4628';g.fillRect(px,py,17,14);g.fillStyle='#efe6cf';g.fillRect(px+2,py+2,13,10);
+    g.fillStyle='#3a2818';if(kd==='forge'){g.fillRect(px+4,py+5,9,3);g.fillRect(px+7,py+8,3,3)}
+    else if(kd==='marchand'){g.beginPath();g.arc(px+8.5,py+7,3.6,0,6.28);g.fill();g.fillStyle='#e2b65e';g.beginPath();g.arc(px+8.5,py+7,2.2,0,6.28);g.fill()}
+    else{g.fillRect(px+5,py+5,6,6);g.fillRect(px+11,py+6,2,3);g.fillStyle='#e2b65e';g.fillRect(px+6,py+4,4,2)}}}
+const dh_=h=>Math.min(30,h-16);
 
 /* ================= Le Pont de Lathandre : grand pont de pierre (arches, parapets, piliers au soleil doré) ================= */
 function bridgeRect(){const B=WORLD.bridge;return{X0:B.x0*TS-8,X1:(B.x1+1)*TS+8,Y0:B.y0*TS,Y1:(B.y1+1)*TS}}
