@@ -344,16 +344,16 @@ function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)re
 
 /* ================= Contrôle local ================= */
 const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,false,false,false],potQ=false,actQ=false;
-const touch={on:false,jx:0,jy:0,atk:false};
+const touch={on:false,jx:0,jy:0,atk:false,aimOn:false,aimAng:0,aimLen:0,relAim:false,aimSlot:null};
 function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
-function aimPoint(){const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
+function aimPoint(){if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const S=SKILLS[hero.cls][slot];const me=myP();if(!S||!me||me.down)return;
   if(hero.lvl<S.lvl){toast(S.nom+' : se débloque au niveau '+S.lvl+'.','lk'+slot);return}
   if(S.ult){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
   L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(S.id);if(mode!=='guest')hostSkill(0,S.id,L.aim,tp)}
-function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2?L.face:L.aim;
+function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!touch.aimOn?L.face:L.aim;
   switch(id){
     case'charge':L.dashT=.22;L.dvx=Math.cos(L.aim)*850;L.dvy=Math.sin(L.aim)*850;L.ivT=.3;Snd.play('dash');break;
     case'ombre':L.dashT=.18;L.dvx=Math.cos(a)*1000;L.dvy=Math.sin(a)*1000;L.ivT=.4;L.buffT=2;Snd.play('dash');parts.push({k:'ring',x:L.x,y:L.y,r:6,mr:30,life:.3,max:.3,col:'#86cc70'});break;
@@ -376,7 +376,8 @@ function updateLocal(dt){
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
   if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}else if(ml>0)moveBody(L,mx*ST.spd*dt,my*ST.spd*dt,10);
   const useMouse=!touch.on&&performance.now()-mouse.t<2500;
-  if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
+  if(touch.aimOn)L.aim=touch.aimAng;
+  else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
   else{const n=nearestEnemy(330);L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
   // découverte des lieux et région
   L.wpT-=dt;if(L.wpT<=0&&G.m&&G.m.kind==='world'){L.wpT=.5;const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS);
@@ -387,6 +388,7 @@ function updateLocal(dt){
   if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)){L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm;L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
     L.swing=SWD;L.swingA=L.aim;Snd.play(hero.cls==='mage'||hero.cls==='soigneur'?'fire':'swing');if(mode!=='guest')hostAttack(0,L.aim,buffed)}
   for(let s=0;s<4;s++)if(skQ[s]){skQ[s]=false;trySkill(s)}
+  if(touch.relAim){touch.relAim=false;touch.aimOn=false}
   if(potQ){potQ=false;if(hero.pot>0&&me&&me.hp<me.mhp){hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
   if(actQ){actQ=false;const it=findInteract();if(it)doInteract(it)}}
 function townAt(tx,ty){for(const k in TOWNS){const p=PL[k];if((p[0]-tx)**2+(p[1]-ty)**2<100)return{id:'t_'+k,nom:TOWNS[k].nom,lv:0}}return null}

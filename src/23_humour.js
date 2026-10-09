@@ -32,6 +32,16 @@ const pickL=a=>a[Math.floor(Math.random()*a.length)];
 function sayP(i,cat){const p=G.players[i];if(!p)return;p.sayT=p.sayT||0;if(G.time<p.sayT)return;const id=pickB(p.cls,cat);if(id<0)return;p.sayT=G.time+4;fx(21,p.x,p.y,id,i)}
 function eKey(e){if(e.type==='boss')return'boss'+(e.bv??0);if(e.elite)return'elite';return({slime:'marionnette',bat:'rejeton',archer:'adepte',orc:G.m&&G.m.soldat?'veilleur':'orc',mimic:'mimic'})[e.type]}
 function sayE(e,cat){const id=pickB(eKey(e),cat||'aggro');if(id>=0)fx(22,e.x,e.y,id,e.id)}
+/* Clients des auberges : répliques quand on passe à côté */
+const TAVERN={
+  buveur:['Je bois pour oublier. J’ai oublié quoi, déjà ?','Le patron dit que sa soupe est maison. La maison de qui ?','Si tu croises un dragon, dis-lui que je suis pas là.','Une bière, c’est de l’eau qui a fait des études.','Mon cheval est plus malin que moi. Il est resté dehors.','Tu sais pourquoi les orcs ne jouent jamais aux cartes ? Trop de piques.','La nuit, les bêtes sont bien plus fortes. Moi, c’est le contraire.','J’ai vu un fantôme hier. Il m’a demandé l’addition.'],
+  barde:['Je compose une ballade sur toi. Pour l’instant, ça rime avec « catastrophe ».','Ma luth a trois cordes. Les deux autres sont parties en tournée.','Un public ! Enfin ! Ah non, tu passes juste.','On dit que je chante faux. C’est la chanson qui est fausse.','Je cherche une rime à « Midheim ». Toujours rien.','Si tu me donnes une pièce, j’arrête de chanter.','Ma dernière chanson a fait pleurer un orc. De douleur.'],
+  conteur:['Les quatre pierres… mon grand-père en parlait déjà, gamin.','Sous la plus profonde montagne, quelque chose attend. Patiemment.','Méfie-toi de la pleine lune : tous les cinq jours, la nuit est plus claire, mais pas plus sûre.','Abhorash respecte ceux qui se battent avec honneur. Pas les autres.','Le Pont de Lathandre a vu passer des rois. Et beaucoup de moutons.','Quand il pleut, les chemins se vident. Les malins en profitent.','De mon temps, les donjons avaient des portes. Et des poignées.']};
+const TavT={};
+/* appelé à chaque image dans une auberge : un client parle quand on passe près de lui */
+function tavernTick(){const m=G&&G.m;if(!m||m.kind!=='house'||m.hk!=='auberge')return;
+  for(const n of m.npcs){if(!n.patron)continue;const d=Math.hypot(n.x-L.x,n.y-L.y),k=n.id;
+    if(d<64&&G.time>(TavT[k]||0)){const ls=TAVERN[n.who];TavT[k]=G.time+9;addBubble({who:'n',o:k,x:n.x,y:n.y,txt:pickL(ls),life:4.5,max:4.5})}}}
 let bubbles=[];
 function addBubble(o){bubbles=bubbles.filter(b=>!(b.who===o.who&&b.o===o.o));bubbles.push(o);if(bubbles.length>8)bubbles.shift()}
 function drawBubble(x,y,txt,a){ctx.save();ctx.globalAlpha=a;ctx.font='600 11px "Pixelify Sans",monospace';const words=txt.replace(/ ([?!:;»])/g,'\u00a0$1').replace(/« /g,'«\u00a0').split(' ');const lines=[];let cur='';for(const w of words){const t=cur?cur+' '+w:w;if(ctx.measureText(t).width>150&&cur){lines.push(cur);cur=w}else cur=t}lines.push(cur);

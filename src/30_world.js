@@ -127,6 +127,8 @@ function buildHouse(kind,hid,exitTo){const W=11,H=9,t=new Uint8Array(W*H).fill(1
   const who={auberge:'aubergiste',marchand:'marchand',forge:'forgeron'}[kind];
   const m={kind:'house',hk:kind,hid,W,H,t,pal:4,furn,rooms:[],chests:[],crates:[],plates:[],spikes:[],torches:[{x:2,y:0},{x:8,y:0}],props:[],stairs:null,boss:false,
     start:{x:5.5*TS,y:(H-2+.5)*TS},exitTo,npcs:[{id:'pnj',who,x:(npcPos[0]+.5)*TS,y:(npcPos[1]+.5)*TS}],theme:4};
+  // clients de l'auberge : ils lancent une blague ou un conseil quand on passe à côté
+  if(kind==='auberge')for(const[id,w,x,y]of[['c1','buveur',6,5],['c2','barde',8,6.2],['c3','conteur',2.6,6]])m.npcs.push({id,who:w,x:(x+.5)*TS,y:(y+.5)*TS,patron:1});
   const town=hid.split('_')[0];
   m.inter=[{x:m.npcs[0].x,y:m.npcs[0].y+TS*1.2,r:44,kind:'talk',act:'shop:'+kind,label:({auberge:'Parler à l’aubergiste',marchand:'Voir le marchand',forge:'Voir le forgeron'})[kind],town},
     {x:5.5*TS,y:(H-1+.2)*TS,r:30,kind:'door',act:'exit',label:'Sortir'}];

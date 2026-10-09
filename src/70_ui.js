@@ -191,7 +191,7 @@ function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(
     parts=parts.filter(q=>q.life>0);if(parts.length>360)parts.splice(0,parts.length-360);
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
-    Sky.update(dt);Vitrine.tick(dt);Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
+    Sky.update(dt);Vitrine.tick(dt);tavernTick();Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
   else if(mode==='menu')MenuBg.draw(dt)}
 
 /* ================= Entrées ================= */
@@ -219,8 +219,21 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
   zone.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e.clientX,e.clientY)});
   const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
-holdBtn($('#bAtk'),()=>touch.atk=true,()=>touch.atk=false);
-holdBtn($('#bS1'),()=>skQ[0]=true);holdBtn($('#bS2'),()=>skQ[1]=true);holdBtn($('#bS3'),()=>skQ[2]=true);holdBtn($('#bUlt'),()=>skQ[3]=true);
+/* Visée au doigt : on appuie sur l'attaque ou une compétence et on glisse pour viser.
+   Attaque : on frappe en continu vers la direction tenue. Compétence : on vise en glissant, le sort part au relâcher
+   (un simple appui sans glisser lance comme avant, vers l'ennemi le plus proche). */
+const AIM_DEAD=16;
+function aimBtn(elx,slot){let id=null,cx=0,cy=0,moved=false;
+  elx.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();id=e.pointerId;try{elx.setPointerCapture(id)}catch(_){}const r=elx.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;moved=false;
+    elx.classList.add('on');touch.on=true;touch.aimSlot=slot;if(slot<0)touch.atk=true;e.preventDefault()});
+  elx.addEventListener('pointermove',e=>{if(e.pointerId!==id)return;const dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy);
+    if(len>AIM_DEAD){moved=true;touch.aimOn=true;touch.aimAng=Math.atan2(dy,dx);touch.aimLen=len}else if(moved){touch.aimOn=false}});
+  const end=(cast)=>e=>{if(e.pointerId!==id)return;id=null;elx.classList.remove('on');
+    if(slot<0){touch.atk=false;touch.aimOn=false}
+    else if(cast){skQ[slot]=true;if(touch.aimOn)touch.relAim=true}else touch.aimOn=false;
+    touch.aimSlot=null};
+  elx.addEventListener('pointerup',end(true));elx.addEventListener('pointercancel',end(false))}
+aimBtn($('#bAtk'),-1);aimBtn($('#bS1'),0);aimBtn($('#bS2'),1);aimBtn($('#bS3'),2);aimBtn($('#bUlt'),3);
 holdBtn($('#bPot'),()=>potQ=true);holdBtn($('#bAct'),()=>actQ=true);
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};

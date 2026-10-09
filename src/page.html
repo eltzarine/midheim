@@ -324,15 +324,15 @@ body.scene #hud,body.scene #touch,body.scene #skillbar,body.scene #mini,body.sce
   .qd-orb{width:100px;height:100px}#qdIcon{width:76px;height:76px}.qd-lore{display:none}}
 
 /* barre des menus sous les commandes (tactile) */
-body.touch{--mb:calc(46px + env(safe-area-inset-bottom,0px))}
+body.touch{--mb:calc(36px + max(0px, env(safe-area-inset-bottom,0px) - 14px))}
 #mbar{display:none}
-body.touch #mbar{position:absolute;left:0;right:0;bottom:0;height:var(--mb);display:flex;gap:6px;justify-content:center;align-items:flex-start;padding:5px calc(8px + env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) calc(8px + env(safe-area-inset-left,0px));background:none;border:0;pointer-events:none}
+body.touch #mbar{position:absolute;left:0;right:0;bottom:0;height:var(--mb);display:flex;gap:6px;justify-content:center;align-items:flex-start;padding:2px calc(8px + env(safe-area-inset-right,0px)) env(safe-area-inset-bottom,0px) calc(8px + env(safe-area-inset-left,0px));background:none;border:0;pointer-events:none}
 body.touch #mbar .pill{pointer-events:auto;box-shadow:none}
-body.touch #mbar .pill{flex:1 1 0;max-width:112px;justify-content:center;height:36px;padding:0 6px;font-size:14px;white-space:nowrap;background:rgba(19,37,44,.78)}
+body.touch #mbar .pill{flex:1 1 0;max-width:112px;justify-content:center;height:32px;padding:0 6px;font-size:14px;white-space:nowrap;background:rgba(19,37,44,.78)}
 body.touch #mbar .pill:active{filter:brightness(1.3)}
 body.touch #vig{bottom:calc(232px + var(--mb))}
 @media (orientation:portrait){body.touch #toasts{bottom:calc(250px + var(--mb))}}
-@media (orientation:landscape) and (max-height:540px){body.touch{--mb:calc(38px + env(safe-area-inset-bottom,0px))}body.touch #mbar{padding-top:4px}body.touch #mbar .pill{height:30px;font-size:12.5px;max-width:104px}
+@media (orientation:landscape) and (max-height:540px){body.touch{--mb:calc(30px + max(0px, env(safe-area-inset-bottom,0px) - 16px))}body.touch #mbar{padding-top:1px}body.touch #mbar .pill{height:27px;font-size:12.5px;max-width:104px}
   body.touch #vig{bottom:calc(10px + var(--mb))}}
 body.scene #mbar{display:none!important}
 
