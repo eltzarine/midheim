@@ -1,8 +1,8 @@
 /* ================= Journal de bord (débogage) =================
    Garde les derniers événements de la session (erreurs JavaScript, réseau, jeu à deux) et,
-   sur le site public, les envoie dans Firebase : rooms/LOGS/peers/<session>, une « salle »
-   où personne ne joue. Rien n'est affiché aux joueurs ; on les lit côté serveur :
-   https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/rooms/LOGS/peers.json */
+   sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
+   lisible par tous, écriture limitée à 16 000 caractères). Rien n'est affiché aux joueurs ; on les lit côté serveur :
+   https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
 const BUILD='@@BUILD@@';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
 const g_=f=>{try{return f()}catch(e){return undefined}};
@@ -23,7 +23,7 @@ const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)
   schedule(ms){if(g_(()=>netKind)!=='fb')return;if(this.upT&&ms>=10000)return;clearTimeout(this.upT);this.upT=setTimeout(()=>{this.upT=null;this.upload()},ms)},
   async upload(){const SDK=g_(()=>FB_SDK);if(!this.dirty||!SDK||!navigator.onLine)return;this.dirty=false;
     try{if(!this.fb){const A=await import(SDK+'firebase-app.js'),D=await import(SDK+'firebase-database.js');
-        const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG);this.fb={D,ref:D.ref(D.getDatabase(app),'rooms/LOGS/peers/'+this.sid)}}
+        const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG);this.fb={D,ref:D.ref(D.getDatabase(app),'logs/'+this.sid)}}
       const head=this.text().split('\n').slice(0,4);const tail=[];let size=head.join('\n').length;
       for(let i=this.lines.length-1;i>=0&&size+this.lines[i].length+1<12000;i--){tail.unshift(this.lines[i]);size+=this.lines[i].length+1}
       const txt=head.concat(tail).join('\n');
