@@ -1,0 +1,5 @@
+dist/
+tests/shots/
+tests/index.html
+__pycache__/
+.DS_Store

@@ -1,0 +1,306 @@
+[
+ {
+  "key": "d_virganth0",
+  "seg": 0,
+  "who": "virganth",
+  "voice": "6DEjyaHWnTHsvXM5Byys",
+  "text": "Allez à Tarkin. L’Everwatch garde la première pierre, dans l’armure de Sinthara.",
+  "prompt": "[slowly] [wise] Allez à Tarkin. L’Everwatch garde la première pierre, dans l’armure de Sinthara."
+ },
+ {
+  "key": "d_virganth1",
+  "seg": 0,
+  "who": "virganth",
+  "voice": "6DEjyaHWnTHsvXM5Byys",
+  "text": "Le pendentif brille plus fort. Continuez : chaque pierre vous rapproche de la prison.",
+  "prompt": "[slowly] [wise] Le pendentif brille plus fort. Continuez : chaque pierre vous rapproche de la prison."
+ },
+ {
+  "key": "d_garde",
+  "seg": 0,
+  "who": "garde",
+  "voice": "7APv1upCOoKr8fIMQr3L",
+  "text": "Tarkin est tenue par le Conseil des espèces non-humaines. Le Pont de Lathandre est le seul passage vers l’Est. Gare aux yeux de l’Everwatch.",
+  "prompt": "[serious] Tarkin est tenue par le Conseil des espèces non-humaines. Le Pont de Lathandre est le seul passage vers l’Est. Gare aux yeux de l’Everwatch."
+ },
+ {
+  "key": "d_grinmir0",
+  "seg": 0,
+  "who": "grinmir",
+  "voice": "7gKHR5GQwrXVcP4EfKew",
+  "text": "Le Witangamot est réuni. Revenez quand vous aurez la force d’affronter ce qui arrive.",
+  "prompt": "[deep voice] [gruff] Le Witangamot est réuni. Revenez quand vous aurez la force d’affronter ce qui arrive."
+ },
+ {
+  "key": "d_grinmir1",
+  "seg": 0,
+  "who": "grinmir",
+  "voice": "7gKHR5GQwrXVcP4EfKew",
+  "text": "La pierre de Talos est entre de bonnes mains. Ne laissez pas Amarath revenir.",
+  "prompt": "[deep voice] [gruff] La pierre de Talos est entre de bonnes mains. Ne laissez pas Amarath revenir."
+ },
+ {
+  "key": "d_abhorash",
+  "seg": 0,
+  "who": "abhorash",
+  "voice": "9osbeK6KzhDRV0yX4rTq",
+  "text": "Vous vous êtes battus avec honneur. Revenez me défier quand vous voulez.",
+  "prompt": "[deep voice] [slowly] Vous vous êtes battus avec honneur. Revenez me défier quand vous voulez."
+ },
+ {
+  "key": "d_nains",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Les portes de cette forteresse naine sont closes. Les nains vivent ici à l’écart du monde.",
+  "prompt": "[softly] Les portes de cette forteresse naine sont closes. Les nains vivent ici à l’écart du monde."
+ },
+ {
+  "key": "d_scelle",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Une porte noire, gravée de quatre emplacements vides. Il faut les quatre pierres.",
+  "prompt": "[softly] Une porte noire, gravée de quatre emplacements vides. Il faut les quatre pierres."
+ },
+ {
+  "key": "d_arena",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Un cercle de pierres levées. L’herbe y est piétinée, comme après un duel.",
+  "prompt": "[softly] Un cercle de pierres levées. L’herbe y est piétinée, comme après un duel."
+ },
+ {
+  "key": "g_aubergiste0",
+  "seg": 0,
+  "who": "aubergiste",
+  "voice": "2vBkYF6XwnA9E7Osnt2m",
+  "text": "Bienvenue, voyageur ! Un bon lit et une chope bien fraîche, ça te dit ?",
+  "prompt": "[warmly] Bienvenue, voyageur ! Un bon lit et une chope bien fraîche, ça te dit ?"
+ },
+ {
+  "key": "g_aubergiste1",
+  "seg": 0,
+  "who": "aubergiste",
+  "voice": "2vBkYF6XwnA9E7Osnt2m",
+  "text": "Entre donc te réchauffer. Les routes de Midheim ne pardonnent pas.",
+  "prompt": "[warmly] Entre donc te réchauffer. Les routes de Midheim ne pardonnent pas."
+ },
+ {
+  "key": "g_aubergiste2",
+  "seg": 0,
+  "who": "aubergiste",
+  "voice": "2vBkYF6XwnA9E7Osnt2m",
+  "text": "Ici, on ne parle pas d’Amarath. On boit, on mange et on dort.",
+  "prompt": "[warmly] Ici, on ne parle pas d’Amarath. On boit, on mange et on dort."
+ },
+ {
+  "key": "g_marchand0",
+  "seg": 0,
+  "who": "marchand",
+  "voice": "pMMW9rLezW8kdNoXPDQX",
+  "text": "Approchez, approchez ! Les meilleures affaires de tout Midheim !",
+  "prompt": "[excited] Approchez, approchez ! Les meilleures affaires de tout Midheim !"
+ },
+ {
+  "key": "g_marchand1",
+  "seg": 0,
+  "who": "marchand",
+  "voice": "pMMW9rLezW8kdNoXPDQX",
+  "text": "Tout se vend, tout s’achète… même les vieilles bottes.",
+  "prompt": "[excited] Tout se vend, tout s’achète… même les vieilles bottes."
+ },
+ {
+  "key": "g_marchand2",
+  "seg": 0,
+  "who": "marchand",
+  "voice": "pMMW9rLezW8kdNoXPDQX",
+  "text": "Ah, un aventurier ! J’ai exactement ce qu’il te faut.",
+  "prompt": "[excited] Ah, un aventurier ! J’ai exactement ce qu’il te faut."
+ },
+ {
+  "key": "g_forgeron0",
+  "seg": 0,
+  "who": "forgeron",
+  "voice": "qc5bFdt925ro3yydUrYD",
+  "text": "Ha ! Une lame qui a besoin d’amour ? Pose-la sur l’enclume.",
+  "prompt": "[gruff] Ha ! Une lame qui a besoin d’amour ? Pose-la sur l’enclume."
+ },
+ {
+  "key": "g_forgeron1",
+  "seg": 0,
+  "who": "forgeron",
+  "voice": "qc5bFdt925ro3yydUrYD",
+  "text": "Le feu est chaud. Qu’est-ce qu’on forge aujourd’hui ?",
+  "prompt": "[gruff] Le feu est chaud. Qu’est-ce qu’on forge aujourd’hui ?"
+ },
+ {
+  "key": "g_forgeron2",
+  "seg": 0,
+  "who": "forgeron",
+  "voice": "qc5bFdt925ro3yydUrYD",
+  "text": "Un bon acier, un bon enchantement, et tu reviendras vivant.",
+  "prompt": "[gruff] Un bon acier, un bon enchantement, et tu reviendras vivant."
+ },
+ {
+  "key": "story_reinald0",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Au cœur d’une forêt sombre se cache Deaf End, un village isolé gouverné par un marquis vampire. C’est là que vous avez rencontré Reinald Sterkov, un dhampir, fils du marquis et d’une humaine. Chasseur, archer, il connaît les secrets des bois. Il porte un pendentif en argent, souvenir de sa mère. Face au marquis, Reinald a reconnu en lui le responsable de la mort de sa mère, et il s’est dressé à vos côtés. Puis il est resté au village, pour mettre ses affaires en ordre.",
+  "prompt": "[softly] Au cœur d’une forêt sombre se cache Deaf End, un village isolé gouverné par un marquis vampire. C’est là que vous avez rencontré Reinald Sterkov, un dhampir, fils du marquis et d’une humaine. Chasseur, archer, il connaît les secrets des bois. Il porte un pendentif en argent, souvenir de sa mère. Face au marquis, Reinald a reconnu en lui le responsable de la mort de sa mère, et il s’est dressé à vos côtés. Puis il est resté au village, pour mettre ses affaires en ordre."
+ },
+ {
+  "key": "story_ch0",
+  "seg": 0,
+  "who": "virganth",
+  "voice": "6DEjyaHWnTHsvXM5Byys",
+  "text": "Vous voilà enfin. Quatre héros, et ce pendentif capable de réunir les pierres… Il y a longtemps, mes compagnons et moi avons scellé Amarath au fond de la plus profonde montagne, grâce à quatre pierres divines. Seules les quatre pierres réunies permettent de retrouver sa prison. Et aujourd’hui, la prison s’affaiblit. Ses adeptes cherchent les pierres. Ils en ont déjà une : elle est encastrée dans l’armure de Sinthara, la Lady Commandeuse de l’Everwatch. Quand Reinald est arrivé parmi vous, j’ai compris que la prophétie était en marche. On ne combat pas une prophétie, on ne peut que s’y préparer. Allez à Tarkin. Passez le Pont de Lathandre.",
+  "prompt": "[slowly] [wise] Vous voilà enfin. Quatre héros, et ce pendentif capable de réunir les pierres… Il y a longtemps, mes compagnons et moi avons scellé Amarath au fond de la plus profonde montagne, grâce à quatre pierres divines. Seules les quatre pierres réunies permettent de retrouver sa prison. Et aujourd’hui, la prison s’affaiblit. Ses adeptes cherchent les pierres. Ils en ont déjà une : elle est encastrée dans l’armure de Sinthara, la Lady Commandeuse de l’Everwatch. Quand Reinald est arrivé parmi vous, j’ai compris que la prophétie était en marche. On ne combat pas une prophétie, on ne peut que s’y préparer. Allez à Tarkin. Passez le Pont de Lathandre."
+ },
+ {
+  "key": "story_stone0",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Sinthara tombe. Dans son armure brille une pierre divine. Avant elle, la pierre appartenait à Astrée, la gardienne de la porte, une ancienne compagne d’Amarath. Trop dure à porter pour une humaine, la pierre l’avait affaiblie au fil des années, jusqu’à ce que Sinthara se débarrasse d’elle. Astrée est présumée morte. La pierre rejoint votre pendentif.",
+  "prompt": "[softly] Sinthara tombe. Dans son armure brille une pierre divine. Avant elle, la pierre appartenait à Astrée, la gardienne de la porte, une ancienne compagne d’Amarath. Trop dure à porter pour une humaine, la pierre l’avait affaiblie au fil des années, jusqu’à ce que Sinthara se débarrasse d’elle. Astrée est présumée morte. La pierre rejoint votre pendentif."
+ },
+ {
+  "key": "story_ch1",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Passé le Pont, des terres sauvages s’étendent jusqu’au carrefour de Last Fire. Les humains les appellent les Royaumes Libres, non sans ironie. Les premières espèces y trouvent refuge, bien loin de leur prestige passé. La tension monte entre les Samarii, qui veulent leur revanche, et les Modorn, défenseurs de la paix. Quelque part erre Abhorash, le Dragon de Sang. Il garde la pierre de la déesse du feu, et Virganth n’a jamais réussi à le retrouver. On dit qu’il laisse parfois un guerrier le défier.",
+  "prompt": "[softly] Passé le Pont, des terres sauvages s’étendent jusqu’au carrefour de Last Fire. Les humains les appellent les Royaumes Libres, non sans ironie. Les premières espèces y trouvent refuge, bien loin de leur prestige passé. La tension monte entre les Samarii, qui veulent leur revanche, et les Modorn, défenseurs de la paix. Quelque part erre Abhorash, le Dragon de Sang. Il garde la pierre de la déesse du feu, et Virganth n’a jamais réussi à le retrouver. On dit qu’il laisse parfois un guerrier le défier."
+ },
+ {
+  "key": "story_reinald1",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "À une journée de marche de Last Fire, Reinald apparaît pendant la nuit. Quelque chose a changé chez lui : il a l’air plus assuré.",
+  "prompt": "[softly] À une journée de marche de Last Fire, Reinald apparaît pendant la nuit. Quelque chose a changé chez lui : il a l’air plus assuré."
+ },
+ {
+  "key": "story_reinald1",
+  "seg": 1,
+  "who": "reinald",
+  "voice": "dQcTMJ4LeV6tUwokCpW4",
+  "text": "« J’ai mis un certain temps à vous rattraper. J’ai laissé mes affaires en ordre au village. Ma dette est repayée. »",
+  "prompt": "[mischievously] J’ai mis un certain temps à vous rattraper. J’ai laissé mes affaires en ordre au village. Ma dette est repayée."
+ },
+ {
+  "key": "story_reinald1",
+  "seg": 2,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Une terreur sourde vous parcourt l’échine. Une aura se dégage de lui. Il est trop tard pour fuir.",
+  "prompt": "[softly] Une terreur sourde vous parcourt l’échine. Une aura se dégage de lui. Il est trop tard pour fuir."
+ },
+ {
+  "key": "story_reinald1",
+  "seg": 3,
+  "who": "reinald",
+  "voice": "dQcTMJ4LeV6tUwokCpW4",
+  "text": "« J’espérais vraiment que vous ne l’ayez pas remarqué… Il n’y a plus aucun intérêt à jouer les enfants perdus. Je vais toutefois vous donner une chance de mourir sans souffrance. »",
+  "prompt": "[mischievously] J’espérais vraiment que vous ne l’ayez pas remarqué… Il n’y a plus aucun intérêt à jouer les enfants perdus. Je vais toutefois vous donner une chance de mourir sans souffrance."
+ },
+ {
+  "key": "story_reinald2",
+  "seg": 0,
+  "who": "reinald",
+  "voice": "dQcTMJ4LeV6tUwokCpW4",
+  "text": "« Survivez, surprenez-moi, et peut-être pourra-t-on s’amuser de nouveau. »",
+  "prompt": "[mischievously] Survivez, surprenez-moi, et peut-être pourra-t-on s’amuser de nouveau."
+ },
+ {
+  "key": "story_reinald2",
+  "seg": 1,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Reinald se change en brouillard et disparaît. Le marquis de Deaf End n’était pas le tyran du village : il en était le protecteur. Il s’était réfugié là pour empêcher son fils de faire trop de mal. Le responsable du malheur des villageois, c’était Reinald. Nihiliste, il veut la création d’une nuit éternelle et s’amuse de la souffrance des mortels. Il est bien plus puissant qu’il n’en a l’air.",
+  "prompt": "[softly] Reinald se change en brouillard et disparaît. Le marquis de Deaf End n’était pas le tyran du village : il en était le protecteur. Il s’était réfugié là pour empêcher son fils de faire trop de mal. Le responsable du malheur des villageois, c’était Reinald. Nihiliste, il veut la création d’une nuit éternelle et s’amuse de la souffrance des mortels. Il est bien plus puissant qu’il n’en a l’air."
+ },
+ {
+  "key": "story_stone1",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Jadis chevalier de Tel’Hara, capitaine de la garde de Lysara, Abhorash fut changé en vampire contre sa volonté. Il but le sang d’un ancien dragon rouge et se libéra de la soif. Depuis, il ne vit que pour le combat et l’honneur. C’est lui qui fit d’Amarath un vampire, pour ne pas le voir mourir. C’est aussi lui qui lui arracha sa pierre pour le sceller.",
+  "prompt": "[softly] Jadis chevalier de Tel’Hara, capitaine de la garde de Lysara, Abhorash fut changé en vampire contre sa volonté. Il but le sang d’un ancien dragon rouge et se libéra de la soif. Depuis, il ne vit que pour le combat et l’honneur. C’est lui qui fit d’Amarath un vampire, pour ne pas le voir mourir. C’est aussi lui qui lui arracha sa pierre pour le sceller."
+ },
+ {
+  "key": "story_stone1",
+  "seg": 1,
+  "who": "abhorash",
+  "voice": "9osbeK6KzhDRV0yX4rTq",
+  "text": "« Vous vous battez avec honneur. Prenez la pierre de la déesse du feu. »",
+  "prompt": "[deep voice] [slowly] Vous vous battez avec honneur. Prenez la pierre de la déesse du feu."
+ },
+ {
+  "key": "story_ch2",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Fils de Karl Stonefoot, Grinmir a uni les royaumes nains en une confédération. Il siège sur le Trône des Âges de Karaz Ankor. Il a senti la prison d’Amarath faiblir et a convoqué le Witangamot, la grande assemblée des seigneurs nains, pour décider du rôle des nains dans les troubles à venir. Mais des orcs assaillent la forteresse.",
+  "prompt": "[softly] Fils de Karl Stonefoot, Grinmir a uni les royaumes nains en une confédération. Il siège sur le Trône des Âges de Karaz Ankor. Il a senti la prison d’Amarath faiblir et a convoqué le Witangamot, la grande assemblée des seigneurs nains, pour décider du rôle des nains dans les troubles à venir. Mais des orcs assaillent la forteresse."
+ },
+ {
+  "key": "story_ch2",
+  "seg": 1,
+  "who": "grinmir",
+  "voice": "7gKHR5GQwrXVcP4EfKew",
+  "text": "« Tenez les portes avec nous. Ensuite, nous parlerons de la pierre de Talos. »",
+  "prompt": "[deep voice] [gruff] Tenez les portes avec nous. Ensuite, nous parlerons de la pierre de Talos."
+ },
+ {
+  "key": "story_stone2",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Karaz Ankor tient bon. Grinmir détache la pierre de Talos de son marteau de guerre, celui qui lui a donné son titre.",
+  "prompt": "[softly] Karaz Ankor tient bon. Grinmir détache la pierre de Talos de son marteau de guerre, celui qui lui a donné son titre."
+ },
+ {
+  "key": "story_stone2",
+  "seg": 1,
+  "who": "grinmir",
+  "voice": "7gKHR5GQwrXVcP4EfKew",
+  "text": "« Amarath était mon ami. Avec Virganth, nous avions fondé une compagnie pour ramener la paix sur nos terres. Ne le laissez pas revenir. »",
+  "prompt": "[deep voice] [gruff] Amarath était mon ami. Avec Virganth, nous avions fondé une compagnie pour ramener la paix sur nos terres. Ne le laissez pas revenir."
+ },
+ {
+  "key": "story_ch3",
+  "seg": 0,
+  "who": "virganth",
+  "voice": "6DEjyaHWnTHsvXM5Byys",
+  "text": "Toutes ces années, j’ai gardé la pierre de Kelemvor, le dieu de la mort, contre les adeptes d’Amarath. Ils ont retrouvé ma trace. Amarath était un sage des Woods of the First Tear. C’est là que Grinmir l’a rencontré, pendant la guerre. Défendez ces bois, et la dernière pierre sera à vous.",
+  "prompt": "[slowly] [wise] Toutes ces années, j’ai gardé la pierre de Kelemvor, le dieu de la mort, contre les adeptes d’Amarath. Ils ont retrouvé ma trace. Amarath était un sage des Woods of the First Tear. C’est là que Grinmir l’a rencontré, pendant la guerre. Défendez ces bois, et la dernière pierre sera à vous."
+ },
+ {
+  "key": "story_stone3",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "La pierre de Kelemvor rejoint votre pendentif. Les quatre pierres sont réunies. Elles s’illuminent et montrent le chemin : la plus profonde montagne, là où l’âme d’Amarath est scellée.",
+  "prompt": "[softly] La pierre de Kelemvor rejoint votre pendentif. Les quatre pierres sont réunies. Elles s’illuminent et montrent le chemin : la plus profonde montagne, là où l’âme d’Amarath est scellée."
+ },
+ {
+  "key": "story_ch4",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "À l’Âge des royaumes guerriers, Amarath menait une compagnie qui protégeait les peuples pris dans la guerre, avec Virganth, Grinmir, Astrée et Abhorash. Mortellement blessé, il devint vampire, puis plus sombre chaque jour. Il finit par croire que seule la mort de chaque combattant apporterait la paix. Avec l’aide de Kelemvor, il lança un rituel pour changer les êtres vivants en marionnettes sans volonté. Ses compagnons le combattirent deux jours et deux nuits et scellèrent son âme. La violence de ce combat fendit le continent en deux. La Fissure n’était peut-être pas seulement l’œuvre de Lathandre.",
+  "prompt": "[softly] À l’Âge des royaumes guerriers, Amarath menait une compagnie qui protégeait les peuples pris dans la guerre, avec Virganth, Grinmir, Astrée et Abhorash. Mortellement blessé, il devint vampire, puis plus sombre chaque jour. Il finit par croire que seule la mort de chaque combattant apporterait la paix. Avec l’aide de Kelemvor, il lança un rituel pour changer les êtres vivants en marionnettes sans volonté. Ses compagnons le combattirent deux jours et deux nuits et scellèrent son âme. La violence de ce combat fendit le continent en deux. La Fissure n’était peut-être pas seulement l’œuvre de Lathandre."
+ },
+ {
+  "key": "story_epilogue",
+  "seg": 0,
+  "who": "narrateur",
+  "voice": "i6ke7jvmGEVUyV4zjSaT",
+  "text": "Amarath s’effondre. Les quatre pierres de votre pendentif scellent à nouveau son âme au fond de la plus profonde montagne. Mais l’histoire de Midheim n’est pas finie. Astrée n’est que présumée morte. Et on raconte encore que le légendaire Cyrus, héros de la résistance, gouverne la cité cachée de Sundarii, dans les Silverwoods. Les échos de la prison continuent de s’agiter. Les lieux que vous avez traversés vous attendent, plus dangereux.",
+  "prompt": "[softly] Amarath s’effondre. Les quatre pierres de votre pendentif scellent à nouveau son âme au fond de la plus profonde montagne. Mais l’histoire de Midheim n’est pas finie. Astrée n’est que présumée morte. Et on raconte encore que le légendaire Cyrus, héros de la résistance, gouverne la cité cachée de Sundarii, dans les Silverwoods. Les échos de la prison continuent de s’agiter. Les lieux que vous avez traversés vous attendent, plus dangereux."
+ }
+]

@@ -1,0 +1,12 @@
+let storyQ=[],storyCtx=null,storyBusy=false;
+function queueStoryKey(k){if(window.__noStory||!hero||!STORY[k])return;hero.story=hero.story||[];if(hero.story.includes(k)||storyQ.includes(k))return;storyQ.push(k);if($('#storyBox').hidden&&!storyBusy){storyCtx='play';nextStory()}}
+function nextStory(){const k=storyQ.shift();if(!k){closeStory();return}if(storyCtx==='play'&&!hero.story.includes(k)){hero.story.push(k);doSave(true)}if(mode!=='menu'&&G&&G.m&&storyCtx==='play'){storyBusy=true;Scene.play(storyScene(k),()=>{storyBusy=false;nextStory()});return}if(mode==='solo')paused=true;showStory(k)}
+function showStory(k){const S=STORY[k];$('#storyBox').hidden=false;drawPortrait($('#stPortrait'),S.who);$('#stWho').textContent=S.nom;$('#stTitle').textContent=S.titre;
+  const t=$('#stText');t.textContent='';for(const para of S.p){const e=document.createElement('p');e.textContent=para;t.append(e)}
+  const gm=$('#stGems');gm.hidden=S.gem==null;gm.textContent='';if(S.gem!=null)for(let i=0;i<4;i++){const d=document.createElement('span');d.className='gem'+(i<=S.gem?' on':'');d.style.setProperty('--c',STONES[i][1]);const ii=document.createElement('i');d.append(ii,document.createTextNode(STONES[i][0]));gm.append(d)}
+  const last=storyCtx!=='play'||!storyQ.length;Voice.story(k);$('#stNext').textContent=storyCtx==='chron'?'Retour':last?'En route !':'Continuer';$('#stSkip').hidden=storyCtx!=='play'||!storyQ.length;$('#stNext').focus({preventScroll:true})}
+function closeStory(){Voice.stop();$('#storyBox').hidden=true;if(storyCtx==='chron'){storyCtx=null;openChron();return}storyCtx=null;if(mode==='solo')paused=!$('#pause').hidden||!$('#talents').hidden}
+function openChron(){const box=$('#chronList');box.textContent='';const seen=(hero&&hero.story)||[];let any=false;
+  STORY_ORDER.forEach((k,i)=>{if(!seen.includes(k))return;any=true;const S=STORY[k];const b=document.createElement('button');b.className='chap';const n=document.createElement('span');n.className='n';n.textContent=i+1;const d=document.createElement('span');const bb=document.createElement('b');bb.textContent=S.titre;const sm=document.createElement('small');sm.textContent=S.nom;d.append(bb,sm);const st=document.createElement('span');st.className='st';st.textContent='Lire';b.append(n,d,st);b.onclick=()=>{$('#chronBox').hidden=true;storyCtx='chron';showStory(k)};box.append(b)});
+  if(!any){const p=document.createElement('p');p.className='muted';p.textContent='Rien pour l’instant. Lance une partie pour découvrir le prologue.';box.append(p)}
+  $('#chronBox').hidden=false}
