@@ -58,3 +58,4 @@ python3 tools/build.py artifact && python3 tests/run.py
 - Univers, carte et histoire de Midheim : eltzarine
 - Voix : générées avec ElevenLabs
 - Polices : Uncial Antiqua, Cinzel, Alegreya Sans (Google Fonts)
+- Graphismes pixel art : pack « Ninja Adventure » de pixel-boy (licence CC0, https://pixel-boy.itch.io/ninja-adventure-asset-pack) ; forteresse dessinée dans sa palette

@@ -45,7 +45,7 @@ function vitrineFolk(town){if(Vitrine.folk[town])return Vitrine.folk[town];const
   return Vitrine.folk[town]=folk}
 function folkPos(f,t){const n=f.loop.length,u=((t*f.spd+f.ph)%n+n)%n,i=Math.floor(u),fr=u-i,a=f.loop[i],b=f.loop[(i+1)%n];
   return{x:(a[0]+(b[0]-a[0])*fr+.5)*TS,y:(a[1]+(b[1]-a[1])*fr+.5)*TS,dir:b[0]-a[0],walk:u}}
-function drawFolk(g,f,p){const[cloth,skin,kind]=f.look,step=Math.sin(p.walk*Math.PI*2*2),x=p.x,y=p.y,fl=p.dir<0?-1:1;
+function drawFolk(g,f,p){if(drawFolkPix(g,f,p))return;const[cloth,skin,kind]=f.look,step=Math.sin(p.walk*Math.PI*2*2),x=p.x,y=p.y,fl=p.dir<0?-1:1;
   g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x,y+11,8,3,0,0,6.28);g.fill();
   g.fillStyle='#3a2a1e';g.fillRect(x-4+step*2,y+4,3,7);g.fillRect(x+1-step*2,y+4,3,7);            // jambes qui marchent
   g.fillStyle=cloth;g.beginPath();g.moveTo(x-7,y-4);g.lineTo(x+7,y-4);g.lineTo(x+8,y+7);g.lineTo(x-8,y+7);g.closePath();g.fill();

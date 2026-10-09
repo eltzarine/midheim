@@ -27,7 +27,7 @@ function drawEnemy(e,x,y,T){const fl=e.fl!=null?e.fl:((e.frz>0?1:0)|(e.tele>0?2:
   g.fillStyle='rgba(0,0,0,.38)';g.beginPath();g.ellipse(x,y+e.r*.8,e.r*1.05,e.r*.35,0,0,6.28);g.fill();
   if(tele){g.fillStyle='rgba(255,60,40,'+(.25+.25*Math.sin(T*30))+')';g.beginPath();g.arc(x,y,e.r+10,0,6.28);g.fill();g.fillStyle='#ff4a3a';g.font='700 16px "Pixelify Sans",monospace';g.textAlign='center';g.fillText('!',x,y-e.r-16)}
   if(big){g.save();g.translate(x,y);g.scale(1.4,1.4);g.translate(-x,-y)}
-  switch(e.type){
+  if(!(e.type!=='boss'&&e.type!=='mimic'&&drawEnemyPix(g,e,x,y,T,lx,ly,elite)))switch(e.type){
     case'slime':{ // Marionnette : un être changé en pantin sans volonté par le rituel d'Amarath
       const sw=Math.sin(T*3+e.id)*2;g.strokeStyle='rgba(200,170,255,.35)';g.lineWidth=.8;g.beginPath();for(const ox of[-6,0,6]){g.moveTo(x+ox+sw*.5,y-30);g.lineTo(x+ox*.8+sw,y-8)}g.stroke();
       g.fillStyle='#3d3a46';g.fillRect(x-5+sw*.3,y+6,3.5,7);g.fillRect(x+1.5-sw*.3,y+6,3.5,7);

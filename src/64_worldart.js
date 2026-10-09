@@ -4,20 +4,21 @@ function vnoise(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi;c
 const isWater=v=>v===0||v===1;
 function pebble(g,x,y,r,col){poly(g,[x-r,y,x-r*.4,y-r*.8,x+r*.6,y-r*.6,x+r,y+r*.1,x+r*.2,y+r*.6],shade(col,-.22));poly(g,[x-r,y,x-r*.4,y-r*.8,x+r*.6,y-r*.6,x+r*.1,y-r*.1],shade(col,.12))}
 function renderChunk(cx,cy){const c=document.createElement('canvas');c.width=CHK*TS;c.height=CHK*TS+CPAD;const g=c.getContext('2d');g.translate(0,CPAD);
-  const x0=cx*CHK,y0=cy*CHK;
+  const x0=cx*CHK,y0=cy*CHK;const PX=pixGround(g,x0,y0);
   // 1) sol : couleur de base + grandes nuances douces
-  for(let ty=y0;ty<y0+CHK;ty++)for(let tx=x0;tx<x0+CHK;tx++){const v=wT(tx,ty),px=(tx-x0)*TS,py=(ty-y0)*TS;const base=TBASE[v]||TBASE[2];
+  if(!PX)for(let ty=y0;ty<y0+CHK;ty++)for(let tx=x0;tx<x0+CHK;tx++){const v=wT(tx,ty),px=(tx-x0)*TS,py=(ty-y0)*TS;const base=TBASE[v]||TBASE[2];
     const n=vnoise(tx/7,ty/7,4)-.5,n2=vnoise(tx/2.3,ty/2.3,8)-.5;const k=isWater(v)?n*.12:n*.16+n2*.025;
     g.fillStyle=shade(base,k);g.fillRect(px,py,TS+.5,TS+.5)}
   // 1b) bords arrondis entre terrains : chaque case déborde en disque sur ses voisines (ordre de priorité)
   const PRIO=[3,9,5,2,4,11,6,7];
-  for(const pv of PRIO)for(let ty=y0-1;ty<=y0+CHK;ty++)for(let tx=x0-1;tx<=x0+CHK;tx++){const v=wT(tx,ty);if(v!==pv)continue;let diff=false;
+  if(!PX)for(const pv of PRIO)for(let ty=y0-1;ty<=y0+CHK;ty++)for(let tx=x0-1;tx<=x0+CHK;tx++){const v=wT(tx,ty);if(v!==pv)continue;let diff=false;
       for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const n=wT(tx+dx,ty+dy);if(n!==v&&!isWater(n)&&n!==8&&n!==10)diff=true}if(!diff)continue;
       const px=(tx-x0)*TS,py=(ty-y0)*TS;const n=vnoise(tx/7,ty/7,4)-.5,n2=vnoise(tx/2.3,ty/2.3,8)-.5;g.fillStyle=shade(TBASE[v],n*.16+n2*.06);
       const r=v===7?17:19+hash2(tx,ty,31)*5;g.beginPath();g.arc(px+16+(hash2(tx,ty,32)-.5)*8,py+16+(hash2(tx,ty,33)-.5)*8,r,0,6.28);g.fill()}
   // 2) détails du sol
   for(let ty=y0;ty<y0+CHK;ty++)for(let tx=x0;tx<x0+CHK;tx++){const v=wT(tx,ty),px=(tx-x0)*TS,py=(ty-y0)*TS,h=hash2(tx,ty,1),h2=hash2(tx,ty,2);const base=TBASE[v]||TBASE[2];
-    if(v===2||v===4||v===11){for(let k=0;k<3;k++){const a=hash2(tx,ty,10+k),b=hash2(tx,ty,20+k);const gx=px+a*28,gy=py+b*28;poly(g,[gx,gy,gx+1.5,gy-5,gx+3,gy],shade(base,k%2?-.2:.18))}
+    if(PX&&v!==8&&!isWater(v)){}
+    else if(v===2||v===4||v===11){for(let k=0;k<3;k++){const a=hash2(tx,ty,10+k),b=hash2(tx,ty,20+k);const gx=px+a*28,gy=py+b*28;poly(g,[gx,gy,gx+1.5,gy-5,gx+3,gy],shade(base,k%2?-.2:.18))}
       if(h2<.08)pebble(g,px+h*26+3,py+h2*200%26+4,2.5,'#a59a88')}
     else if(v===3){if(h<.5)pebble(g,px+4+h*22,py+6+h2*20,1.6+h*2,'#9a6a48');if(h2<.35){g.strokeStyle=shade(base,-.28);g.lineWidth=1;g.beginPath();let x=px+4+h*12,y=py+6+h2*10;g.moveTo(x,y);for(let k=0;k<3;k++){x+=4+hash2(tx,ty,30+k)*5;y+=2+hash2(tx,ty,40+k)*6;g.lineTo(x,y)}g.stroke()}
       if(h>.8){g.fillStyle=shade(base,-.12);g.beginPath();g.ellipse(px+16,py+16,9,4,0,0,6.28);g.fill()}}
@@ -35,7 +36,8 @@ function renderChunk(cx,cy){const c=document.createElement('canvas');c.width=CHK
     else if(isWater(v)){if(h2<.22){g.strokeStyle='rgba(220,245,240,.22)';g.lineWidth=1.2;g.beginPath();g.moveTo(px+4+h*10,py+10+h2*12);g.lineTo(px+16+h*10,py+10+h2*12);g.stroke()}}
     if(v===11&&h2<.3){g.fillStyle='rgba(60,110,110,.55)';g.beginPath();g.ellipse(px+16,py+18,10,5,0,0,6.28);g.fill()}
     const dc=WORLD.deco[ty*WORLD.W+tx];
-    if(dc===1){const cols=['#f2d65a','#e8705a','#fbf6e6','#b88ae8'];for(let k=0;k<4;k++){const fx=px+6+hash2(tx,ty,60+k)*20,fy=py+6+hash2(tx,ty,70+k)*20;g.fillStyle='#4f7a2a';g.fillRect(fx-.5,fy,1,3);g.fillStyle=cols[Math.floor(hash2(tx,ty,50+k)*4)];g.beginPath();g.arc(fx,fy,1.9,0,6.28);g.fill()}}
+    if(PX&&dc&&dc<5&&pixDeco(g,dc,px,py,tx,ty)){}
+    else if(dc===1){const cols=['#f2d65a','#e8705a','#fbf6e6','#b88ae8'];for(let k=0;k<4;k++){const fx=px+6+hash2(tx,ty,60+k)*20,fy=py+6+hash2(tx,ty,70+k)*20;g.fillStyle='#4f7a2a';g.fillRect(fx-.5,fy,1,3);g.fillStyle=cols[Math.floor(hash2(tx,ty,50+k)*4)];g.beginPath();g.arc(fx,fy,1.9,0,6.28);g.fill()}}
     else if(dc===2){facetBlob(g,px+16,py+20,8,'#5a8530',tx*31+ty,6)}
     else if(dc===3){g.strokeStyle='#7a6a44';g.lineWidth=1.2;g.beginPath();for(let k=0;k<5;k++){g.moveTo(px+16,py+24);g.lineTo(px+9+k*3.5,py+13+hash2(tx,ty,80+k)*4)}g.stroke()}
     else if(dc===4){for(let k=0;k<5;k++){const x=px+6+k*5;poly(g,[x,py+26,x+1+(hash2(tx,ty,90+k)-.5)*4,py+11,x+2.5,py+26],k%2?'#6f8a3e':'#8aa64a')}}
@@ -63,7 +65,7 @@ function drawWater(x0,y0,x1,y1,T){const m=WORLD;const a=Math.max(0,Math.floor(x0
     const px=tx*TS+h*20,py=ty*TS+8+hash2(tx,ty,6)*16;const w=3+Math.sin(ph*2.6)*5;ctx.fillRect(px,py,Math.max(1,w),1.4)}}
 
 /* objets du monde : 1 pin, 2 feuillu, 3 pin enneigé, 4 rocher, 5 saule, 6 pierre levée, 7 mur, 8 tonneaux, 9 rondins, 10 lanterne, 11 caisses, 12 charrette, 13 clôture */
-function drawTreeObj(k,tx,ty,alpha){const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS-4,h=hash2(tx,ty,9),T=G.time,sw=Math.sin(T*1.1+tx*.7+ty)*1.1;
+function drawTreeObj(k,tx,ty,alpha){if(drawTreePix(k,tx,ty,alpha))return;const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS-4,h=hash2(tx,ty,9),T=G.time,sw=Math.sin(T*1.1+tx*.7+ty)*1.1;
   if(alpha<1)g.globalAlpha=alpha;
   if(k===1||k===3){const s=.95+h*.35;dshadow(g,x+6,y,16*s,5);g.fillStyle='#5a3a22';g.fillRect(x-2.5,y-10,5,10);g.fillStyle='#3e2818';g.fillRect(x+.5,y-10,2,10);
     const col=k===3?'#4f7266':'#3f7a34';for(let i=0;i<3;i++){const yy=y-8-i*12*s,w=(16-i*3.6)*s;cone(g,x+sw*i*.4,yy,w,22*s,shade(col,i*.06),k===3)}}
@@ -85,7 +87,7 @@ function drawTreeObj(k,tx,ty,alpha){const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS-4,h=has
 // maisons médiévales : soubassement de pierre, colombages et torchis, toits de tuiles (chaume pour les maisons),
 // fenêtres à petits carreaux et volets, porte cintrée cloutée, cheminée qui fume
 function mixHex(a,b,t){const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16);const c=k=>Math.round(((A>>k)&255)*(1-t)+((B>>k)&255)*t);return'#'+((1<<24)|(c(16)<<16)|(c(8)<<8)|c(0)).toString(16).slice(1)}
-function drawBuilding(b,T){const kd=b.kind;if(!(kd==='auberge'||kd==='marchand'||kd==='forge'||kd==='maison'||kd==='temple')){drawBuildingBase(b,T);return}
+function drawBuilding(b,T){if(drawBuildPix(b,T))return;const kd=b.kind;if(!(kd==='auberge'||kd==='marchand'||kd==='forge'||kd==='maison'||kd==='temple')){drawBuildingBase(b,T);return}
   const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,dx=(b.door.x+.5)*TS,hs=hash2(b.x,b.y,3);
   const thatch=kd==='maison',stoneWall=kd==='forge',lit=Vitrine.lit(b);
   const roof=thatch?mixHex('#b8964e',b.roof||'#8a6a3a',.12):mixHex(b.roof||'#7a4a36','#8a4a32',.45);

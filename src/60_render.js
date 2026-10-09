@@ -114,7 +114,7 @@ function drawBuildingBase(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,r
   // enseigne
   if(b.act&&(b.kind==='auberge'||b.kind==='marchand'||b.kind==='forge')){const sx=dx+22,sy=y+h-30;g.strokeStyle='#3a2818';g.lineWidth=2;g.beginPath();g.moveTo(sx-6,sy-4);g.lineTo(sx+10,sy-4);g.stroke();g.fillStyle='#efe6cf';g.fillRect(sx-2,sy-2,16,14);g.strokeStyle='#5a3e24';g.strokeRect(sx-2,sy-2,16,14);
     g.fillStyle='#3a2818';if(b.kind==='forge'){g.fillRect(sx+1,sy+2,10,3);g.fillRect(sx+4,sy+5,4,4)}else if(b.kind==='marchand'){g.beginPath();g.arc(sx+6,sy+5,4,0,6.28);g.fill();g.fillStyle='#e2b65e';g.beginPath();g.arc(sx+6,sy+5,2.5,0,6.28);g.fill()}else{g.fillRect(sx+2,sy+6,10,4);g.fillRect(sx+2,sy+2,3,4)}}}
-function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.scale(scale,scale);const bob=Math.sin(T*2+x)*.8;
+function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.scale(scale,scale);if(who!=='virganth'&&drawNPCPix(g,who,0,0,T)){g.restore();return}const bob=Math.sin(T*2+x)*.8;
   if(who==='virganth'){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(0,14,40,10,0,0,6.28);g.fill();
     g.fillStyle='#b8862a';g.beginPath();g.ellipse(6,0,30,16,0,0,6.28);g.fill();g.fillStyle='#e2b54a';g.beginPath();g.ellipse(6,-4,26,12,0,0,6.28);g.fill();
     g.fillStyle='#c9952e';g.beginPath();g.moveTo(-6,-10);g.quadraticCurveTo(-20,-40+bob,-42,-30);g.lineTo(-30,-14);g.closePath();g.fill();g.beginPath();g.moveTo(18,-8);g.quadraticCurveTo(40,-44+bob,60,-26);g.lineTo(40,-6);g.closePath();g.fill();

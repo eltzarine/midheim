@@ -18,7 +18,7 @@ SRC = os.path.join(ROOT, 'src')
 VOICE = os.path.join(ROOT, 'assets', 'voice')
 
 MODULES = [
-    '05_log.js', '10_data.js', '11_store.js', '12_sound.js', '15_music.js', '20_lore.js',
+    '05_log.js', '10_data.js', '11_store.js', '12_sound.js', '13_sprites.js', '15_music.js', '20_lore.js',
     '21_bosses.js', '22_story.js', '23_humour.js', '26_maprend.js',
     '30_world.js', '35_dungeons.js', '40_game.js', '45_quests.js', '50_net.js',
     '60_render.js', '61_draw.js', '61_portrait.js', '61_storyui.js', '62_art.js',
@@ -64,12 +64,22 @@ def voices():
     return clips, times or [0], lines
 
 
+def pack():
+    """Images du pack Ninja Adventure (CC0) copiées par tools/import_pack.py -> {nom: data-URI}."""
+    d = os.path.join(ROOT, 'assets', 'pack')
+    if not os.path.isdir(d):
+        return {}
+    return {f[:-4]: b64(os.path.join('assets', 'pack', f), 'image/png') for f in sorted(os.listdir(d)) if f.endswith('.png')}
+
+
 def build(target):
     clips, times, lines = voices()
     world = json.load(open(os.path.join(ROOT, 'data', 'world.json')))
     parts = []
     for m in MODULES:
         js = read('src', m)
+        if m == '13_sprites.js':
+            js = js.replace('@@PACK@@', json.dumps(pack()))
         if m == '20_lore.js':
             js = js.replace('@@WORLD@@', json.dumps(world, separators=(',', ':')))
         if m == '65_cine.js':

@@ -25,7 +25,8 @@ function lookOf(eq){if(!eq)return 0;const w=eq.arme,a=eq.armure,tl=eq.talisman;
   return (w?w.b:0)+3*(a?a.b:0)+9*(w?Math.min(3,w.r):0)+36*(a?Math.min(3,a.r):0)+144*(tl?Math.min(3,tl.r)+1:0)+720*(w&&w.e?ENCH_IDS.indexOf(w.e)+1:0)+3600*Math.min(5,w?w.u|0:0)+21600*(a&&a.e?ENCH_IDS.indexOf(a.e)+1:0)}
 function unLook(n){n=Math.max(0,n|0);return{wb:n%3,ab:Math.floor(n/3)%3,wr:Math.floor(n/9)%4,ar:Math.floor(n/36)%4,tr:Math.floor(n/144)%5-1,we:Math.floor(n/720)%5,wu:Math.floor(n/3600)%6,ae:Math.floor(n/21600)%5}}
 const METAL=['#c9ccd6','#9cc4ff','#cfa6ff','#f0c95a'],CLOAK=['#6b5a48','#2f5e9e','#6b3a9e','#b8862a'],ENC_COL=[null,'#ffe9a0','#ff7a3a','#9fd0ff','#b98cff'];
-function drawHero2(g,cls,x,y,aim,t,moving,o){o=o||{};const L2=unLook(o.lk);const face=Math.cos(aim)<0?-1:1;const wk=moving?Math.sin(t*11):0;const bob=moving?Math.abs(Math.sin(t*11))*1.8:Math.sin(t*2.2)*.6;
+function drawHero2(g,cls,x,y,aim,t,moving,o){o=o||{};if(drawHeroPix(g,cls,x,y,aim,t,moving,o))return;drawHero2Vec(g,cls,x,y,aim,t,moving,o)}
+function drawHero2Vec(g,cls,x,y,aim,t,moving,o){o=o||{};const L2=unLook(o.lk);const face=Math.cos(aim)<0?-1:1;const wk=moving?Math.sin(t*11):0;const bob=moving?Math.abs(Math.sin(t*11))*1.8:Math.sin(t*2.2)*.6;
   const ca=Math.cos(aim),sa=Math.sin(aim),back=sa<-.4;const metal=METAL[L2.wr],am=METAL[L2.ar],ck=CLOAK[L2.ar];const skin='#f0c49a';
   g.save();g.translate(x,y);g.scale(1.12,1.12);
   dshadow(g,0,12,12,4.2,.32);
