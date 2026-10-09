@@ -193,6 +193,7 @@ function render(dt){
     for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){const o=m.obj[ty*m.W+tx];if(!o)continue;const ox=(tx+.5)*TS,oy=(ty+1)*TS;let al=1;
       if(o!==4&&o!==7&&Math.abs(ox-L.x)<30&&L.y<oy-4&&L.y>oy-70)al=.45;Z.push([oy-4,()=>drawTreeObj(o,tx,ty,al)])}
     bridgeProps(Z,T);
+    {const c=PL[VITRINE.town];if(Math.hypot(L.x/TS-c[0],L.y/TS-c[1])<VITRINE.r+12)for(const f of vitrineFolk()){const p=folkPos(f,G.time);if(vis(p.x,p.y))Z.push([p.y+6,()=>drawFolk(ctx,f,p)])}}
     for(const bd of m.builds){if(bd.x*TS>x1+64||(bd.x+bd.w)*TS<x0-64||bd.y*TS>y1+64||(bd.y+bd.h)*TS<y0-90)continue;Z.push([(bd.y+bd.h)*TS-2,()=>drawBuilding(bd,T)])}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(vis(n.x,n.y))Z.push([n.y+6,()=>drawNPC(ctx,n.who,n.x,n.y,T)])}
     if(G.q>=3&&!G.abhOn){const a2=m.arena;if(vis(a2.x,a2.y))Z.push([a2.y+6,()=>drawNPC(ctx,'abhorash',a2.x,a2.y-8,T)])}}
@@ -206,7 +207,8 @@ function render(dt){
     else if(q.k==='ember'){ctx.globalAlpha=al;ctx.fillStyle='#ffb347';ctx.fillRect(q.x-1,q.y-1,2,2)}
     else if(q.k==='mote'){ctx.globalAlpha=Math.sin(Math.PI*q.life/q.max)*.35;ctx.fillStyle=isW?'#fffbe8':'#fff3d6';ctx.fillRect(q.x,q.y,1.6,1.6)}
     else if(q.k==='leaf'){ctx.globalAlpha=Math.min(1,al*2)*.8;ctx.fillStyle=q.col;ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.life*3);ctx.fillRect(-2,-1,4,2);ctx.restore()}
-    else if(q.k==='smoke'){ctx.globalAlpha=Math.sin(Math.PI*q.life/q.max)*.35;ctx.fillStyle='#8a8a90';ctx.beginPath();ctx.arc(q.x,q.y,q.r||10,0,6.28);ctx.fill()}
+    else if(q.k==='smoke'){const age=1-q.life/q.max,r=(q.r||10)*(1+age*1.8),gr=ctx.createRadialGradient(q.x,q.y,0,q.x,q.y,r);ctx.globalAlpha=Math.sin(Math.PI*q.life/q.max)*.5;
+      gr.addColorStop(0,'rgba(214,208,198,.55)');gr.addColorStop(.6,'rgba(200,194,186,.22)');gr.addColorStop(1,'rgba(190,186,180,0)');ctx.fillStyle=gr;ctx.fillRect(q.x-r,q.y-r,r*2,r*2)}
     else if(q.k==='ring'){const t2=1-al;ctx.globalAlpha=al;ctx.strokeStyle=q.col;ctx.lineWidth=q.w||3;ctx.beginPath();ctx.arc(q.x,q.y,Math.max(1,q.r+(q.mr-q.r)*t2),0,6.28);ctx.stroke()}
     else if(q.k==='line'){ctx.globalAlpha=al;ctx.strokeStyle=q.col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(q.x2,q.y2);ctx.stroke()}
     else if(q.k==='bolt'){ctx.globalAlpha=al;ctx.strokeStyle='#cfe8ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(q.x,q.y);const n=5;for(let i=1;i<=n;i++){const t2=i/n;ctx.lineTo(q.x+(q.x2-q.x)*t2+(i<n?(Math.random()-.5)*14:0),q.y+(q.y2-q.y)*t2+(i<n?(Math.random()-.5)*14:0))}ctx.stroke()}
@@ -216,18 +218,19 @@ function render(dt){
   ctx.globalAlpha=1;
   if(L.swing>0)drawSlash(L.x,L.y,L.swingA,1-L.swing/SWD,hero.cls,true);
   // lumière : intérieurs sombres, extérieur de nuit pendant l'embuscade
-  const dark=isW?(G.night?.66:0):(m.kind==='house'?.22:(m.st?m.st.dark:.5));
-  if(dark>0){lx.setTransform(1,0,0,1,0,0);lx.globalCompositeOperation='source-over';lx.fillStyle=isW?'rgba(8,14,34,'+dark+')':'rgba(6,5,10,'+dark+')';lx.fillRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='destination-out';
+  const dark=isW?Math.max(G.night?.66:0,Vitrine.dusk*.5):(m.kind==='house'?.22:(m.st?m.st.dark:.5));
+  if(dark>0){lx.setTransform(1,0,0,1,0,0);lx.globalCompositeOperation='source-over';lx.fillStyle=isW?(G.night?'rgba(8,14,34,'+dark+')':'rgba(26,18,48,'+dark+')'):'rgba(6,5,10,'+dark+')';lx.fillRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='destination-out';
     const ls=S/2,ox=lc.width/2-(camX+sh)*ls,oy=lc.height*fy-(camY+sh)*ls;
     const light=(x,y,r,a)=>{const sx=x*ls+ox,sy=y*ls+oy,rr2=r*ls;if(sx<-rr2||sy<-rr2||sx>lc.width+rr2||sy>lc.height+rr2)return;const g=lx.createRadialGradient(sx,sy,0,sx,sy,rr2);g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(.6,'rgba(0,0,0,'+a*.55+')');g.addColorStop(1,'rgba(0,0,0,0)');lx.fillStyle=g;lx.fillRect(sx-rr2,sy-rr2,rr2*2,rr2*2)};
-    G.players.forEach((p,i)=>{const w=wpos(i);light(w.x,w.y,i===myIdx?320:260,1)});
+    {const dk=isW&&!G.night?Vitrine.dusk:0;G.players.forEach((p,i)=>{const w=wpos(i);light(w.x,w.y,(i===myIdx?320:260)*(1-.2*dk),1-.4*dk)})}
     if(!isW)for(const t of m.torches)light((t.x+.5)*TS,t.y*TS+20,150+Math.sin(T*9+t.x)*8,.85);
+    if(isW)vitrineHoles(light,x0,y0,x1,y1);
     if(isW)for(const bd of m.builds)if(bd.kind!=='puits')light((bd.door.x+.5)*TS,bd.door.y*TS,90,.7);
     if(isW&&WORLD.bridge){const r=bridgeRect();for(const[x,y]of[[r.X0,r.Y0],[r.X1,r.Y0],[r.X0,r.Y1+6],[r.X1,r.Y1+6]])light(x,y-60,120,.8)}
     for(const p of G.projs)if(p.k===1||p.k===2)light(p.x,p.y,70,.8);
     for(const z of G.zones)if(!z.smoke)light(z.x,z.y,z.r,.5);for(const f of G.fires)light(f.x,f.y,f.r+40,.8);
     if(m.kind==='dun'&&G.stairsOpen)light(m.stairs.x,m.stairs.y,110,.8);
-    lx.globalCompositeOperation='source-over';ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(lc,0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S)}
+    lx.globalCompositeOperation='source-over';ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(lc,0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);if(isW)vitrineGlow(x0,y0,x1,y1)}
   else{ctx.setTransform(1,0,0,1,0,0);const gr=ctx.createRadialGradient(cv.width/2,cv.height*fy,Math.min(cv.width,cv.height)*.35,cv.width/2,cv.height*fy,Math.max(cv.width,cv.height)*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,20,26,.35)');ctx.fillStyle=gr;ctx.fillRect(0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S)}
   // textes
   ctx.textAlign='center';ctx.textBaseline='middle';
