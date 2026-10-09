@@ -52,7 +52,7 @@ with sync_playwright() as pw:
       const placed=Object.keys(TOWNS).filter(k=>m.builds.filter(b=>b.town===k).length!==TOWNS[k].b.length).map(k=>k+' : bâtiment manquant');
       return bad.concat(placed)})()""")
     check('Monde : toutes les portes sont accessibles et dégagées', not audit, audit[:5])
-    sky = go(pg, """(()=>{const keep=[Sky.off,Sky.force];const at=h=>{Sky.force='beau';const c=Sky.at(Date.now()).hour;Sky.off=((h-c+24)%24)/24*SKY_DAY;Sky.update(0);return[Sky.label(),Sky.dark]};
+    sky = go(pg, """(()=>{const keep=[Sky.off,Sky.force];const at=h=>{Sky.force='beau';const c=Sky.at(Date.now()).hour;Sky.off=((h-c+24)%24)/24*SKY_DAY;Sky.testOff=true;Sky.update(0);return[Sky.label(),Sky.dark]};
       const r={midi:at(12.5),soir:at(19.5),nuit:at(23)};r.mulNuit=G&&G.m?(G.m.kind==='world'?Sky.mul():4):4;at(12.5);r.mulJour=G&&G.m?Sky.mul():1;Sky.off=keep[0];Sky.force=keep[1];return r})()""")
     check('Ciel : midi clair, soir qui baisse, nuit sombre', sky['midi'][0]=='Midi' and sky['midi'][1] < .15 and .15 < sky['soir'][1] < sky['nuit'][1] and sky['nuit'][1] > .75, sky)
     pg.fill('#name', 'César'); pg.click('#bSolo'); pg.wait_for_timeout(900)

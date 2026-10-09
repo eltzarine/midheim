@@ -14,8 +14,8 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
   moonOf(hour,day){const d=hour<6?day-1:day;return((d%5)+5)%5}, // 0 = pleine lune
   period(h){return h<5?'Nuit':h<7?'Aube':h<11?'Matin':h<14?'Midi':h<18?'Après-midi':h<21.5?'Soir':'Nuit'},
   /* off (ms) et force (clé météo) : seulement pour les tests */
-  update(dt){if(this.off===undefined&&window.__skyHour!=null){const h=this.at(Date.now()).hour;this.off=((window.__skyHour-h+24)%24)/24*SKY_DAY;this.force=window.__skyWeather||null}
-    const now=Date.now()+(this.off||0),s=this.at(now);this.secs=(now-SKY_EPOCH)/1000;this.hour=s.hour;this.day=s.day;const h=s.hour;
+  update(dt){if(window.__skyHour!=null&&(this.off===undefined||window.__skyFreeze)&&!this.testOff){const h=this.at(Date.now()).hour;this.off=((window.__skyHour-h+24)%24)/24*SKY_DAY;this.force=window.__skyWeather||null}
+    const now=Date.now()+(this.off||0),s=this.at(now);this.testOff=false;this.secs=(now-SKY_EPOCH)/1000;this.hour=s.hour;this.day=s.day;const h=s.hour;
     // météo par tranches de 6 h, avec un fondu d'environ 20 minutes de jeu aux changements
     const bu=s.u*4,b=Math.floor(bu),f=bu-b,cur=SKY_W[this.blockWeather(b)];this.wkey=this.blockWeather(b);
     const edge=.08;let w=cur,nb=null,t=0;if(f>1-edge){nb=SKY_W[this.blockWeather(b+1)];t=(f-(1-edge))/edge*.5}else if(f<edge){nb=SKY_W[this.blockWeather(b-1)];t=(edge-f)/edge*.5}
