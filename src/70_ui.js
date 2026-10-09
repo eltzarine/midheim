@@ -154,8 +154,8 @@ function renderMenu(){const box=$('#classes');box.textContent='';
 /* ================= Écrans ================= */
 function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
   $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
-function toMenu(){document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
-function startLocal(asHost){Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
+function toMenu(){Log.ev('jeu','retour au menu depuis',mode);document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
+function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',myName,hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();
@@ -169,7 +169,9 @@ function pickTheme(){if(Cine.on)return'cine';if(Scene.on&&Scene.def&&Scene.def.m
 
 /* ================= Boucle ================= */
 let lastT=performance.now();
-function loop(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(pickTheme());
+/* Une erreur dans une image ne doit jamais figer le jeu : on la note et on continue. */
+function loop(now){try{frame(now)}catch(e){loop.n=(loop.n||0)+1;if(loop.n<=20||loop.n%300===0)Log.err('boucle ('+mode+')',e,loop.n>1?'×'+loop.n:'')}requestAnimationFrame(loop)}
+function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(pickTheme());
   if(mode==='solo'||mode==='host'){if(!(mode==='solo'&&paused))hostUpdate(dt);netTick(dt)}
   else if(mode==='guest'){guestUpdate(dt);netTick(dt)}
   if(mode==='solo'||mode==='host'||mode==='guest'){
@@ -178,8 +180,7 @@ function loop(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(p
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
     Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
-  else if(mode==='menu')MenuBg.draw(dt);
-  requestAnimationFrame(loop)}
+  else if(mode==='menu')MenuBg.draw(dt)}
 
 /* ================= Entrées ================= */
 const isTouch=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window&&navigator.maxTouchPoints>0);

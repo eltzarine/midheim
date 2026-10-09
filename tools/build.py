@@ -18,7 +18,7 @@ SRC = os.path.join(ROOT, 'src')
 VOICE = os.path.join(ROOT, 'assets', 'voice')
 
 MODULES = [
-    '10_data.js', '11_store.js', '12_sound.js', '15_music.js', '20_lore.js',
+    '05_log.js', '10_data.js', '11_store.js', '12_sound.js', '15_music.js', '20_lore.js',
     '21_bosses.js', '22_story.js', '23_humour.js', '26_maprend.js',
     '30_world.js', '35_dungeons.js', '40_game.js', '45_quests.js', '50_net.js',
     '60_render.js', '61_draw.js', '61_portrait.js', '61_storyui.js', '62_art.js',
@@ -78,6 +78,8 @@ def build(target):
                     .replace('@@LINES@@', json.dumps(lines, ensure_ascii=False)))
         parts.append('/* ---- %s ---- */\n%s' % (m, js.rstrip()))
     js = '\n'.join(parts)
+    import hashlib
+    js = js.replace('@@BUILD@@', hashlib.sha256(js.encode()).hexdigest()[:8])
     assert '@@' not in js.replace("'@@'", ''), 'un marqueur @@ n’a pas été remplacé'
     page = read('src', 'page.html').replace('@@MAP@@', b64(os.path.join('assets', 'map.jpg'), 'image/jpeg'))
     icon = read('assets', 'icons', 'icon.svg').replace(' role="img" aria-label="Les Pierres de Midheim"', ' focusable="false"')
