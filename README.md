@@ -7,11 +7,12 @@ Deux héros traversent Midheim, de Tarkin aux Pics Rouges, pour réunir les quat
 
 ## Jouer à deux
 
-1. L’un ouvre le jeu et touche **Créer une partie à deux** : un code de 4 lettres s’affiche en haut de l’écran.
-2. L’autre ouvre le même lien, choisit son héros, tape le code dans **Rejoindre avec un code** et touche **Rejoindre**.
+Pas de code ni de salon à créer : quand quelqu’un lance l’aventure, sa partie reste ouverte tant qu’il reste une place.
+Le 2ᵉ joueur ouvre le même lien, choisit son héros et touche **Rejoindre** sous « Rejoindre une partie en cours ».
+S’il repart, la place se libère et l’hôte continue seul.
 
-La partie tourne sur le téléphone de celui qui l’a créée ; la connexion passe par Firebase Realtime Database
-(une « salle » `rooms/<CODE>` par partie, effacée quand les joueurs se déconnectent).
+La partie tourne sur le téléphone de celui qui l’a lancée ; la connexion passe par Firebase Realtime Database
+(une salle unique `rooms/MIDH`, chaque joueur y est effacé quand il se déconnecte).
 
 ## Fonctionnalités
 

@@ -107,7 +107,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini()}if(hudT>0)r
   $('#meHp').style.width=(clamp(me.hp/me.mhp,0,1)*100)+'%';$('#meSh').style.width=(clamp((me.sh||me.shield||0)/me.mhp,0,1)*100)+'%';$('#meMp').style.width=(clamp(L.mp/ST.mmp,0,1)*100)+'%';$('#meXp').style.width=(clamp(hero.xp/xpNeed(hero.lvl),0,1)*100)+'%';
   const oi=myIdx===0?1:0,o=G.players[oi],ca=$('#cAlly');
   if(o){$('#alName').textContent=o.name+' · '+CLS[o.cls].nom;$('#alBar').hidden=false;$('#alHp').style.width=(clamp(o.hp/o.mhp,0,1)*100)+'%';$('#alSt').textContent=o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV'}
-  else{$('#alName').textContent='Joueur 2';$('#alBar').hidden=true;$('#alSt').textContent=mode==='host'?(netKind==='fb'?'En attente : code '+roomCode:'En attente : ton frère ouvre ce lien et clique sur Rejoindre.'):'Seul dans Midheim'}
+  else{$('#alName').textContent='Joueur 2';$('#alBar').hidden=true;$('#alSt').textContent=room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim'}
   const boss=G.enemies.find(e=>e.type==='boss');$('#bossBox').hidden=!boss;if(boss){$('#bossName').textContent=BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':'');$('#bossHp').style.width=(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)+'%'}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
   else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
@@ -142,7 +142,7 @@ function renderMenu(){const box=$('#classes');box.textContent='';
     const lv=h?(h.lvl>1||h.q>0?'Niveau '+h.lvl+' · '+stonesQ(h.q)+'/4 pierres':'Nouveau héros'):'…';
     b.append(pc,el('b',null,C.nom),el('span','lv',lv),el('small',null,C.desc));b.onclick=()=>{selCls=c;Store.lsSet('dd_cls',c);hero=heroes[c]||newHero(c);ST=derive(hero);renderMenu();pres({c,l:hero.lvl})};box.append(b)}
   if(!hero)return;
-  const fresh=hero.q===0&&!hero.pos;$('#bSolo').textContent=fresh?'Commencer l’aventure':'Continuer l’aventure';$('#bHost').textContent=fresh?'Commencer à deux':'Continuer à deux';
+  const fresh=hero.q===0&&!hero.pos;$('#bSolo').textContent=fresh?'Commencer l’aventure':'Continuer l’aventure';
   const pos=hero.pos||PL.start;const where=townAt(pos[0],pos[1])||regionAt(pos[0],pos[1]);
   const rs=$('#resumeTxt');rs.textContent='';rs.append(el('b',null,CLS[hero.cls].nom+' niveau '+hero.lvl),document.createTextNode(' · '+where.nom+' · '+hero.gold+' or · '+hero.pot+' potions. Objectif : '+OBJ[Math.min(hero.q,6)].t));
   // carte du menu
@@ -154,14 +154,15 @@ function renderMenu(){const box=$('#classes');box.textContent='';
 /* ================= Écrans ================= */
 function showGame(){$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
   $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
-function toMenu(){Voice.stop();if(netKind==='fb'&&room){room.close();room=null;roomCode='';peers=[];wantJoin=false;setNet(false)}mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
+function toMenu(){Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
 function startLocal(asHost){Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();
   if(hero.q===0){if(!window.__noStory&&!hero.story.includes('prologue')){Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}else['prologue','reinald0','ch0'].forEach(queueStoryKey)}
-  if(asHost){pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:serialize()});toast(netKind==='fb'?'Partie créée. Donne le code '+roomCode+' à ton frère : il le tape dans « Rejoindre avec un code ».':'Partie créée. Ton frère ouvre ce lien, choisit son héros et clique sur Rejoindre.');if(netKind==='fb')setNet(netOn)}}
-function quitGame(){doSave(true);if(mode==='host')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
+  // toute partie est ouverte : tant qu'il reste une place, un 2e joueur peut la rejoindre depuis le menu
+  if(room)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)})}
+function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
 function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
 function pickTheme(){if(Cine.on)return'cine';if(Scene.on&&Scene.def&&Scene.def.music)return Scene.def.music;if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
   if(G.m.kind==='house'||(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS))))return'town';if(G.m.kind!=='world')return'dungeon';return'explore'}
@@ -216,7 +217,7 @@ $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);
 addEventListener('pointerdown',()=>Snd.init(),{capture:true});addEventListener('keydown',()=>Snd.init(),{capture:true});
 $('#bJoinCancel').onclick=()=>{pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()};
-$('#bSolo').onclick=()=>startLocal(false);$('#bHost').onclick=hostWithCode;$('#bJoinCode').onclick=joinWithCode;$('#codeIn').onkeydown=e=>{if(e.key==='Enter')joinWithCode()};
+$('#bSolo').onclick=()=>startLocal(false);
 $('#bChron').onclick=()=>{Snd.init();openChron()};$('#chronClose').onclick=()=>{$('#chronBox').hidden=true};
 $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$('#stSkip').onclick=()=>{storyQ.forEach(k=>{if(!hero.story.includes(k))hero.story.push(k)});storyQ=[];doSave(true);closeStory()};
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});

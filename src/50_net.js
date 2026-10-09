@@ -5,15 +5,17 @@
 const FB_CONFIG={apiKey:'AIzaSyDQn6cqulpah1EoR_hz8x5IEskq0ZVO-Rs',authDomain:'midheim-1a4c1.firebaseapp.com',
   databaseURL:'https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app',projectId:'midheim-1a4c1',appId:'1:573879321173:web:09b976a2437460ff478adc'};
 const FB_SDK='https://www.gstatic.com/firebasejs/13.0.0/';
-const CODE_ABC='ABCDEFGHJKLMNPQRSTUVWXYZ';
-let netKind=null,roomCode='',wantJoin=false,netOn=false;
+const FB_ROOM='MIDH'; // une seule salle : chaque partie lancée y est visible tant qu'il reste une place
+let netKind=null,netOn=false;
 async function initNet(){
   if(window.claude&&window.claude.use){netKind='claude';try{room=await claude.use('room')}catch(e){room=null}if(!room){setNet(false);return}attachRoom(room);return}
-  netKind='fb';$('#coopCode').hidden=false;setNet(false)}
+  netKind='fb';setNet(false);
+  try{attachRoom(await fbRoom(FB_ROOM))}catch(e){room=null;setNet(false)}}
 function attachRoom(r){room=r;
   room.onPeers(ch=>{peers=ch.peers;const me=peers.find(p=>p.sameTab);if(me)myPeer=me.peer;onPeersChange()},()=>{room=null;setNet(false);if(mode==='guest'||mode==='joining')endGuest('Connexion perdue avec l’autre joueur.')});
   room.onConnection(c=>setNet(c),()=>{});
-  pres({r:'m',n:myName,c:selCls,l:hero?hero.lvl:1,g:null,gp:null,h:null,i:null,st:null})}
+  if(mode==='solo'&&G&&G.m)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)});
+  else pres({r:'m',n:myName,c:selCls,l:hero?hero.lvl:1,g:null,gp:null,h:null,i:null,st:null})}
 // salle Firebase : rooms/<CODE>/peers/<id> = { j: présence en JSON, t: horodatage }
 async function fbRoom(code){
   const A=await import(FB_SDK+'firebase-app.js'),D=await import(FB_SDK+'firebase-database.js');
@@ -29,26 +31,14 @@ async function fbRoom(code){
     presence(o){for(const k in o){if(o[k]==null)delete me[k];else me[k]=o[k]}return write()},
     onPeers(f){pcb.push(f);emit()},onConnection(f){ccb.push(f)},
     close(){live=false;pcb.length=0;ccb.length=0;D.remove(mine).catch(()=>{});D.onDisconnect(mine).cancel()}}}
-const newCode=()=>{let s='';const b=crypto.getRandomValues(new Uint8Array(4));for(const x of b)s+=CODE_ABC[x%CODE_ABC.length];return s};
-async function openFbRoom(code){if(room&&room.close)room.close();room=null;peers=[];roomCode='';setNet(false);$('#net span').textContent='Connexion…';
-  try{const r=await fbRoom(code);roomCode=code;attachRoom(r);return true}
-  catch(e){room=null;setNet(false);toast('Impossible de joindre le serveur du jeu à deux. Vérifie la connexion internet.');return false}}
-async function hostWithCode(){if(netKind==='claude'){if(room)startLocal(true);return}
-  Snd.init();$('#bHost').disabled=true;const ok=await openFbRoom(newCode());$('#bHost').disabled=false;if(ok)startLocal(true)}
-async function joinWithCode(){const code=$('#codeIn').value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);$('#codeIn').value=code;
-  if(!/^[A-Z]{4}$/.test(code)){toast('Le code de partie fait 4 lettres.');return}
-  Snd.init();wantJoin=true;$('#bJoinCode').disabled=true;await openFbRoom(code);$('#bJoinCode').disabled=false;
-  setTimeout(()=>{if(wantJoin&&mode==='menu'){wantJoin=false;toast('Aucune partie ouverte avec ce code.')}},6000)}
 function pres(o){if(!room)return;room.presence(o).catch(()=>{})}
 function setNet(on){netOn=!!on&&!!room;const el=$('#net');el.classList.toggle('on',netOn);
-  el.querySelector('span').textContent=netKind==='fb'?(room?(on?'Partie '+roomCode:'Connexion…'):'Jeu à deux par code'):room?(on?'Salon connecté':'Connexion au salon…'):'Jeu à deux indisponible ici';
-  $('#bHost').disabled=netKind!=='fb'&&!room;const cp=$('#codePill');if(cp){cp.hidden=!(netKind==='fb'&&roomCode&&(mode==='host'||mode==='guest'));$('#codeTxt').textContent=roomCode}renderLobby()}
-function onPeersChange(){if(mode==='menu')renderLobby();if(mode==='host')hostCheckGuest();if(mode==='joining'||mode==='guest')guestCheckHost()}
+  el.querySelector('span').textContent=room?(on?'Jeu à deux connecté':'Connexion…'):netKind==='fb'?'Jeu à deux hors ligne':'Jeu à deux indisponible ici';renderLobby()}
+function onPeersChange(){if(mode==='menu')renderLobby();if(mode==='host'||mode==='solo')hostCheckGuest();if(mode==='joining'||mode==='guest')guestCheckHost()}
 function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
-  if(!room){box.append(el('p','muted',netKind==='fb'?'Pour jouer à deux : l’un clique sur « Créer une partie à deux » et lit le code de 4 lettres affiché en haut de son écran ; l’autre tape ce code ci-dessus puis « Rejoindre ».':'Pour jouer à deux, ouvrez tous les deux cette page depuis claude.ai, connectés à vos comptes. Ton frère doit être invité au partage de la page avec le niveau Contributeur.'));return}
+  if(!room){box.append(el('p','muted',netKind==='fb'?'Pas de connexion internet : tu peux jouer seul.':'Pour jouer à deux, ouvrez tous les deux cette page depuis claude.ai, connectés à vos comptes. Ton frère doit être invité au partage de la page avec le niveau Contributeur.'));return}
   const hs=peers.filter(p=>!p.sameTab&&p.presence&&p.presence.r==='h');
-  if(!hs.length){box.append(el('p','muted',netKind==='fb'?'Personne n’a encore ouvert la partie '+roomCode+'. Vérifie le code avec l’autre joueur.':'Aucune partie ouverte. Quand l’autre joueur clique sur « Créer une partie à deux », elle apparaît ici.'));return}
-  if(wantJoin&&mode==='menu'&&hs.length===1){const h=hs[0],pr=h.presence;if(!pr.gp||pr.gp===myPeer){wantJoin=false;joinHost(h.peer,clean(pr.n));return}}
+  if(!hs.length){box.append(el('p','muted','Personne ne joue pour l’instant. Lance l’aventure : tant qu’il reste une place, un 2ᵉ joueur pourra te rejoindre.'));return}
   for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
     const c=CLS[pr.c]?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
     const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>joinHost(h.peer,clean(pr.n));row.append(d,bt);box.append(row)}}
@@ -57,9 +47,9 @@ function hostCheckGuest(){
   if(!G.guestPeer){const c=peers.find(p=>!p.sameTab&&p.presence&&p.presence.r==='g'&&p.presence.h===myPeer&&CLS[p.presence.c]);if(c)acceptGuest(c)}}
 function acceptGuest(c){const pr=c.presence;const st=pr.st||{};const p=mkPlayer(clean(pr.n)||'Joueur 2',pr.c,{dmg:10,crit:.05,arm:0});p.mhp=100;applyGuestStats(p,st);p.hp=p.mhp;p.lvl=clamp(pr.l|0,1,99);
   const me=G.players[0];const q=freeSpot(me.x+36,me.y);p.x=p.rx=q.x;p.y=p.ry=q.y;
-  G.players[1]=p;for(const k in G.gain)G.gain[k][1]=0;G.guestPeer=c.peer;G.guestPres=pr;G.coop=true;
+  G.players[1]=p;for(const k in G.gain)G.gain[k][1]=0;G.guestPeer=c.peer;G.guestPres=pr;G.coop=true;mode='host';paused=false;
   pres({gp:c.peer});msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
-function dropGuest(){const p=G.players[1];if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;pres({gp:null})}
+function dropGuest(){const p=G.players[1];if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';pres({gp:null,g:null})}
 function joinHost(peer,name){Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
   $('#menu').hidden=true;$('#game').hidden=false;$('#joining').hidden=false;
   pres({r:'g',h:peer,n:myName,c:selCls,l:hero.lvl,st:guestStats(),i:null,g:null,gp:null})}
@@ -116,5 +106,6 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
 let netT=0;
 function netTick(dt){if(!room)return;netT-=dt;
   if(mode==='host'&&netT<=0){netT=.066;pres({g:serialize(),l:hero.lvl,wh:zoneName(G.m)})}
+  if(mode==='solo'&&netT<=0){netT=3;pres({l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='guest'&&netT<=0){netT=.05;const r=Math.round;const tp=L.tp||aimPoint();
     pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0}})}}
