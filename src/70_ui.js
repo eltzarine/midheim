@@ -224,6 +224,12 @@ addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImme
 addEventListener('keydown',e=>{if($('#storyBox').hidden)return;if(e.code==='Enter'||e.code==='Space'||e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();keys.clear();$('#stNext').click()}},{capture:true});
 const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn.value)||'Héros';Store.lsSet('dd_name',myName);pres({n:myName})});
 
+/* Pas de zoom du navigateur (double tap, pincement) : on joue, on ne zoome pas. */
+(function noZoom(){let last=0;
+  document.addEventListener('touchend',e=>{const n=performance.now();if(n-last<350&&!(e.target&&e.target.closest&&e.target.closest('input,textarea,button,a,.pill,.qcard,.chap,.itc,.slotc,.mk')))e.preventDefault();last=n},{passive:false});
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+  for(const ev of['gesturestart','gesturechange'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false})})();
+
 /* ================= Démarrage ================= */
 (async function boot(){
   myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';

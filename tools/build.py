@@ -85,7 +85,7 @@ def build(target):
         # page complète : en-tête (titre, polices, styles) puis le corps du jeu
         k = page.index('</style>') + len('</style>')
         html = ('<!doctype html>\n<html lang="fr">\n<head>\n<meta charset="utf-8">\n'
-                '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
+                '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
                 '<meta http-equiv="Content-Security-Policy" content="%s">\n<meta name="referrer" content="no-referrer">\n'
                 '<meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">\n'
                 '%s\n</head>\n<body>\n%s\n%s</body>\n</html>\n') % (CSP, page[:k], page[k:], script)

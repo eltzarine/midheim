@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
@@ -22,6 +22,7 @@
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box}
+html,body,button,input,.screen,.over,.pill,.tb{touch-action:manipulation}
 [hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--deep);color:var(--parch);font-family:var(--f-ui);font-size:16px;overflow:hidden;-webkit-tap-highlight-color:transparent}
@@ -3508,6 +3509,12 @@ $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$(
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});
 addEventListener('keydown',e=>{if($('#storyBox').hidden)return;if(e.code==='Enter'||e.code==='Space'||e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();keys.clear();$('#stNext').click()}},{capture:true});
 const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn.value)||'Héros';Store.lsSet('dd_name',myName);pres({n:myName})});
+
+/* Pas de zoom du navigateur (double tap, pincement) : on joue, on ne zoome pas. */
+(function noZoom(){let last=0;
+  document.addEventListener('touchend',e=>{const n=performance.now();if(n-last<350&&!(e.target&&e.target.closest&&e.target.closest('input,textarea,button,a,.pill,.qcard,.chap,.itc,.slotc,.mk')))e.preventDefault();last=n},{passive:false});
+  document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+  for(const ev of['gesturestart','gesturechange'])document.addEventListener(ev,e=>e.preventDefault(),{passive:false})})();
 
 /* ================= Démarrage ================= */
 (async function boot(){
