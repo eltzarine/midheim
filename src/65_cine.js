@@ -60,8 +60,8 @@ const Cine={on:false,i:0,t0:0,st:0,prev:-1,pt:0,cb:null,raf:0,stars:null,motes:n
     this.cv=$('#cineCv');this.g=this.cv.getContext('2d');this.size();this.t0=performance.now()/1000;
     if(VOICE_CLIPS.intro&&Voice.on){this.mode='clip';Voice.clip('intro',()=>{if(!this.on)return;if(this.now()<3){this.mode=Voice.canSpeak()?'speech':'timer';this.scene(0)}else this.finish(1.6)});this.scene(0)}
     else{this.mode=Voice.canSpeak()?'speech':'timer';this.scene(0)}
-    cancelAnimationFrame(this.raf);const step=()=>{if(!this.on)return;this.draw();this.raf=requestAnimationFrame(step)};this.raf=requestAnimationFrame(step)},
-  size(){const r=Math.min(2,window.devicePixelRatio||1);this.cv.width=innerWidth*r;this.cv.height=innerHeight*r;this.r=r},
+    cancelAnimationFrame(this.raf);const step=()=>{if(!this.on)return;this.size();this.draw();this.raf=requestAnimationFrame(step)};this.raf=requestAnimationFrame(step)},
+  size(){const r=Math.min(2,window.devicePixelRatio||1),w=Math.round(innerWidth*r),h=Math.round(innerHeight*r);if(this.cv.width!==w)this.cv.width=w;if(this.cv.height!==h)this.cv.height=h;this.r=r},
   now(){return performance.now()/1000-this.t0},
   scene(i){if(!this.on)return;if(i>=CINE_SCENES.length){this.finish(.4);return}this.prev=this.i===i?-1:this.i;this.pst=this.st;this.pt=this.now();this.i=i;this.st=this.now();
     const sub=$('#cineSub');sub.classList.remove('on');setTimeout(()=>{if(this.i===i&&this.on){sub.textContent=CINE_SCENES[i].t;sub.classList.add('on')}},250);

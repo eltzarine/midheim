@@ -177,7 +177,7 @@ function loop(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(p
     parts=parts.filter(q=>q.life>0);if(parts.length>360)parts.splice(0,parts.length-360);
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
-    Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);render(dt);hud(dt);doSave(false)}
+    Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
   else if(mode==='menu')MenuBg.draw(dt);
   requestAnimationFrame(loop)}
 

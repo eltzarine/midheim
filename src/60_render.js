@@ -59,6 +59,14 @@ let dpr=1,vw=0,vh=0,scale=1,camX=0,camY=0,shake=0;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
   scale=clamp(Math.min(vw/(TS*11),vh/(TS*11)),.6,1.6)}
 addEventListener('resize',resize);
+/* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
+   On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
+function fitCanvas(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,r=Math.min(2,window.devicePixelRatio||1);
+  if(w!==vw||h!==vh||r!==dpr)resize()}
+function settleResize(){resize();for(const t of[60,200,450,900])setTimeout(()=>{fitCanvas();if(typeof Cine!=='undefined'&&Cine.on)Cine.size()},t)}
+addEventListener('orientationchange',settleResize);
+if(window.visualViewport)visualViewport.addEventListener('resize',settleResize);
+if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',settleResize);
 function screenToWorld(sx,sy){return{x:(sx-vw/2)/scale+camX,y:(sy-vh*focusY())/scale+camY}}
 function focusY(){return vh>vw?.55:.52}
 function wpos(i){const p=G.players[i];if(i===myIdx)return{x:L.x,y:L.y};return{x:p.rx,y:p.ry}}

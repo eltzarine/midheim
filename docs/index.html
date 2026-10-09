@@ -2233,6 +2233,14 @@ let dpr=1,vw=0,vh=0,scale=1,camX=0,camY=0,shake=0;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
   scale=clamp(Math.min(vw/(TS*11),vh/(TS*11)),.6,1.6)}
 addEventListener('resize',resize);
+/* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
+   On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
+function fitCanvas(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,r=Math.min(2,window.devicePixelRatio||1);
+  if(w!==vw||h!==vh||r!==dpr)resize()}
+function settleResize(){resize();for(const t of[60,200,450,900])setTimeout(()=>{fitCanvas();if(typeof Cine!=='undefined'&&Cine.on)Cine.size()},t)}
+addEventListener('orientationchange',settleResize);
+if(window.visualViewport)visualViewport.addEventListener('resize',settleResize);
+if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',settleResize);
 function screenToWorld(sx,sy){return{x:(sx-vw/2)/scale+camX,y:(sy-vh*focusY())/scale+camY}}
 function focusY(){return vh>vw?.55:.52}
 function wpos(i){const p=G.players[i];if(i===myIdx)return{x:L.x,y:L.y};return{x:p.rx,y:p.ry}}
@@ -3040,8 +3048,8 @@ const Cine={on:false,i:0,t0:0,st:0,prev:-1,pt:0,cb:null,raf:0,stars:null,motes:n
     this.cv=$('#cineCv');this.g=this.cv.getContext('2d');this.size();this.t0=performance.now()/1000;
     if(VOICE_CLIPS.intro&&Voice.on){this.mode='clip';Voice.clip('intro',()=>{if(!this.on)return;if(this.now()<3){this.mode=Voice.canSpeak()?'speech':'timer';this.scene(0)}else this.finish(1.6)});this.scene(0)}
     else{this.mode=Voice.canSpeak()?'speech':'timer';this.scene(0)}
-    cancelAnimationFrame(this.raf);const step=()=>{if(!this.on)return;this.draw();this.raf=requestAnimationFrame(step)};this.raf=requestAnimationFrame(step)},
-  size(){const r=Math.min(2,window.devicePixelRatio||1);this.cv.width=innerWidth*r;this.cv.height=innerHeight*r;this.r=r},
+    cancelAnimationFrame(this.raf);const step=()=>{if(!this.on)return;this.size();this.draw();this.raf=requestAnimationFrame(step)};this.raf=requestAnimationFrame(step)},
+  size(){const r=Math.min(2,window.devicePixelRatio||1),w=Math.round(innerWidth*r),h=Math.round(innerHeight*r);if(this.cv.width!==w)this.cv.width=w;if(this.cv.height!==h)this.cv.height=h;this.r=r},
   now(){return performance.now()/1000-this.t0},
   scene(i){if(!this.on)return;if(i>=CINE_SCENES.length){this.finish(.4);return}this.prev=this.i===i?-1:this.i;this.pst=this.st;this.pt=this.now();this.i=i;this.st=this.now();
     const sub=$('#cineSub');sub.classList.remove('on');setTimeout(()=>{if(this.i===i&&this.on){sub.textContent=CINE_SCENES[i].t;sub.classList.add('on')}},250);
@@ -3454,7 +3462,7 @@ function loop(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(p
     parts=parts.filter(q=>q.life>0);if(parts.length>360)parts.splice(0,parts.length-360);
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
-    Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);render(dt);hud(dt);doSave(false)}
+    Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
   else if(mode==='menu')MenuBg.draw(dt);
   requestAnimationFrame(loop)}
 
