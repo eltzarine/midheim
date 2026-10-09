@@ -272,13 +272,19 @@ with sync_playwright() as pw:
     A.goto(URL); A.wait_for_timeout(600); A.fill('#name', 'César'); A.click('#bSolo'); A.wait_for_timeout(800)
     B = ctx.new_page(); B.errs = []; B.on('pageerror', lambda e: B.errs.append('[frère] ' + str(e)))
     B.goto(URL); B.wait_for_timeout(800); B.fill('#name', 'Petit frère'); B.click('.cls >> nth=2'); B.wait_for_timeout(300)
-    B.click('#hosts button'); B.wait_for_timeout(1500)
+    B.wait_for_selector('#hosts button:not([disabled])', timeout=5000); B.click('#hosts button'); B.wait_for_timeout(1000)
+    for _ in range(16):
+        if go(B, "mode==='guest'&&!!G&&!!L"): break
+        B.wait_for_timeout(250)
     check('À deux : le frère rejoint le monde', go(B, "mode==='guest'&&G.zd==='w'") and go(A, "G.players.length") == 2)
     go(B, "hero.lvl=7;buildSkillUI();L.mp=ST.mmp"); B.wait_for_timeout(300)
     go(A, "(()=>{for(let k=0;k<3;k++){const p=G.players[1];const e=spawnEnemy('orc',p.x+40+k*10,p.y,false,false,undefined,2);e.act=true}})()"); A.wait_for_timeout(300)
     go(B, "skQ[1]=true"); B.wait_for_timeout(600)
     check('À deux : compétence du frère exécutée par l’hôte', go(A, "G.players[1].sk[1]") >= 1)
     go(A, "addDrop(6,G.players[1].x+4,G.players[1].y,999,1,2)"); A.wait_for_timeout(1500)
+    for _ in range(12):
+        if go(B, "hero.bag.some(i=>i.c==='voleur')"): break
+        A.wait_for_timeout(250)
     check('À deux : le frère ramasse un objet pour sa classe', go(B, "hero.bag.some(i=>i.c==='voleur')"))
     go(A, "G.enemies=[];G.players.forEach(q=>{q.down=false;q.hp=q.mhp})")
     door = go(A, "(()=>{const b=WORLD.builds.find(b=>b.act==='dun:everwatch');return[b.door.x,b.door.y]})()")
@@ -320,13 +326,15 @@ with sync_playwright() as pw:
     mp = go(A, "window.__maxPres||0"); check('Site : messages Firebase légers', 0 < mp <= 6000, mp)
     C = ctx.new_page(); C.errs = []; C.goto(URL); C.wait_for_timeout(1000)
     check('Site : partie complète pour un 3e joueur', C.is_disabled('#hosts button') and 'Complète' in C.inner_text('#hosts'))
-    B.close(run_before_unload=True); A.wait_for_timeout(800)
-    for _ in range(12):
+    B.close(); A.wait_for_timeout(800)
+    for _ in range(40):
         if go(A, "G.players.length") == 1: break
         A.wait_for_timeout(250)
     check('Site : le frère part, l’hôte continue seul et la place se libère', go(A, "G.players.length===1&&mode==='solo'"))
-    C.wait_for_timeout(600)
-    check('Site : la place libérée réapparaît pour un autre joueur', C.is_enabled('#hosts button'))
+    for _ in range(12):
+        if C.query_selector('#hosts button') and C.is_enabled('#hosts button'): break
+        C.wait_for_timeout(250)
+    check('Site : la place libérée réapparaît pour un autre joueur', C.is_enabled('#hosts button'), C.inner_text('#hosts'))
     check('Aucune erreur JavaScript (site, à deux)', not A.errs and not B.errs and not C.errs, (A.errs + B.errs + C.errs)[:4])
     br.close()
 print(f"\n{sum(1 for r in res if r[1])}/{len(res)} tests réussis")
