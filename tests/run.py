@@ -312,7 +312,7 @@ with sync_playwright() as pw:
     ctx = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
     ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.route('https://www.gstatic.com/firebasejs/**', fb_route); ctx.add_init_script('window.__noStory = true;')
     A = ctx.new_page(); A.errs = []; A.on('pageerror', lambda e: A.errs.append('[hôte] ' + str(e)))
-    A.goto(URL); A.wait_for_timeout(800)
+    A.goto(URL); A.wait_for_selector('#splash', state='detached', timeout=30000); A.wait_for_timeout(800)
     check('Site : connecté au jeu à deux, sans code ni bouton spécial', go(A, "netOn") and not A.query_selector('#bHost') and not A.query_selector('#codeIn'))
     A.fill('#name', 'César'); A.click('#bSolo'); A.wait_for_timeout(1000)
     check('Site : on commence à jouer seul, la partie est ouverte', go(A, "mode==='solo'&&peers.find(p=>p.sameTab).presence.r==='h'") and 'Place libre' in A.inner_text('#alSt'))

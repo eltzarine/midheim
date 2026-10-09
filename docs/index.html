@@ -6,6 +6,15 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
+<meta name="theme-color" content="#13252c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Midheim">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Les Pierres de Midheim</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -373,15 +382,67 @@ body.touch .tb.nomp,body.touch .tb.empty{opacity:.28}
 .center>.obj{max-height:calc(2.5em + 6px)}
 
 
+/* ---- écran de démarrage (le temps de tout charger) ---- */
+#splash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;
+  background:radial-gradient(120% 80% at 50% 30%,#264650 0%,#13252c 55%,#0b161b 100%);color:var(--parch);transition:opacity .45s ease}
+#splash.out{opacity:0;pointer-events:none}
+#splash .sp-in{display:grid;justify-items:center;gap:18px;text-align:center;width:min(100%,360px)}
+#splash .sp-logo{width:clamp(120px,34vmin,200px);height:auto;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45));animation:spIn .7s ease-out both}
+#splash .sp-kick{margin:0;font-family:var(--f-label);font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:var(--brass)}
+#splash .sp-name{margin:-12px 0 0;font-family:var(--f-title);font-weight:400;font-size:clamp(34px,10vw,50px);line-height:1}
+#splash .sp-bar{width:100%;height:6px;border-radius:99px;background:rgba(0,0,0,.35);border:1px solid var(--edge);overflow:hidden;margin-top:6px}
+#splash .sp-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#b98544,#f0c95a);transition:width .25s ease}
+#splash .sp-step{margin:0;min-height:1.4em;font-size:14px;color:var(--dim)}
+#splash .sp-copy{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom,0px));margin:0;text-align:center;font-family:var(--f-label);font-size:12px;letter-spacing:.2em;color:var(--dim)}
+@keyframes spIn{from{opacity:0;transform:scale(.88)}}
+#splash .sp-logo svg,#menu .macaron svg{width:100%;height:auto;display:block}
+/* macaron du menu */
+#menu .macaron{width:84px;height:84px;margin:0 auto 10px;display:block;filter:drop-shadow(0 4px 0 #5a2e14) drop-shadow(0 8px 16px rgba(0,0,0,.45))}
+#menu .copy{text-align:center;margin:4px 0 0;font-family:var(--f-label);font-size:12px;letter-spacing:.2em;color:#e8d6a8;text-shadow:0 1px 2px #000}
+/* ---- bandeau de mise à jour (obligatoire avant de lancer une partie) ---- */
+.updbar{position:fixed;inset-inline:0;bottom:0;z-index:120;display:flex;justify-content:center;pointer-events:none;
+  padding:0 max(12px,env(safe-area-inset-left,0px)) calc(12px + env(safe-area-inset-bottom,0px))}
+.updbar-in{pointer-events:auto;width:min(560px,100%);display:flex;align-items:center;gap:12px;background:#efe6cf;color:#1a1712;
+  border:2px solid var(--bronze);border-radius:12px;padding:10px 10px 10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:updbar-in .3s ease-out both}
+.updbar-dot{width:9px;height:9px;border-radius:50%;background:#b8482a;flex:none;box-shadow:0 0 0 3px rgba(184,72,42,.25)}
+.updbar-txt{flex:1;min-width:0;font-size:14.5px;line-height:1.3}
+.updbar-txt b{display:block}
+.updbar-btn{appearance:none;border:2px solid #ffd9a0;background:linear-gradient(#ea7a44,#b8482a);color:#fff;border-radius:99px;padding:9px 16px;min-height:44px;
+  font:700 14px/1 var(--f-ui);cursor:pointer;white-space:nowrap;box-shadow:0 3px 0 #6a2412}
+.updbar-btn[aria-busy="true"]{cursor:progress;opacity:.85}
+.updbar.nudge .updbar-in{animation:updNudge .45s ease}
+html.ingame .updbar{display:none}
+html.has-update #menu .wrap{padding-bottom:84px}
+html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
+@keyframes updbar-in{from{transform:translateY(16px);opacity:0}}
+@keyframes updNudge{25%{transform:translateX(-8px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
 </style>
 </head>
 <body>
 
 
+<div id="splash" role="status" aria-live="polite" aria-label="Chargement">
+  <div class="sp-in">
+    <div class="sp-logo" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" focusable="false"><rect x="10" y="10" width="492" height="492" rx="112" fill="#1d3640" stroke="#b98544" stroke-width="16"/><g transform="translate(256 256) scale(1) translate(-256 -256)"><path fill="#efe6cf" transform="translate(71.61 318.83) scale(0.1407 -0.1407)" d="M1133 762Q1133 841 1126.5 919.5Q1120 998 1104.5 1069.5Q1089 1141 1064.5 1202.5Q1040 1264 1004.0 1309.5Q968 1355 919.5 1381.0Q871 1407 809 1407Q720 1407 649.5 1355.5Q579 1304 529.0 1217.5Q479 1131 452.5 1018.5Q426 906 426 784Q426 649 455.5 539.5Q485 430 530.0 344.0Q575 258 628.0 194.0Q681 130 727.5 88.0Q774 46 807.5 24.0Q841 2 846 0H463Q444 9 410.5 40.0Q377 71 336.5 120.0Q296 169 254.5 234.5Q213 300 179.0 377.5Q145 455 123.5 543.5Q102 632 102 727Q102 785 112.5 863.0Q123 941 151.0 1023.5Q179 1106 227.5 1186.0Q276 1266 351.0 1329.0Q426 1392 531.0 1431.0Q636 1470 778 1470Q872 1470 948.5 1452.5Q1025 1435 1087.0 1404.5Q1149 1374 1197.0 1333.0Q1245 1292 1282 1245Q1319 1292 1370.0 1333.0Q1421 1374 1487.0 1404.5Q1553 1435 1636.5 1452.5Q1720 1470 1823 1470Q1961 1470 2066.5 1439.0Q2172 1408 2249.5 1355.5Q2327 1303 2378.5 1234.5Q2430 1166 2461.5 1091.5Q2493 1017 2506.0 940.5Q2519 864 2519 797Q2519 671 2481.0 567.5Q2443 464 2383.0 381.5Q2323 299 2248.5 235.0Q2174 171 2101.0 124.5Q2028 78 1964.5 47.5Q1901 17 1862 0H1774Q1779 2 1812.0 24.5Q1845 47 1892.0 90.0Q1939 133 1992.0 198.0Q2045 263 2090.0 351.0Q2135 439 2165.0 550.5Q2195 662 2195 799Q2195 940 2162.0 1053.0Q2129 1166 2073.5 1244.5Q2018 1323 1945.0 1365.0Q1872 1407 1792 1407Q1728 1407 1678.0 1381.0Q1628 1355 1590.0 1309.5Q1552 1264 1525.5 1202.5Q1499 1141 1482.0 1069.5Q1465 998 1457.5 919.5Q1450 841 1450 762V0H1133Z"/><rect x="131" y="382" width="40" height="40" transform="rotate(45 151 402)" fill="#cfe2ff"/><rect x="201" y="382" width="40" height="40" transform="rotate(45 221 402)" fill="#ff7a3a"/><rect x="271" y="382" width="40" height="40" transform="rotate(45 291 402)" fill="#f0c95a"/><rect x="341" y="382" width="40" height="40" transform="rotate(45 361 402)" fill="#b98cff"/></g></svg></div>
+    <p class="sp-kick">Les Pierres de</p>
+    <h1 class="sp-name">Midheim</h1>
+    <div class="sp-bar"><i id="spBar"></i></div>
+    <p class="sp-step" id="spStep">Ouverture du grimoire…</p>
+  </div>
+  <p class="sp-copy">© XVI2026</p>
+</div>
+<div class="updbar" id="updateBanner" role="status" aria-live="polite" hidden>
+  <div class="updbar-in">
+    <span class="updbar-dot" aria-hidden="true"></span>
+    <span class="updbar-txt" id="updTxt"><b>Nouvelle version disponible.</b>Mets à jour pour lancer une partie.</span>
+    <button type="button" class="updbar-btn" id="updateBtn">Mettre à jour</button>
+  </div>
+</div>
 <canvas id="menuBg" aria-hidden="true"></canvas>
 <div id="menu" class="screen">
   <div class="wrap">
     <header class="mast">
+      <div class="macaron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" focusable="false"><rect x="10" y="10" width="492" height="492" rx="112" fill="#1d3640" stroke="#b98544" stroke-width="16"/><g transform="translate(256 256) scale(1) translate(-256 -256)"><path fill="#efe6cf" transform="translate(71.61 318.83) scale(0.1407 -0.1407)" d="M1133 762Q1133 841 1126.5 919.5Q1120 998 1104.5 1069.5Q1089 1141 1064.5 1202.5Q1040 1264 1004.0 1309.5Q968 1355 919.5 1381.0Q871 1407 809 1407Q720 1407 649.5 1355.5Q579 1304 529.0 1217.5Q479 1131 452.5 1018.5Q426 906 426 784Q426 649 455.5 539.5Q485 430 530.0 344.0Q575 258 628.0 194.0Q681 130 727.5 88.0Q774 46 807.5 24.0Q841 2 846 0H463Q444 9 410.5 40.0Q377 71 336.5 120.0Q296 169 254.5 234.5Q213 300 179.0 377.5Q145 455 123.5 543.5Q102 632 102 727Q102 785 112.5 863.0Q123 941 151.0 1023.5Q179 1106 227.5 1186.0Q276 1266 351.0 1329.0Q426 1392 531.0 1431.0Q636 1470 778 1470Q872 1470 948.5 1452.5Q1025 1435 1087.0 1404.5Q1149 1374 1197.0 1333.0Q1245 1292 1282 1245Q1319 1292 1370.0 1333.0Q1421 1374 1487.0 1404.5Q1553 1435 1636.5 1452.5Q1720 1470 1823 1470Q1961 1470 2066.5 1439.0Q2172 1408 2249.5 1355.5Q2327 1303 2378.5 1234.5Q2430 1166 2461.5 1091.5Q2493 1017 2506.0 940.5Q2519 864 2519 797Q2519 671 2481.0 567.5Q2443 464 2383.0 381.5Q2323 299 2248.5 235.0Q2174 171 2101.0 124.5Q2028 78 1964.5 47.5Q1901 17 1862 0H1774Q1779 2 1812.0 24.5Q1845 47 1892.0 90.0Q1939 133 1992.0 198.0Q2045 263 2090.0 351.0Q2135 439 2165.0 550.5Q2195 662 2195 799Q2195 940 2162.0 1053.0Q2129 1166 2073.5 1244.5Q2018 1323 1945.0 1365.0Q1872 1407 1792 1407Q1728 1407 1678.0 1381.0Q1628 1355 1590.0 1309.5Q1552 1264 1525.5 1202.5Q1499 1141 1482.0 1069.5Q1465 998 1457.5 919.5Q1450 841 1450 762V0H1133Z"/><rect x="131" y="382" width="40" height="40" transform="rotate(45 151 402)" fill="#cfe2ff"/><rect x="201" y="382" width="40" height="40" transform="rotate(45 221 402)" fill="#ff7a3a"/><rect x="271" y="382" width="40" height="40" transform="rotate(45 291 402)" fill="#f0c95a"/><rect x="341" y="382" width="40" height="40" transform="rotate(45 361 402)" fill="#b98cff"/></g></svg></div>
       <h1>Les Pierres <span>de Midheim</span></h1>
       <p>An 147 AM. La prison d’Amarath s’affaiblit. Vous portez le pendentif capable de réunir les quatre pierres divines. Traversez Midheim, de Tarkin aux Pics Rouges, avant ses adeptes.</p>
     </header>
@@ -422,6 +483,7 @@ body.touch .tb.nomp,body.touch .tb.empty{opacity:.28}
         <dt>E · I · M · T</dt><dd>Potion · sac · carte · talents</dd>
       </dl>
     </section>
+    <p class="copy">© XVI2026</p>
   </div>
 </div>
 
@@ -2102,7 +2164,7 @@ function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
   if(!hs.length){box.append(el('p','muted','Personne ne joue pour l’instant. Lance l’aventure : tant qu’il reste une place, un 2ᵉ joueur pourra te rejoindre.'));return}
   for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
     const c=CLS[pr.c]?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
-    const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>joinHost(h.peer,clean(pr.n));row.append(d,bt);box.append(row)}}
+    const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
 function hostCheckGuest(){
   if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);if(!gp||!gp.presence||gp.presence.r!=='g'||gp.presence.h!==myPeer){dropGuest()}else{if(G.guestPres!==gp.presence)G.guestSeen=performance.now();G.guestPres=gp.presence}}
   if(!G.guestPeer){const c=peers.find(p=>!p.sameTab&&p.presence&&p.presence.r==='g'&&p.presence.h===myPeer&&CLS[p.presence.c]&&!(G.stale&&G.stale.peer===p.peer&&G.stale.pres===p.presence));if(c)acceptGuest(c)}}
@@ -3260,6 +3322,39 @@ function introScene(){const camp=spx('start'),seal=placePx('prison')||spx('monts
   const r0=storyLines('reinald0');steps.push(r0[0],r0[1]||{wait:0},{move:'rein',to:[cx-420,cy+30],dur:6},r0[2]||{wait:0});
   steps.push(...storyLines('ch0'),{del:'rein'});
   return{cam:[seal.x-200,seal.y-160],fadeIn:true,actors:[fire,...heroes,rein],steps,hideP:true,hideNpc:['virganth'],music:'cine'}}
+/* ---- 67_splash.js ---- */
+/* ================= Écran de démarrage : reste affiché le temps de tout charger ================= */
+const Splash={t0:performance.now(),
+  set(label,frac){const s=$('#spStep'),b=$('#spBar');if(s&&label!=null)s.textContent=label;if(b)b.style.width=Math.round(Math.max(0,Math.min(1,frac))*100)+'%'},
+  /* tâches : [libellé, poids, fonction (reçoit un rapporteur d'avancement 0..1)] */
+  async run(tasks){const total=tasks.reduce((a,t)=>a+t[1],0);let done=0;
+    for(const[label,w,fn]of tasks){this.set(label,done/total);
+      try{await fn(p=>this.set(null,(done+w*Math.max(0,Math.min(1,p)))/total))}catch(e){}
+      done+=w;this.set(null,done/total)}
+    this.set('Prêt.',1)},
+  async hide(){const sp=$('#splash');if(!sp)return;const wait=1600-(performance.now()-this.t0);if(wait>0)await sleep(wait);
+    sp.classList.add('out');setTimeout(()=>sp.remove(),500)}
+};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* Une étape ne bloque jamais le jeu : au-delà du délai, on passe à la suite. */
+const within=(p,ms)=>Promise.race([Promise.resolve(p).catch(()=>{}),sleep(ms)]);
+
+const Loader={
+  fonts(){if(!document.fonts||!document.fonts.load)return;
+    return within(Promise.all(['40px "Uncial Antiqua"','700 16px Cinzel','500 16px Cinzel','16px "Alegreya Sans"','700 16px "Alegreya Sans"'].map(f=>document.fonts.load(f))),5000)},
+  images(){const imgs=[...document.images].filter(i=>i.src);
+    return within(Promise.all(imgs.map(i=>i.decode?i.decode().catch(()=>{}):null)),5000)},
+  /* Les voix enregistrées : chaque clip est décodé une fois pour qu'il parte sans attente. */
+  async voices(report){const keys=Object.keys(VOICE_CLIPS);if(!keys.length)return;
+    const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;let ac=null;try{if(OAC)ac=new OAC(1,1,44100)}catch(e){}
+    let n=0;for(const k of keys){const url=VOICE_CLIPS[k];
+      if(ac&&typeof url==='string'&&url.startsWith('data:')){try{const b=atob(url.slice(url.indexOf(',')+1)),u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
+        await within(new Promise((ok,ko)=>{const r=ac.decodeAudioData(u.buffer,ok,ko);if(r&&r.then)r.then(ok,ko)}),6000)}catch(e){}}
+      report(++n/keys.length);await sleep(0)}},
+  /* Voix de synthèse du téléphone (repli quand un clip manque) : elles arrivent un peu après le chargement. */
+  speech(){if(!('speechSynthesis' in window))return;if(speechSynthesis.getVoices().length)return;
+    return within(new Promise(r=>speechSynthesis.addEventListener('voiceschanged',r,{once:true})),2000)}
+};
 /* ---- 68_menu.js ---- */
 /* ================= Accueil : un décor vivant dans le style du jeu ================= */
 const MenuBg={t:0,
@@ -3283,6 +3378,66 @@ const MenuBg={t:0,
     g.fillStyle='#ffcf6a';for(let k=0;k<10;k++){const ph=(T*.5+k*.37)%1;g.globalAlpha=1-ph;g.fillRect(fx+Math.sin(k*7+T)*10,fy-10-ph*90,2,2)}g.globalAlpha=1;
     g.setTransform(1,0,0,1,0,0);const sh=g.createLinearGradient(0,focus*r,0,c.height);sh.addColorStop(0,'rgba(30,18,10,0)');sh.addColorStop(.35,'rgba(30,18,10,.55)');sh.addColorStop(1,'rgba(20,12,6,.85)');g.fillStyle=sh;g.fillRect(0,focus*r,c.width,c.height-focus*r);
     const tp=g.createLinearGradient(0,0,0,focus*r*.6);tp.addColorStop(0,'rgba(30,18,10,.55)');tp.addColorStop(1,'rgba(30,18,10,0)');g.fillStyle=tp;g.fillRect(0,0,c.width,focus*r*.6)}};
+/* ---- 69_pwa.js ---- */
+/* ================= Appli installable + bandeau de mise à jour (même brique que FGC 2026) =================
+   Service worker, bandeau « Nouvelle version disponible ». Ici la mise à jour est OBLIGATOIRE :
+   tant qu'une nouvelle version attend, on ne peut ni lancer ni rejoindre une partie (les deux
+   joueurs doivent avoir la même version). Inactif sans manifeste (version claude.ai) ou hors HTTPS. */
+const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastCheck:0,
+  init(){
+    this.on=!!document.querySelector('link[rel="manifest"]')&&('serviceWorker' in navigator)&&window.isSecureContext;
+    if(!this.on)return;
+    const btn=$('#updateBtn');
+    navigator.serviceWorker.register('sw.js',{scope:'./',updateViaCache:'none'}).then(reg=>{
+      this.reg=reg;
+      if(reg.waiting&&navigator.serviceWorker.controller)this.offer(reg.waiting);
+      this.track(reg.installing);
+      reg.addEventListener('updatefound',()=>this.track(reg.installing));
+      this.lastCheck=Date.now();
+      setInterval(()=>this.check(),10*60000);
+    }).catch(()=>{/* PWA indisponible : le jeu fonctionne quand même */});
+    /* Retour sur l'app (onglet réactivé, téléphone déverrouillé, réseau revenu) : vérification immédiate. */
+    document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')this.check()});
+    addEventListener('online',()=>this.check());
+    addEventListener('pageshow',e=>{if(e.persisted)this.check()});
+    btn.addEventListener('click',()=>{
+      if(this.clicked)return;this.clicked=true;btn.setAttribute('aria-busy','true');btn.textContent='Mise à jour…';
+      if(hero)doSave(true);
+      /* La nouvelle version a déjà pris la main (depuis un autre onglet) : simple rechargement. */
+      if(!this.waiting||this.waiting.state!=='installed'){this.reload();return}
+      this.waiting.postMessage({type:'SKIP_WAITING'});
+      setTimeout(()=>this.reload(),4000)});
+    navigator.serviceWorker.addEventListener('controllerchange',()=>{if(this.clicked)this.reload()});
+  },
+  reload(){if(this.reloading)return;this.reloading=true;location.reload()},
+  offer(sw){this.waiting=sw;const b=$('#updateBanner');if(b.hidden){b.hidden=false;document.documentElement.classList.add('has-update')}},
+  /* Suit un service worker en cours d'installation jusqu'à ce qu'il attende son tour. */
+  track(sw){if(!sw)return;const done=()=>{if(sw.state==='installed'&&navigator.serviceWorker.controller)this.offer(sw)};done();sw.addEventListener('statechange',done)},
+  /* Cherche une nouvelle version (au plus une fois par minute, sauf si on force). */
+  check(force){if(!this.reg||!navigator.onLine||(!force&&Date.now()-this.lastCheck<60000))return Promise.resolve();
+    this.lastCheck=Date.now();return this.reg.update().catch(()=>{})},
+  blocked(){return!!this.waiting},
+  nudge(){const b=$('#updateBanner');b.hidden=false;b.classList.remove('nudge');void b.offsetWidth;b.classList.add('nudge');},
+  /* Porte d'entrée de toute partie : vérifie qu'on a la dernière version avant de lancer. */
+  async gate(go){
+    if(this.busy)return;
+    if(!this.on||!this.reg){go();return}
+    this.busy=true;try{await this.gate2(go)}finally{this.busy=false}},
+  async gate2(go){
+    if(this.blocked()){this.nudge();return}
+    await within(this.check(true),2500);
+    const inst=this.reg.installing;
+    if(inst&&navigator.serviceWorker.controller){ // une version arrive : on l'attend, elle sera obligatoire
+      const b=$('#updateBanner'),t=$('#updTxt');b.hidden=false;document.documentElement.classList.add('has-update');
+      t.innerHTML='<b>Nouvelle version en cours de téléchargement…</b>Encore un instant.';
+      await within(new Promise(r=>inst.addEventListener('statechange',()=>{if(inst.state!=='installing')r()})),20000);
+      t.innerHTML='<b>Nouvelle version disponible.</b>Mets à jour pour lancer une partie.';
+      if(inst.state==='installed')this.offer(inst);
+      else{b.hidden=true;document.documentElement.classList.remove('has-update')}
+    }
+    if(this.blocked()){this.nudge();return}
+    go()}
+};
 /* ---- 70_ui.js ---- */
 /* ================= Portraits supplémentaires ================= */
 function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron'].includes(who)){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
@@ -3438,9 +3593,9 @@ function renderMenu(){const box=$('#classes');box.textContent='';
   const pd=$('#pendant');pd.textContent='';const n=stonesQ(hero.q);STONES.forEach((s,i)=>{const d=el('span','gem'+(i<n?' on':''));d.style.setProperty('--c',s[1]);d.append(el('i'),document.createTextNode(s[0].replace('la pierre ','Pierre ')));pd.append(d)})}
 
 /* ================= Écrans ================= */
-function showGame(){$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
+function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
   $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
-function toMenu(){Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
+function toMenu(){document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
 function startLocal(asHost){Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
@@ -3503,7 +3658,7 @@ $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);
 addEventListener('pointerdown',()=>Snd.init(),{capture:true});addEventListener('keydown',()=>Snd.init(),{capture:true});
 $('#bJoinCancel').onclick=()=>{pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()};
-$('#bSolo').onclick=()=>startLocal(false);
+$('#bSolo').onclick=()=>Pwa.gate(()=>startLocal(false));
 $('#bChron').onclick=()=>{Snd.init();openChron()};$('#chronClose').onclick=()=>{$('#chronBox').hidden=true};
 $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$('#stSkip').onclick=()=>{storyQ.forEach(k=>{if(!hero.story.includes(k))hero.story.push(k)});storyQ=[];doSave(true);closeStory()};
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});
@@ -3520,12 +3675,19 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
 (async function boot(){
   myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';
   const c=Store.lsGet('dd_cls');if(CLS[c])selCls=c;
-  $('#mapImg2').src=$('#mapImg').src;Voice.init();buildWorld();
-  for(const k of CLS_IDS)heroes[k]=fixHero(Store.lsGet('dd_hero_'+k),k);hero=heroes[selCls];ST=derive(hero);renderMenu();renderLobby();
-  requestAnimationFrame(loop);
-  initNet();
-  await Store.init();
-  if(Store.db)await loadAll();
+  $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();
+  await Splash.run([
+    ['Les polices de Midheim',1,()=>Loader.fonts()],
+    ['La carte du royaume',1,()=>Loader.images()],
+    ['Le monde et ses donjons',2,async()=>{await sleep(30);buildWorld();
+      for(const k of CLS_IDS)heroes[k]=fixHero(Store.lsGet('dd_hero_'+k),k);hero=heroes[selCls];ST=derive(hero);renderMenu();renderLobby();
+      requestAnimationFrame(loop)}],
+    ['Les voix des personnages',4,p=>Loader.voices(p)],
+    ['La musique et les bruitages',1,async()=>{await Loader.speech();await sleep(120)}],
+    ['Tes héros sauvegardés',1,async()=>{await within(Store.init(),5000);if(Store.db)await within(loadAll(),6000)}],
+    ['Le salon de jeu',1,()=>within(initNet(),6000)],
+  ]);
+  Splash.hide();
   setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>12000)endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
 })();

@@ -33,6 +33,12 @@ La partie tourne sur le téléphone de celui qui l’a lancée ; la connexion pa
 | `tests/` | Tests de bout en bout (Playwright), avec un faux salon et un faux Firebase pour jouer à deux hors ligne |
 | `docs/index.html` | Version publiée sur GitHub Pages (générée) |
 
+## Mises à jour
+
+Le site est une appli installable. À chaque publication de `docs/`, le jeu affiche le bandeau
+« Nouvelle version disponible » : la mise à jour est obligatoire avant de lancer ou de rejoindre
+une partie, pour que les deux joueurs aient toujours la même version.
+
 ## Construire
 
 ```sh

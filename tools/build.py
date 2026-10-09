@@ -22,7 +22,7 @@ MODULES = [
     '21_bosses.js', '22_story.js', '23_humour.js', '26_maprend.js',
     '30_world.js', '35_dungeons.js', '40_game.js', '45_quests.js', '50_net.js',
     '60_render.js', '61_draw.js', '61_portrait.js', '61_storyui.js', '62_art.js',
-    '63_fx.js', '64_worldart.js', '65_cine.js', '66_scene.js', '68_menu.js', '70_ui.js',
+    '63_fx.js', '64_worldart.js', '65_cine.js', '66_scene.js', '67_splash.js', '68_menu.js', '69_pwa.js', '70_ui.js',
 ]
 
 # Politique de sécurité du site public : tout est dans la page, sauf les polices et la base Firebase.
@@ -80,6 +80,9 @@ def build(target):
     js = '\n'.join(parts)
     assert '@@' not in js.replace("'@@'", ''), 'un marqueur @@ n’a pas été remplacé'
     page = read('src', 'page.html').replace('@@MAP@@', b64(os.path.join('assets', 'map.jpg'), 'image/jpeg'))
+    icon = read('assets', 'icons', 'icon.svg').replace(' role="img" aria-label="Les Pierres de Midheim"', ' focusable="false"')
+    page = page.replace('@@ICON@@', icon)
+    assert '@@' not in page, 'un marqueur @@ de la page n’a pas été remplacé'
     script = '<script>\n"use strict";\n' + js + '\n</script>\n'
     if target == 'web':
         # page complète : en-tête (titre, polices, styles) puis le corps du jeu
@@ -88,6 +91,14 @@ def build(target):
                 '<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">\n'
                 '<meta http-equiv="Content-Security-Policy" content="%s">\n<meta name="referrer" content="no-referrer">\n'
                 '<meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">\n'
+                '<meta name="theme-color" content="#13252c">\n'
+                '<meta name="apple-mobile-web-app-capable" content="yes">\n<meta name="mobile-web-app-capable" content="yes">\n'
+                '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n'
+                '<meta name="apple-mobile-web-app-title" content="Midheim">\n'
+                '<link rel="manifest" href="manifest.webmanifest">\n'
+                '<link rel="icon" href="icons/icon.svg" type="image/svg+xml">\n'
+                '<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">\n'
+                '<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n'
                 '%s\n</head>\n<body>\n%s\n%s</body>\n</html>\n') % (CSP, page[:k], page[k:], script)
         out_dir, name = os.path.join(ROOT, 'docs'), 'index.html'
     else:
@@ -96,11 +107,44 @@ def build(target):
     os.makedirs(out_dir, exist_ok=True)
     with open(os.path.join(out_dir, name), 'w') as f:
         f.write(html)
+    if target == 'web':
+        pwa(out_dir, html)
     os.makedirs(os.path.join(ROOT, 'dist'), exist_ok=True)
     with open(os.path.join(ROOT, 'dist', 'bundle.js'), 'w') as f:  # pour node --check
         f.write('"use strict";\n' + js)
     print('ok', target, os.path.join(out_dir, name), len(html))
 
+
+ICONS = ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']
+MANIFEST = {
+    'id': './', 'name': 'Les Pierres de Midheim', 'short_name': 'Midheim',
+    'description': 'Jeu d’aventure coopératif à deux dans le monde de Midheim.',
+    'lang': 'fr', 'dir': 'ltr', 'start_url': './', 'scope': './', 'display': 'fullscreen',
+    'orientation': 'any', 'background_color': '#13252c', 'theme_color': '#13252c', 'categories': ['games'],
+    'icons': [
+        {'src': 'icons/icon.svg', 'sizes': 'any', 'type': 'image/svg+xml', 'purpose': 'any'},
+        {'src': 'icons/icon-192.png', 'sizes': '192x192', 'type': 'image/png', 'purpose': 'any'},
+        {'src': 'icons/icon-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'any'},
+        {'src': 'icons/icon-maskable-512.png', 'sizes': '512x512', 'type': 'image/png', 'purpose': 'maskable'},
+    ],
+}
+
+
+def pwa(out_dir, html):
+    """Appli installable : manifeste, icônes et service worker. La version du service worker
+    est l'empreinte de la page : chaque build différent déclenche le bandeau de mise à jour."""
+    import hashlib
+    import shutil
+    os.makedirs(os.path.join(out_dir, 'icons'), exist_ok=True)
+    for n in ICONS:
+        shutil.copyfile(os.path.join(ROOT, 'assets', 'icons', n), os.path.join(out_dir, 'icons', n))
+    with open(os.path.join(out_dir, 'manifest.webmanifest'), 'w') as f:
+        json.dump(MANIFEST, f, ensure_ascii=False, indent=2)
+    version = 'midheim-' + hashlib.sha256(html.encode()).hexdigest()[:12]
+    sw = read('tools', 'sw.js').replace('@@VERSION@@', version).replace('@@ICONS@@', json.dumps(['icons/' + n for n in ICONS]))
+    with open(os.path.join(out_dir, 'sw.js'), 'w') as f:
+        f.write(sw)
+    print('pwa', version)
 
 if __name__ == '__main__':
     build(sys.argv[1] if len(sys.argv) > 1 else 'web')

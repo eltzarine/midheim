@@ -41,7 +41,7 @@ function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
   if(!hs.length){box.append(el('p','muted','Personne ne joue pour l’instant. Lance l’aventure : tant qu’il reste une place, un 2ᵉ joueur pourra te rejoindre.'));return}
   for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
     const c=CLS[pr.c]?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
-    const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>joinHost(h.peer,clean(pr.n));row.append(d,bt);box.append(row)}}
+    const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
 function hostCheckGuest(){
   if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);if(!gp||!gp.presence||gp.presence.r!=='g'||gp.presence.h!==myPeer){dropGuest()}else{if(G.guestPres!==gp.presence)G.guestSeen=performance.now();G.guestPres=gp.presence}}
   if(!G.guestPeer){const c=peers.find(p=>!p.sameTab&&p.presence&&p.presence.r==='g'&&p.presence.h===myPeer&&CLS[p.presence.c]&&!(G.stale&&G.stale.peer===p.peer&&G.stale.pres===p.presence));if(c)acceptGuest(c)}}

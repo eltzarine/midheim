@@ -152,9 +152,9 @@ function renderMenu(){const box=$('#classes');box.textContent='';
   const pd=$('#pendant');pd.textContent='';const n=stonesQ(hero.q);STONES.forEach((s,i)=>{const d=el('span','gem'+(i<n?' on':''));d.style.setProperty('--c',s[1]);d.append(el('i'),document.createTextNode(s[0].replace('la pierre ','Pierre ')));pd.append(d)})}
 
 /* ================= Écrans ================= */
-function showGame(){$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
+function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
   $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
-function toMenu(){Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
+function toMenu(){document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
 function startLocal(asHost){Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
@@ -217,7 +217,7 @@ $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);
 addEventListener('pointerdown',()=>Snd.init(),{capture:true});addEventListener('keydown',()=>Snd.init(),{capture:true});
 $('#bJoinCancel').onclick=()=>{pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()};
-$('#bSolo').onclick=()=>startLocal(false);
+$('#bSolo').onclick=()=>Pwa.gate(()=>startLocal(false));
 $('#bChron').onclick=()=>{Snd.init();openChron()};$('#chronClose').onclick=()=>{$('#chronBox').hidden=true};
 $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$('#stSkip').onclick=()=>{storyQ.forEach(k=>{if(!hero.story.includes(k))hero.story.push(k)});storyQ=[];doSave(true);closeStory()};
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});
@@ -234,12 +234,19 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
 (async function boot(){
   myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';
   const c=Store.lsGet('dd_cls');if(CLS[c])selCls=c;
-  $('#mapImg2').src=$('#mapImg').src;Voice.init();buildWorld();
-  for(const k of CLS_IDS)heroes[k]=fixHero(Store.lsGet('dd_hero_'+k),k);hero=heroes[selCls];ST=derive(hero);renderMenu();renderLobby();
-  requestAnimationFrame(loop);
-  initNet();
-  await Store.init();
-  if(Store.db)await loadAll();
+  $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();
+  await Splash.run([
+    ['Les polices de Midheim',1,()=>Loader.fonts()],
+    ['La carte du royaume',1,()=>Loader.images()],
+    ['Le monde et ses donjons',2,async()=>{await sleep(30);buildWorld();
+      for(const k of CLS_IDS)heroes[k]=fixHero(Store.lsGet('dd_hero_'+k),k);hero=heroes[selCls];ST=derive(hero);renderMenu();renderLobby();
+      requestAnimationFrame(loop)}],
+    ['Les voix des personnages',4,p=>Loader.voices(p)],
+    ['La musique et les bruitages',1,async()=>{await Loader.speech();await sleep(120)}],
+    ['Tes héros sauvegardés',1,async()=>{await within(Store.init(),5000);if(Store.db)await within(loadAll(),6000)}],
+    ['Le salon de jeu',1,()=>within(initNet(),6000)],
+  ]);
+  Splash.hide();
   setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>12000)endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
 })();
