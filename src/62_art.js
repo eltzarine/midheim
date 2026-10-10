@@ -114,7 +114,7 @@ function drawPlayer(p,x,y,mine,T){const lk=mine?lookOf(hero.eq):(p.lk|0);
   if(p.down){drawHero2(ctx,p.cls,x,y,0,T,false,{down:true,lk});if(p.rev>0){ctx.strokeStyle='#7fe07a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,20,-1.57,-1.57+6.283*p.rev);ctx.stroke()}return}
   const a=mine?L.aim:(p.aim!=null?p.aim:0);
   let moving;if(mine)moving=Math.abs(L.mv[0])+Math.abs(L.mv[1])>.1;else{moving=Math.hypot(x-(p._px??x),y-(p._py??y))>.3;p._px=x;p._py=y}
-  if((mine&&(L.ivT>0||L.stealthT>0))||(!mine&&p.stealthT>0))ctx.globalAlpha=.45;
+  if((mine&&L.stealthT>0)||(!mine&&p.stealthT>0))ctx.globalAlpha=.28;else if(mine&&L.ivT>0)ctx.globalAlpha=.45;
   if(p.drT>0){ctx.strokeStyle='rgba(255,122,92,'+(.5+.3*Math.sin(T*10))+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,19,0,6.28);ctx.stroke()}
   const sp=swingProg(p,mine);_hsw=sp!=null?{p:sp,off:swingOff(p.cls,sp)}:null;const aa=sp!=null&&(p.cls==='guerrier'||p.cls==='voleur')?swingAngle(p,mine):a;
   drawHero2(ctx,p.cls,x,y,aa,T,moving,{lk});_hsw=null;ctx.globalAlpha=1;if(sp!=null&&(p.cls==='mage'||p.cls==='soigneur'))drawCastRune(x,y,a,sp,p.cls);
@@ -129,6 +129,39 @@ const ICON_PATHS={
   nova:'M12 2 V22 M2 12 H22 M5 5 L19 19 M19 5 L5 19',transfert:'M5 12 a7 7 0 1 1 14 0 M12 3 V8 M9 18 L12 21 L15 18 M12 21 V14',flammes:'M12 3 C15 8 18 10 18 15 A6 6 0 0 1 6 15 C6 11 9 10 9 7 C11 9 12 6 12 3 Z',tempete:'M7 3 L13 11 H9 L15 21 M3 8 Q12 4 21 8 M3 16 Q12 20 21 16',
   ombre:'M6 18 C6 10 10 6 18 4 C14 8 13 12 15 16 C11 15 8 16 6 18 Z',eventail:'M12 20 L4 8 M12 20 L8 5 M12 20 L12 4 M12 20 L16 5 M12 20 L20 8',fumee:'M6 16 a4 4 0 0 1 2 -7 a5 5 0 0 1 9 1 a4 4 0 0 1 1 8 H7 Z',danse:'M4 4 L20 20 M20 4 L4 20 M12 2 V6 M12 18 V22',
   cercle:'M12 4 A8 8 0 1 1 11.9 4 Z M12 9 V15 M9 12 H15',bouclier:'M12 3 L20 6 V12 C20 17 16 20 12 22 C8 20 4 17 4 12 V6 Z',jugement:'M12 2 L14 9 L21 9 L15 13 L17 21 L12 16 L7 21 L9 13 L3 9 L10 9 Z',aube:'M3 17 H21 M6 17 a6 6 0 0 1 12 0 M12 4 V7 M5 8 L7 10 M19 8 L17 10',
+  protecteur:'M7 4 L12 2 L17 4 V10 C17 14 15 16 12 17 C9 16 7 14 7 10 Z M4 21 H20',
+  bastion:'M4 21 V8 H7 V5 H10 V8 H14 V5 H17 V8 H20 V21 Z',
+  garde:'M3 12 a9 9 0 0 1 18 0 M6 12 V20 M18 12 V20 M9 16 H15',
+  fracas:'M12 2 L14 9 L21 7 L16 12 L22 17 L14 15 L12 22 L10 15 L2 17 L8 12 L3 7 L10 9 Z',
+  bond:'M3 20 Q12 -2 21 20 M17 16 L21 20 L22 15',
+  soif:'M12 3 C15 8 18 11 18 15 A6 6 0 0 1 6 15 C6 11 9 8 12 3 Z',
+  rage:'M5 20 L9 10 L12 14 L15 4 L19 20 M3 20 H21',
+  hache:'M12 3 V21 M12 5 C18 5 20 9 20 12 C16 11 14 12 12 12 M12 5 C7 5 5 8 5 10 C8 9 10 10 12 10',
+  froid:'M12 3 V21 M5 7 L19 17 M19 7 L5 17 M10 4 L12 6 L14 4 M10 20 L12 18 L14 20',
+  hiver:'M3 18 L8 10 L11 14 L14 8 L21 18 Z M12 2 V5',
+  embras:'M12 21 C7 21 5 17 7 13 C8 15 9 15 10 14 C9 10 11 6 14 3 C14 8 19 10 18 16 C17.5 19 15 21 12 21 Z',
+  meteore:'M15 11 A4 4 0 1 1 14.9 11 Z M11 11 L3 3 M13 8 L8 1 M8 13 L1 8',
+  mur:'M3 20 H21 M5 20 C5 14 8 13 8 9 C10 12 11 13 11 20 M13 20 C13 14 16 12 16 8 C18 12 19 14 19 20',
+  entrave:'M4 12 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0 M12 12 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0',
+  manab:'M12 3 L19 7 V13 C19 17 15.5 20 12 21 C8.5 20 5 17 5 13 V7 Z',
+  miroir:'M7 4 a3 3 0 1 0 0.1 0 M17 4 a3 3 0 1 0 0.1 0 M4 20 V14 a3 3 0 0 1 6 0 V20 M14 20 V14 a3 3 0 0 1 6 0 V20',
+  sangfroid:'M12 2 V22 M2 12 H22 M12 7 a5 5 0 1 0 0.1 0',
+  dispar:'M2 12 C6 5 18 5 22 12 C18 19 6 19 2 12 M12 9 a3 3 0 1 0 0.1 0 M4 20 L20 4',
+  assassin:'M5 19 L17 7 L20 4 L19 8 L7 20 Z M3 3 L9 9',
+  saignee:'M12 3 C15 8 18 11 18 15 A6 6 0 0 1 6 15 C6 11 9 8 12 3 Z M9 15 H15',
+  ricochet:'M3 18 L9 6 L14 16 L20 5 M17 5 H20 V8',
+  pommeau:'M8 3 H16 V9 H8 Z M12 9 V21 M9 14 H15',
+  oppor:'M2 12 C6 5 18 5 22 12 C18 19 6 19 2 12 M12 9 a3 3 0 1 0 0.1 0',
+  embuscade:'M4 16 L7 10 L10 16 M14 16 L17 10 L20 16 M9 8 L12 3 L15 8 M2 20 H22',
+  piege:'M3 14 H21 M5 14 L7 9 L9 14 L11 9 L13 14 L15 9 L17 14 L19 9 L21 14',
+  aura:'M12 4 A8 8 0 1 1 11.9 4 M12 8 A4 4 0 1 1 11.9 8',
+  main:'M6 20 V11 C6 9 9 9 9 11 V6 C9 4 12 4 12 6 V11 V5 C12 3 15 3 15 5 V12 V8 C15 6 18 6 18 8 V15 C18 19 15 21 12 21 H8',
+  foi:'M12 3 V21 M7 8 H17',
+  banniere:'M5 3 V21 M5 4 H19 L16 8 L19 12 H5',
+  benir:'M12 2 V6 M12 18 V22 M2 12 H6 M18 12 H22 M12 8 a4 4 0 1 0 0.1 0',
+  chatiment:'M4 20 L20 4 M14 4 H20 V10 M6 6 L10 10',
+  colere:'M13 2 L6 13 H11 L9 22 L18 9 H13 Z',
+  marteau:'M5 5 H15 V11 H5 Z M10 11 V21 M15 8 H19',
   potion:'M9 2 H15 V4 H14 V8 C17 9 19 12 19 15 A7 7 0 0 1 5 15 C5 12 7 9 10 8 V4 H9 Z'};
 function iconSvg(key,col){const d=ICON_PATHS[key]||ICON_PATHS.nova;const fill=/Z/.test(d)?col:'none';
   return '<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="'+d+'" fill="'+fill+'" fill-opacity=".9" stroke="'+col+'" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>'}

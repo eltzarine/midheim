@@ -144,15 +144,43 @@ with sync_playwright() as pw:
     pg.click('#bagMain .detail .btn.main'); pg.wait_for_timeout(100)
     check('Équiper depuis le sac', go(pg, "Object.values(hero.eq).some(i=>i&&i.r===2)"))
     pg.click('#bagClose')
-    # compétences de chaque classe
+    # arbre de talents : chaque branche de chaque classe, jusqu'au niveau 10
     for cls in ['guerrier', 'mage', 'voleur', 'soigneur']:
-        go(pg, f"""(()=>{{QDone.q.length=0;QDone.close();hero.cls='{cls}';hero.lvl=7;hero.eq={{arme:starter('{cls}','arme'),armure:starter('{cls}','armure'),talisman:null}};refreshStats();G.players[0].cls='{cls}';G.players[0].st=ST;L.mp=ST.mmp;L.ult=100;L.cd=[0,0,0,0];buildSkillUI();
-          for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}}})()""")
-        for s in range(4):
-            go(pg, f"QDone.q.length=0;QDone.close();skQ[{s}]=true"); pg.wait_for_timeout(260); go(pg, "L.mp=ST.mmp")
-        used = go(pg, "L.sk.join(',')")
-        check(f'{cls} : 3 compétences + ultime lancées', go(pg, "L.sk.every(v=>v>=1)"), used)
-        go(pg, "L.sk=[0,0,0,0]")
+        for b in range(3):
+            go(pg, f"""(()=>{{QDone.q.length=0;QDone.close();hero.cls='{cls}';hero.lvl=LVL_MAX;hero.tr=[];for(let k=0;k<10;k++){{const key='{b}.'+k;if(!treeWhy(hero,key))hero.tr.push(key)}}hero.eq={{arme:starter('{cls}','arme'),armure:starter('{cls}','armure'),talisman:null}};refreshStats();G.players[0].cls='{cls}';G.players[0].st=ST;L.mp=ST.mmp;L.ult=100;L.cd=[0,0,0,0];buildSkillUI();
+              for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}}})()""")
+            n = go(pg, "hero.tr.length")
+            for sl in range(4):
+                go(pg, f"QDone.q.length=0;QDone.close();skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")
+            pg.wait_for_timeout(300)
+            ok = go(pg, "ST.ks.every((id,i)=>!id||L.sk[i]>=1)&&!!ST.ks[3]&&!!ST.pa&&ST.ks.filter(Boolean).length===3")
+            check(f'{cls} branche {b + 1} : 10 crans, passif, 2 compétences et ultime lancés', ok and n == 10, go(pg, "[hero.tr.join(' '),ST.ks.join(','),ST.pa,L.sk.join(',')].join(' | ')"))
+            go(pg, "L.sk=[0,0,0,0];G.traps=[];G.decoys=[];G.later=[];G.enemies=[]")
+    check('Arbre : pas plus de 10 points au niveau 10', go(pg, "(()=>{hero.lvl=LVL_MAX;hero.tr=[];let n=0;for(let b=0;b<3;b++)for(let k=0;k<10;k++){if(!treeWhy(hero,b+'.'+k)){hero.tr.push(b+'.'+k);n++}}return n===10&&treePts(hero)===0})()"))
+    check('Arbre : une seule passive', go(pg, "(()=>{hero.cls='voleur';hero.lvl=LVL_MAX;hero.tr=['0.0','1.0','1.1','1.2'];return /passive/.test(treeWhy(hero,'1.3'))})()"))
+    check('Arbre : au plus 3 compétences', go(pg, "(()=>{hero.tr=['0.0','0.1','0.2','0.3','1.0'];return /Au plus 3/.test(treeWhy(hero,'2.0'))})()"))
+    check('Niveau 10 au plus', go(pg, "(()=>{hero.lvl=9;hero.xp=0;giveXp(1e6);return hero.lvl===LVL_MAX&&hero.xp===0})()"))
+    check('Ancienne sauvegarde : héros remis à zéro', go(pg, "(()=>{const h=fixHero({cls:'mage',lvl:14,gold:900,tal:{for:3}},'mage');return h.lvl===1&&h.gold===30&&h.tr.length===0&&h.v===HERO_V})()"))
+    go(pg, "(()=>{hero.cls='guerrier';hero.lvl=1;hero.tr=[];refreshStats()})()")
+    pg.click('#pTal'); pg.wait_for_timeout(200)
+    check('Arbre : l’écran s’ouvre avec 30 crans', pg.locator('#talTree .tn').count() == 30)
+    pg.click('#talTree .tn >> nth=0'); pg.wait_for_timeout(100); pg.click('#talDet .btn.main'); pg.wait_for_timeout(150)
+    check('Arbre : apprendre la première compétence au toucher', go(pg, "hero.tr.join()==='0.0'&&ST.pa==='protecteur'"))
+    pg.screenshot(path=f'{OUT}/a7_arbre.png')
+    pg.click('#bTalClose'); pg.wait_for_timeout(100)
+    go(pg, "(()=>{hero.cls='voleur';hero.lvl=LVL_MAX;hero.tr=['0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9'];hero.eq={arme:starter('voleur','arme'),armure:starter('voleur','armure'),talisman:null};refreshStats();G.players[0].cls='voleur';G.players[0].st=ST;buildSkillUI()})()")
+    rs = go(pg, "['#bAtk','#bS1','#bS2','#bS3','#bUlt','#bPot'].map(s=>{const e=document.querySelector(s);e.hidden=false;const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
+    ov = any(not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]) for i, a in enumerate(rs) for b in rs[i + 1:])
+    check('Portrait : boutons sans chevauchement', not ov, rs)
+    go(pg, "buildSkillUI();L.mp=ST.mmp;L.ult=60;L.cd=[0,0,0,0]"); clearUI(pg); pg.wait_for_timeout(250); pg.screenshot(path=f'{OUT}/a8_boutons.png')
+    hb = go(pg, "(()=>{const b=WORLD.builds.filter(b=>b.act==='talents');return b.length})()")
+    check('Une maison des talents dans chaque ville', hb == len(go(pg, "Object.keys(TOWNS)")), hb)
+    go(pg, "hero.gold=1000;toggleTalents(true)"); pg.wait_for_timeout(150)
+    pg.click('#talReset .btn'); pg.wait_for_timeout(80); pg.click('#talReset .btn'); pg.wait_for_timeout(120)
+    check('Maison des talents : réinitialisation payante', go(pg, "hero.tr.length===0&&hero.gold===1000-TREE_RESET*LVL_MAX"))
+    go(pg, "toggleTalents()")
+    tb = go(pg, "(()=>{const b=WORLD.builds.find(b=>b.act==='talents'&&b.town==='cibellos');return[b.door.x,b.door.y+2]})()")
+    tele(pg, tb[0], tb[1]); pg.wait_for_timeout(700); clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/a9_maison_talents.png')
     pg.wait_for_timeout(1200); go(pg, "QDone.q.length=0;QDone.close()")
     go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(100); pg.screenshot(path=f'{OUT}/a7_competences.png'); go(pg, "paused=false;G.enemies=[]")
     go(pg, "(()=>{hero.cls='guerrier';hero.eq={arme:starter('guerrier','arme'),armure:starter('guerrier','armure'),talisman:null};refreshStats();G.players[0].cls='guerrier';G.players[0].st=ST;buildSkillUI()})()")
@@ -281,7 +309,7 @@ with sync_playwright() as pw:
 
     # ================= Téléphone à l'horizontale =================
     ctx, pg = page(br, w=844, h=390, tag='paysage'); pg.goto(URL); pg.wait_for_timeout(600); pg.click('#bSolo'); pg.wait_for_timeout(900)
-    go(pg, "hero.lvl=7;buildSkillUI()"); clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/d1_paysage.png')
+    go(pg, "(()=>{hero.lvl=LVL_MAX;hero.tr=['1.0','1.1','1.2','1.3','1.4','1.5','1.6','1.7','1.8','1.9'];refreshStats();buildSkillUI();['bS1','bS2','bS3','bUlt'].forEach(i=>$('#'+i).hidden=false)})()"); clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/d1_paysage.png')
     rs = go(pg, "['#bAtk','#bS1','#bS2','#bS3','#bUlt','#bPot'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
     ov = any(not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]) for i, a in enumerate(rs) for b in rs[i + 1:])
     check('Paysage : boutons sans chevauchement', not ov, rs)
@@ -298,7 +326,7 @@ with sync_playwright() as pw:
     pg.goto(URL); pg.wait_for_timeout(600); pg.click('#bSolo'); pg.wait_for_timeout(900)
     pg.keyboard.down('KeyD'); pg.wait_for_timeout(700); pg.keyboard.up('KeyD')
     check('Clavier : déplacement', go(pg, "L.x/TS") > 43.3)
-    go(pg, "hero.lvl=7;buildSkillUI()"); pg.keyboard.press('KeyI'); pg.wait_for_timeout(150)
+    go(pg, "hero.lvl=7;hero.tr=['0.0','0.1','0.2','0.3'];refreshStats();buildSkillUI()"); pg.keyboard.press('KeyI'); pg.wait_for_timeout(150)
     check('Clavier : I ouvre le sac', pg.is_visible('#bagBox')); pg.keyboard.press('Escape'); pg.wait_for_timeout(100)
     pg.keyboard.press('KeyM'); pg.wait_for_timeout(150); check('Clavier : M ouvre la carte', pg.is_visible('#mapBox')); pg.keyboard.press('Escape')
     clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/d2_ordi.png')
@@ -317,7 +345,7 @@ with sync_playwright() as pw:
         if go(B, "mode==='guest'&&!!G&&!!L"): break
         B.wait_for_timeout(250)
     check('À deux : le frère rejoint le monde', go(B, "mode==='guest'&&G.zd==='w'") and go(A, "G.players.length") == 2)
-    go(B, "hero.lvl=7;buildSkillUI();L.mp=ST.mmp"); B.wait_for_timeout(300)
+    go(B, "hero.lvl=7;hero.tr=['0.0','0.1','0.2','0.3'];refreshStats();buildSkillUI();L.mp=ST.mmp"); B.wait_for_timeout(500)
     go(A, "(()=>{for(let k=0;k<3;k++){const p=G.players[1];const e=spawnEnemy('orc',p.x+40+k*10,p.y,false,false,undefined,2);e.act=true}})()"); A.wait_for_timeout(300)
     go(B, "skQ[1]=true"); B.wait_for_timeout(600)
     check('À deux : compétence du frère exécutée par l’hôte', go(A, "G.players[1].sk[1]") >= 1)

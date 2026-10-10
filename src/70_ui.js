@@ -98,9 +98,12 @@ function travel(k){if(mode==='guest'||!G.m||G.m.kind!=='world')return;if(G.enemi
 
 /* ================= HUD ================= */
 let hudT=0,miniT=0;
-function buildSkillUI(){const sk=SKILLS[hero.cls],cc=CLS[hero.cls].col;$('#bAtk').querySelector('.ic').innerHTML=iconSvg('atk_'+hero.cls,'#fff6e8');$('#bAtk').setAttribute('aria-label','Attaque : '+CLS[hero.cls].atk);['bS1','bS2','bS3','bUlt'].forEach((id,i)=>{const b=$('#'+id);if(i<3)b.style.setProperty('--c',cc);b.querySelector('.ic').innerHTML=iconSvg(sk[i].id,'#fff6e8');b.querySelector('.k').textContent=sk[i].court;b.setAttribute('aria-label',sk[i].nom+(hero.lvl<sk[i].lvl?' (niveau '+sk[i].lvl+')':''))});
+function buildSkillUI(){if(!ST)return;const ks=ST.ks,cc=CLS[hero.cls].col;$('#bAtk').querySelector('.ic').innerHTML=iconSvg('atk_'+hero.cls,'#fff6e8');$('#bAtk').setAttribute('aria-label','Attaque : '+CLS[hero.cls].atk);
+  ['bS1','bS2','bS3','bUlt'].forEach((id,i)=>{const b=$('#'+id),S=SK[ks[i]];b.hidden=!S;if(!S)return;if(i<3)b.style.setProperty('--c',cc);b.querySelector('.ic').innerHTML=iconSvg(ks[i],'#fff6e8');b.querySelector('.k').textContent=S.court;b.setAttribute('aria-label',S.nom)});
+  const pp=$('#mePas');if(pp){pp.hidden=!ST.pa;if(ST.pa)pp.textContent='Passif : '+SK[ST.pa].nom}
   const bar=$('#skillbar');bar.textContent='';const keysL=['1','2','3','R'];
-  sk.forEach((s,i)=>{const d=el('div','sk'+(s.ult?' ult':''));d.id='sk'+i;const ic=el('i','ic');ic.innerHTML=iconSvg(s.id,s.ult?'#f0c95a':cc);d.append(el('em',null,keysL[i]),ic,el('span',null,s.court));d.title=s.nom+' : '+s.desc;d.onclick=()=>{skQ[i]=true};bar.append(d)});
+  ks.forEach((id,i)=>{const s=SK[id];if(!s)return;const d=el('div','sk'+(s.t==='u'?' ult':''));d.id='sk'+i;const ic=el('i','ic');ic.innerHTML=iconSvg(id,s.t==='u'?'#f0c95a':cc);d.append(el('em',null,keysL[i]),ic,el('span',null,s.court));d.title=s.nom+' : '+s.desc;d.onclick=()=>{skQ[i]=true};bar.append(d)});
+  if(ST.pa){const s=SK[ST.pa],d=el('div','sk pas');const ic=el('i','ic');ic.innerHTML=iconSvg(ST.pa,'#9ff08a');d.append(el('em',null,'P'),ic,el('span',null,s.court));d.title='Passif · '+s.nom+' : '+s.desc;bar.append(d)}
   const pd=el('div','sk');pd.id='skPot';pd.append(el('em',null,'E'),el('span',null,'Potion'));pd.onclick=()=>{potQ=true};bar.append(pd)}
 /* pastille heure + météo sous la mini-carte */
 function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out=G&&G.m&&G.m.kind==='world';t.hidden=!out;if(!out)return;
@@ -116,7 +119,7 @@ function skyLine(){const night=Sky.hour<5.5||Sky.hour>=21;
     +(Sky.isNight()?'<span style="color:#ff9a8a"><b>Nuit : ennemis 4 fois plus forts</b></span>':'<span class="dim">La nuit (21 h 30 – 5 h), les ennemis sont 4 fois plus forts</span>')}
 function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if(hudT>0)return;hudT=.1;const me=myP();if(!me)return;
   $('#meName').textContent=myName+' · '+CLS[hero.cls].nom;$('#meLvl').textContent='Niv '+hero.lvl;
-  $('#meHp').style.width=(clamp(me.hp/me.mhp,0,1)*100)+'%';$('#meSh').style.width=(clamp((me.sh||me.shield||0)/me.mhp,0,1)*100)+'%';$('#meMp').style.width=(clamp(L.mp/ST.mmp,0,1)*100)+'%';$('#meXp').style.width=(clamp(hero.xp/xpNeed(hero.lvl),0,1)*100)+'%';
+  $('#meHp').style.width=(clamp(me.hp/me.mhp,0,1)*100)+'%';$('#meSh').style.width=(clamp((me.sh||me.shield||0)/me.mhp,0,1)*100)+'%';$('#meMp').style.width=(clamp(L.mp/ST.mmp,0,1)*100)+'%';$('#meXp').style.width=(hero.lvl>=LVL_MAX?100:clamp(hero.xp/xpNeed(hero.lvl),0,1)*100)+'%';
   const oi=myIdx===0?1:0,o=G.players[oi],ca=$('#cAlly');
   if(o){$('#alName').textContent=o.name+' · '+CLS[o.cls].nom;$('#alBar').hidden=false;$('#alHp').style.width=(clamp(o.hp/o.mhp,0,1)*100)+'%';$('#alSt').textContent=o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV'}
   else{$('#alName').textContent='Joueur 2';$('#alBar').hidden=true;$('#alSt').textContent=room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim'}
@@ -125,23 +128,48 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
   const tq=m.kind==='world'&&!G.reinOn?trackedText():null;
   const ot=$('#objTxt');ot.textContent='';ot.append(el('b',null,tq?tq[0]+' · ':m.kind==='world'?'Quête · ':m.kind==='dun'?DUNGEONS[m.did].nom+' · ':''),document.createTextNode(tq?tq[1]:obj));
-  $('#goldTxt').textContent=hero.gold;$('#ptsB').hidden=hero.pts<=0;$('#ptsB').textContent=hero.pts;$('#bagB').hidden=!UI.newItems;
+  $('#goldTxt').textContent=hero.gold;$('#ptsB').hidden=treePts(hero)<=0;$('#ptsB').textContent=treePts(hero);$('#bagB').hidden=!UI.newItems;
   {const n=stonesQ(Math.max(G.q,hero.q));const gp=$('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
-  const sk=SKILLS[hero.cls];['bS1','bS2','bS3'].forEach((id,i)=>{const b=$('#'+id),S=sk[i],lk=hero.lvl<S.lvl;b.classList.toggle('lock',lk);b.querySelector('.t').textContent=lk?'Niv '+S.lvl:(L.cd[i]>0?Math.ceil(L.cd[i]):'');b.style.setProperty('--cd',lk?0:clamp(L.cd[i]/(S.cd*ST.cdm),0,1));b.classList.toggle('nomp',!lk&&L.mp<S.mp)});
-  {const b=$('#bUlt'),S=sk[3],lk=hero.lvl<S.lvl;b.classList.toggle('lock',lk);b.classList.toggle('ready',!lk&&L.ult>=100);b.querySelector('.t').textContent=lk?'Niv '+S.lvl:L.ult>=100?'':Math.floor(L.ult)+'%';b.style.setProperty('--cd',lk?0:1-L.ult/100)}
-  sk.forEach((S,i)=>{const d=$('#sk'+i);if(!d)return;const lk=hero.lvl<S.lvl;d.classList.toggle('lock',lk);if(S.ult){d.classList.toggle('ready',!lk&&L.ult>=100);d.style.setProperty('--cd',lk?0:1-L.ult/100)}else d.style.setProperty('--cd',lk?0:clamp(L.cd[i]/(S.cd*ST.cdm),0,1))});
+  const ks=ST.ks;['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=$('#'+id);b.classList.remove('lock');b.querySelector('.t').textContent=L.cd[i]>0?Math.ceil(L.cd[i]):'';b.style.setProperty('--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1));b.classList.toggle('nomp',L.mp<S.mp)});
+  if(ks[3]){const b=$('#bUlt');b.classList.remove('lock');b.classList.toggle('ready',L.ult>=100);b.querySelector('.t').textContent=L.ult>=100?'':Math.floor(L.ult)+'%';b.style.setProperty('--cd',1-L.ult/100)}
+  ks.forEach((id,i)=>{const S=SK[id],d=$('#sk'+i);if(!S||!d)return;if(S.t==='u'){d.classList.toggle('ready',L.ult>=100);d.style.setProperty('--cd',1-L.ult/100)}else d.style.setProperty('--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1))});
   {const d=$('#skPot');if(d)d.querySelector('span').textContent='Potion '+hero.pot}
   $('#potN').textContent=hero.pot;$('#bPot').classList.toggle('empty',hero.pot<=0);
   const it=findInteract();const lab=interactLabel(it);const ba=$('#bAct');ba.hidden=!it;if(it)ba.textContent=lab.length>24?lab.split(' : ')[0]:lab;const ah=$('#actHint');ah.hidden=!it;if(it)ah.textContent='F · '+lab}
 
 /* ================= Talents et compétences ================= */
-function toggleTalents(){const t=$('#talents');t.hidden=!t.hidden;$('#pause').hidden=true;paused=!t.hidden&&mode==='solo';if(!t.hidden)renderTalents()}
-function renderTalents(){$('#talPts').textContent=hero.pts+(hero.pts>1?' points':' point')+' à dépenser · un point par niveau et par gemme';const box=$('#talList');box.textContent='';
-  for(const[k,n,d]of TALENTS){const r=el('div','tal');const a=el('div');a.append(el('b',null,n),el('small',null,d));const rk=el('span','rk',hero.tal[k]+'/'+TAL_MAX);const bt=el('button',null,'+');bt.setAttribute('aria-label','Ajouter un point en '+n);bt.disabled=hero.pts<=0||hero.tal[k]>=TAL_MAX;
-    bt.onclick=()=>{if(hero.pts<=0||hero.tal[k]>=TAL_MAX)return;hero.pts--;hero.tal[k]++;refreshStats();doSave(true);renderTalents();Snd.play('coin')};r.append(a,rk,bt);box.append(r)}
-  const si=$('#skillInfo');si.textContent='';si.append(el('p','lab','Compétences de '+CLS[hero.cls].nom.toLowerCase()));
-  for(const S of SKILLS[hero.cls]){const r=el('div','tal');r.style.gridTemplateColumns='minmax(0,1fr) auto';const a=el('div');a.append(el('b',null,S.nom+(S.ult?' (ultime)':'')),el('small',null,S.desc+(S.ult?'':' · '+S.mp+' mana, '+S.cd+' s')));
-    r.append(a,el('span','rk',hero.lvl>=S.lvl?'Acquise':'Niv '+S.lvl));si.append(r)}}
+let talSel=null,talHouse=false,talConfirm=false;
+function toggleTalents(house){const t=$('#talents');const open=t.hidden;t.hidden=!open;$('#pause').hidden=true;paused=open&&mode==='solo';talHouse=open&&house===true;talSel=null;talConfirm=false;if(open)renderTalents()}
+/* position des crans : 3 branches de 10 crans (voir NODE_PARENT) */
+function talPos(b,k){const x=65+b*120,Y=[44,92,132,178,232,272,320,232,272,320];return{x:k>=7?x+30:k>=4?x-30:x,y:Y[k]}}
+function renderTalents(){const pts=treePts(hero),kit=heroKit(hero);
+  $('#talPts').textContent=pts+(pts>1?' points':' point')+' à dépenser · 1 point par niveau (niveau '+LVL_MAX+' au plus) · compétences '+(kit.act.length+(kit.pa?1:0))+'/3 · ultime '+(kit.ult?1:0)+'/1';
+  const NS='http://www.w3.org/2000/svg',sv=document.createElementNS(NS,'svg');sv.setAttribute('viewBox','0 0 370 352');sv.setAttribute('width','100%');sv.setAttribute('role','img');sv.setAttribute('aria-label','Arbre de talents');
+  const mk=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;sv.appendChild(e);return e};
+  TREE[hero.cls].forEach((B,b)=>{mk('text',{x:65+b*120,y:14,'text-anchor':'middle',class:'tbn'},B[0]);
+    for(let k=1;k<10;k++){const pk=NODE_PARENT[k],a=talPos(b,pk),c=talPos(b,k),on=hero.tr.includes(b+'.'+k),y0=a.y+([0,3].includes(pk)?31:25),y1=c.y-([6,9].includes(k)?14:9);mk('path',{d:'M'+a.x+' '+y0+' C'+a.x+' '+(y0+y1)/2+' '+c.x+' '+(y0+y1)/2+' '+c.x+' '+y1,class:'tl'+(on?' on':'')})}});
+  TREE[hero.cls].forEach((B,b)=>{for(let k=0;k<10;k++){const key=b+'.'+k,n=treeNode(hero.cls,key),c=talPos(b,k),on=hero.tr.includes(key),ok=!on&&!treeWhy(hero,key);
+    const g=document.createElementNS(NS,'g');g.setAttribute('class','tn'+(on?' on':ok?' ok':' off')+(n.kind==='u'?' ult':'')+(n.kind==='s'&&n.sk.t==='p'?' pas':'')+(talSel===key?' sel':''));g.setAttribute('role','button');g.setAttribute('aria-label',n.nom);sv.appendChild(g);
+    const add=(t,a,txt)=>{const e=document.createElementNS(NS,t);for(const q in a)e.setAttribute(q,a[q]);if(txt!=null)e.textContent=txt;g.appendChild(e)};
+    if(n.kind==='b')add('circle',{cx:c.x,cy:c.y,r:9});else{add('rect',{x:c.x-14,y:c.y-14,width:28,height:28,rx:5});const ic=document.createElementNS(NS,'g');ic.setAttribute('transform','translate('+(c.x-9)+' '+(c.y-9)+') scale(.75)');ic.innerHTML=iconSvg(n.id,on?'#2a1d10':'#efe6cf').replace(/^<svg[^>]*>|<\/svg>$/g,'');g.appendChild(ic)}
+    add('text',{x:c.x,y:c.y+(n.kind==='b'?21:27),'text-anchor':'middle'},n.kind==='b'?n.nom:n.sk.court);
+    add('rect',{x:c.x-28,y:c.y-16,width:56,height:42,fill:'transparent'});
+    g.onclick=()=>{talSel=key;talConfirm=false;renderTalents()}}});
+  const box=$('#talTree');box.textContent='';box.append(sv);
+  const d=$('#talDet');d.textContent='';
+  if(!talSel){d.append(el('p','muted',pts&&!hero.tr.length?'Touche le premier cran d’une branche pour choisir ta première compétence.':'Touche un cran pour voir son effet. Carré : compétence ; rond : bonus ; bord doré : ultime.'))}
+  else{const n=treeNode(hero.cls,talSel),why=treeWhy(hero,talSel),own=hero.tr.includes(talSel);
+    const kind=n.kind==='b'?'Bonus':n.kind==='u'?'Ultime':n.sk.t==='p'?'Compétence passive':'Compétence';
+    d.append(el('b',null,n.nom),el('small','muted',' · '+kind),el('p',null,n.desc+(n.kind==='s'&&n.sk.t==='a'?' ('+n.sk.mp+' mana, '+n.sk.cd+' s)':'')));
+    if(own)d.append(el('p','okt','Acquis'));else if(why)d.append(el('p','bad',why));
+    else{const bt=el('button','btn main','Apprendre · 1 point');bt.onclick=()=>{if(treeWhy(hero,talSel))return;hero.tr.push(talSel);refreshStats();buildSkillUI();doSave(true);Snd.play('lvl');
+      if(n.kind!=='b')toast((n.kind==='u'?'Ultime':'Compétence')+' apprise : '+n.nom+'.');renderTalents()};d.append(bt)}}
+  const rs=$('#talReset');rs.textContent='';
+  if(talHouse){const cost=TREE_RESET*hero.lvl;const bt=el('button','btn',talConfirm?'Confirmer : '+cost+' or':'Réinitialiser l’arbre · '+cost+' or');
+    bt.onclick=()=>{if(!hero.tr.length){toast('Rien à réinitialiser.');return}if(hero.gold<cost){toast('Pas assez d’or : il en faut '+cost+'.');return}
+      if(!talConfirm){talConfirm=true;renderTalents();return}hero.gold-=cost;hero.tr=[];talSel=null;talConfirm=false;refreshStats();buildSkillUI();doSave(true);Snd.play('coin');toast('Arbre remis à zéro. Tous tes points sont à redépenser.');renderTalents()};
+    rs.append(el('p','muted','Maison des talents : tu peux remettre ton arbre à zéro (20 or par niveau).'),bt)}
+  else rs.append(el('p','muted','Pour changer de chemin, va à la maison des talents d’une ville : elle remet ton arbre à zéro contre de l’or.'))}
 
 /* ================= Menu ================= */
 const heroes={};
@@ -240,7 +268,7 @@ aimBtn($('#bAtk'),-1);aimBtn($('#bS1'),0);aimBtn($('#bS2'),1);aimBtn($('#bS3'),2
 holdBtn($('#bPot'),()=>potQ=true);holdBtn($('#bAct'),()=>actQ=true);
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
-$('#pMenu').onclick=togglePause;$('#pTal').onclick=toggleTalents;$('#bResume').onclick=togglePause;$('#bTalClose').onclick=toggleTalents;
+$('#pMenu').onclick=togglePause;$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
 $('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);

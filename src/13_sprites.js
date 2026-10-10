@@ -137,6 +137,8 @@ const SIGN_PAL={'k':'#141b1b','i':'#4e484a','I':'#8d977f','W':'#7a4a2a','w':'#5a
 const SIGN_PX={
   auberge:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhffffhhhhk..','.kWWffffffWWWk..','.kWWyyyyyykkWk..','.kWWyYyyyyWkWk..','.kWWyYyyyyWkWk..','.kWWyyyyyykkWk..','.kWWooooooWWWk..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..'],
   marchand:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhhkkhhhhhk..','.kWWWnkknWWWWk..','.kWWWWbbWWWWWk..','.kWWbbBbbbWWWk..','.kWbbBbbbbbcck..','.kWbbbbbbbcCck..','.kWWnnnnnnWcck..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..'],
+  // maison des talents : un petit arbre doré
+  talents:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhhhhhhhhhk..','.kWWWWyyyWWWWk..','.kWWWyyYyyWWWk..','.kWWyyyyYyyWWk..','.kWWWyYyyyWWWk..','.kWWWWWCWWWWWk..','.kWWWWCCCWWWWk..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..'],
   forge:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhhAAAhshhk..','.kWWWWArAWWsWk..','.kWWWWWtWsWWWk..','.kWWLLLLLLLWWk..','.kWAAAAAAAAAWk..','.kWWWWaaaWWWWk..','.kWWWaaaaaWWWk..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..']};
 const _sign={};
 function signCanvas(k){if(_sign[k])return _sign[k];const G2=SIGN_PX[k];if(!G2)return null;const c=document.createElement('canvas');c.width=c.height=16;const q=c.getContext('2d');
@@ -149,7 +151,7 @@ function drawHousePix(b,T){if((b.kind==='deco'||b.kind==='tour')&&drawDecoPix(b,
   const[cx,cy,cw,chh,sk]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;const SRC=SPR.im[sk||'t_TilesetHouse'];if(sk&&!SPR.ok(sk))return false;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
   if(!sk&&cx===25&&cy===7&&cw===4&&chh===5)g.drawImage(chaumeCanvas(),0,0,64,80,dx,dy,W,H);else g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
-  {const kd=b.act&&b.act.startsWith('house:')?b.act.split(':')[1]:null,sg=kd&&signCanvas(kd);if(sg)g.drawImage(sg,0,0,16,16,dx+W/2+16,dy+H-34,32,32)}
+  {const kd=b.act==='talents'?'talents':b.act&&b.act.startsWith('house:')?b.act.split(':')[1]:null,sg=kd&&signCanvas(kd);if(sg)g.drawImage(sg,0,0,16,16,dx+W/2+16,dy+H-34,32,32)}
   if(typeof Vitrine!=='undefined'&&Vitrine.lit&&Vitrine.lit(b))drawGlow(g,x+w/2,y+h-8,40,.35);
   g.restore();
   if((b.kind==='forge'||(b.kind==='maison'&&hash2(b.x,b.y,5)<.5))&&Math.random()<(b.kind==='forge'?.09:.03)&&parts.length<500)

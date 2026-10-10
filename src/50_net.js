@@ -68,7 +68,7 @@ function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p
 function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',anonName(name),'peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
   $('#menu').hidden=true;$('#game').hidden=false;$('#joining').hidden=false;
   pres({r:'g',h:peer,n:myName,c:selCls,l:hero.lvl,st:guestStats(),i:null,g:null,gp:null})}
-function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0}}
+function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0,ks:ST.ks,pa:ST.pa}}
 function guestCheckHost(){const h=peers.find(p=>p.peer===hostPeer);
   if(!h){if(mode==='guest'&&!hostGoneAt){hostGoneAt=performance.now();Log.warn('à deux','hôte absent de la salle')}if(mode==='joining')endGuest('La partie n’existe plus.');return}
   hostGoneAt=0;const pr=h.presence||{};
@@ -100,7 +100,8 @@ function onState(s,first){
   G.emap=em;G.enemies=[...em.values()];
   G.projs=(s.j||[]).map(a=>({x:a[0],y:a[1],k:a[2],ang:(a[3]||0)/10}));
   G.drops=(s.d||[]).map(a=>({id:a[0],k:a[1],x:a[2],y:a[3],r:a[4]|0,t:1}));
-  G.zones=(s.zo||[]).map(a=>({x:a[0],y:a[1],r:a[2],smoke:a[3]}));
+  G.zones=(s.zo||[]).map(a=>({x:a[0],y:a[1],r:a[2],smoke:a[3]===1?1:0,slow:a[3]===2?1:0}));
+  G.traps=(s.tq||[]).filter(a=>!a[2]).map(a=>({x:a[0],y:a[1]}));G.decoys=(s.tq||[]).filter(a=>a[2]).map(a=>({x:a[0],y:a[1],cls:CLS_IDS[a[2]-1]||'mage',lk:a[3]|0,decoy:true}));
   G.fires=(s.fi||[]).map(a=>({x:a[0],y:a[1],r:a[2]}));
   const oc=G.crates;G.crates=(s.cr||[]).map((a,i)=>({x:a[0],y:a[1],rx:oc[i]?oc[i].rx:a[0],ry:oc[i]?oc[i].ry:a[1]}));
   G.opened=new Set(s.o||[]);G.platesOn=s.pl||[];G.gateOpen=!!s.go;G.key=s.k|0;G.stairsOpen=!!s.so;G.gp=(s.gp||[]).map(v=>(v|0)/20);G.wave=s.wv|0;G.defT=s.df?1:0;G.abhOn=!!s.ab;
@@ -120,7 +121,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
     d:G.drops.filter(d=>near(d.x,d.y)).slice(0,26).map(d=>[d.id,d.k,r(d.x),r(d.y),d.r]),
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),
     m:G.msgs.slice(-3),o:[...G.opened].slice(-60),cr:G.crates.map(c=>[c.x,c.y]),pl:G.platesOn,go:G.gateOpen?1:0,k:G.key,gp:(G.gp||[]).map(v=>Math.round(v*20)),wv:G.wave|0,so:G.stairsOpen?1:0,ab:G.abhOn?1:0,
-    zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:0]),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0};
+    zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:z.slow?2:0]),tq:G.traps.slice(-12).map(t=>[r(t.x),r(t.y),0]).concat(G.decoys.map(d=>[r(d.x),r(d.y),CLS_IDS.indexOf(d.cls)+1,d.lk|0])),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0};
   let n=0;while(enc.encode(JSON.stringify(s)).length>3400&&n++<24){if(s.j.length>4)s.j.length=Math.floor(s.j.length*.6);else if(s.x.length>4)s.x.splice(0,4);else if(s.o.length>10)s.o.splice(0,10);else if(s.d.length>8)s.d.length-=6;else if(s.e.length>12)s.e.length-=5;else break}
   return s}
 let netT=0;
