@@ -193,6 +193,29 @@ with sync_playwright() as pw:
         go(pg, "L.x=G.m.stairs.x;L.y=G.m.stairs.y"); pg.wait_for_timeout(1400)
         check(f'{did} : entrée, boss {bv}, sortie et étape {nextq}', ok_in and go(pg, f"G.zd==='w'&&G.q==={nextq}"), go(pg, "G.q"))
         skip(pg)
+    # quête annexe : la tour d'Eastwatch (Brann à la porte, cinq étages praticables, le Veilleur Noir, le feu rallumé)
+    dd = go(pg, "(()=>{const b=WORLD.builds.find(b=>b.act==='dun:eastwatch');return b?[b.door.x,b.door.y]:null})()")
+    tele(pg, dd[0], dd[1] + 2); pg.wait_for_timeout(800); skip(pg)
+    go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/e0_tour_eastwatch.png'); go(pg, "paused=false")
+    pre = go(pg, "[!!WORLD.npcs.find(n=>n.id==='brann'),ewState(),sqActive(SQ_BY.eastwatch)]")
+    go(pg, "requestAct('dun:eastwatch')"); pg.wait_for_timeout(1200)
+    sc = go(pg, "Scene.on")
+    if sc: go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(100); pg.screenshot(path=f'{OUT}/e1_brann.png'); go(pg, "paused=false")
+    skip(pg)
+    ok_in = go(pg, "G.m.kind==='dun'&&G.m.did==='eastwatch'&&sqActive(SQ_BY.eastwatch)")
+    walk = go(pg, """(()=>{const out=[];for(let i=0;i<5;i++){const z=genDungeon2('eastwatch',i,77,10);const W=z.W,ok=v=>v===0||v===3||v===4||v===5;
+      const sx=Math.floor(z.start.x/TS),sy=Math.floor(z.start.y/TS),ex=Math.floor(z.stairs.x/TS),ey=Math.floor(z.stairs.y/TS),seen=new Uint8Array(W*z.H),q=[[sx,sy]];seen[sy*W+sx]=1;
+      while(q.length){const[x,y]=q.pop();for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=z.H||seen[ny*W+nx]||!ok(z.t[ny*W+nx]))continue;seen[ny*W+nx]=1;q.push([nx,ny])}}
+      const mk=(z.marks||[]).every(m=>seen[m.y*W+m.x]);if(!seen[ey*W+ex]||!mk||z.spawns.length<(i===4?2:6))out.push(i+' : '+z.spawns.length+' ennemis, sortie '+!!seen[ey*W+ex]+', leviers '+mk)}return out})()""")
+    for i in range(5):
+        go(pg, f"G.dun=G.dun||{{ret:WORLD.start}};hostEnter('d:eastwatch:{i}:77:'+G.m.lv,null,{{heal:true}})"); pg.wait_for_timeout(1000); skip(pg)
+        go(pg, "G.players[0].hp=G.players[0].mhp=1e6;paused=true"); clearUI(pg); pg.wait_for_timeout(100); pg.screenshot(path=f'{OUT}/e2_etage{i}.png'); go(pg, "paused=false")
+    bv = go(pg, "(()=>{const e=G.enemies.find(e=>e.type==='boss');return e?e.bv:-1})()")
+    go(pg, "(()=>{const e=G.enemies.find(e=>e.type==='boss');if(e)killEnemy(e)})()"); pg.wait_for_timeout(900); skip(pg)
+    go(pg, "L.x=G.m.stairs.x;L.y=G.m.stairs.y"); pg.wait_for_timeout(2600)
+    if go(pg, "Scene.on"): go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(100); pg.screenshot(path=f'{OUT}/e3_feu.png'); go(pg, "paused=false")
+    skip(pg); pg.wait_for_timeout(300); skip(pg)
+    check('Tour d’Eastwatch : Brann, porte, 5 étages, Veilleur Noir, feu rallumé', pre == [True, 1, False] and ok_in and not walk and bv == 6 and go(pg, "G.zd==='w'&&hero.sqd.includes('eastwatch')&&ewState()===2"), [pre, ok_in, walk, bv, go(pg, "[G.zd,hero.sqd]")])
     check('Les quatre pierres réunies', go(pg, "stonesQ(G.q)") == 4)
     # objectifs variés des donjons
     go(pg, "G.dun={ret:WORLD.start};hostEnter('d:antre:0:55:8',null,{heal:true});G.enemies.length=0"); pg.wait_for_timeout(300); pg.wait_for_timeout(900); skip(pg); go(pg,'G.enemies.length=0')

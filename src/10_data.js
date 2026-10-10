@@ -80,7 +80,8 @@ const RELICS={
   pics:{s:'arme',b:0,suf:' de Grinmir',e:'talos',lore:'Forgée à Karaz Ankor. Grinmir Thunderhammer jure qu’elle gronde comme l’orage.'},
   larme:{s:'armure',b:2,suf:' de la Première Larme',e:'feu',lore:'Reprise aux adeptes d’Amarath. Elle brûle ceux qui osent frapper.'},
   oublies:{s:'armure',b:1,suf:' des Monts Oubliés',e:'kel',lore:'L’ermite des montagnes l’a bénie : la mort hésite devant elle.'},
-  echos:{s:'talisman',b:2,nom:'Sceau de Virganth',tk:'cdr',sp:'xp',lore:'Un fragment du sceau qui retient Amarath. Il murmure encore.'}};
+  echos:{s:'talisman',b:2,nom:'Sceau de Virganth',tk:'cdr',sp:'xp',lore:'Un fragment du sceau qui retient Amarath. Il murmure encore.'},
+  eastwatch:{s:'talisman',b:3,nom:'Lanterne d’Osric',tk:'reg',sp:'pot',lore:'La lanterne du capitaine Osric. Elle s’allume seule quand des voiles noires approchent.'}};
 function makeRelic(qid,cls,lvl){const D=RELICS[qid];if(!D)return null;const seed=900000+Object.keys(RELICS).indexOf(qid)*97;const it=genItem(seed,lvl,4,cls,D.s);it.b=D.b;it.rq=qid;it.lore=D.lore;
   if(D.s==='talisman'){it.n=D.nom;it.tk=D.tk;it.sp=D.sp;const v=affVal(D.tk,Math.max(1,lvl|0),mulberry(seed));it.p=D.tk==='reg'?+(v*2.1).toFixed(1):Math.round(v*2.1+(D.tk==='crit'||D.tk==='cdr'?1:0));it.a=it.a.filter(a=>a[0]!==D.tk)}
   else{it.n=BASES[D.s][cls][D.b]+D.suf;it.e=D.e}return it}
@@ -115,7 +116,7 @@ function newHero(cls){return{cls,lvl:1,xp:0,pts:0,tal:{for:0,vit:0,cel:0,esp:0,a
 function fixItem(it,cls){if(!it||typeof it!=='object'||!SLOTS.includes(it.s))return null;if(typeof it.rq==='string'&&RELICS[it.rq]){const r=makeRelic(it.rq,cls,it.l|0);if(r.s!==it.s)return null;r.u=clamp(it.u|0,0,5);return r}const o=genItem(it.id|0,it.l|0,it.r|0,cls,it.s);o.u=clamp(it.u|0,0,5);o.e=it.e&&enchOf(it.s,it.e)?it.e:null;if(typeof it.n==='string'&&it.n.length<60)o.n=it.n;return o}
 function fixHero(h,cls){const n=newHero(cls);if(!h||typeof h!=='object')return n;const o=Object.assign(n,h);o.cls=cls;o.tal=Object.assign(newHero(cls).tal,h.tal||{});
   for(const k of['lvl','xp','pts','gold','pot','sh','q'])o[k]=clamp(Math.floor(+o[k]||0),0,1e7);o.lvl=clamp(o.lvl,1,99);o.pts=Math.min(o.pts,99);o.q=clamp(o.q,0,6);o.pot=Math.min(POT_MAX,o.pot);
-  o.fl=Array.isArray(h.fl)?h.fl.filter(x=>typeof x==='string').slice(0,30):[];o.wp=Array.isArray(h.wp)?h.wp.filter(x=>typeof x==='string').slice(0,40):['start'];if(!o.wp.includes('start'))o.wp.push('start');
+  o.fl=Array.isArray(h.fl)?h.fl.filter(x=>typeof x==='string').slice(0,60):[];o.wp=Array.isArray(h.wp)?h.wp.filter(x=>typeof x==='string').slice(0,40):['start'];if(!o.wp.includes('start'))o.wp.push('start');
   o.story=Array.isArray(h.story)?h.story.filter(k=>typeof k==='string').slice(0,40):[];
   o.sq={};if(h.sq&&typeof h.sq==='object')for(const k in h.sq){if(/^[a-z]{2,12}$/.test(k))o.sq[k]=Math.max(0,Math.min(99,h.sq[k]|0))}
   o.sqd=Array.isArray(h.sqd)?h.sqd.filter(k=>typeof k==='string'&&/^[a-z]{2,12}$/.test(k)).slice(0,40):[];o.track=typeof h.track==='string'&&/^[a-z]{2,12}$/.test(h.track)?h.track:'main';

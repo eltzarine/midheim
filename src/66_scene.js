@@ -104,16 +104,23 @@ const DSCENE={
   antre1:{to:'boss',who:'adepte',text:'La pierre de Kelemvor reviendra au maître. Le vieux dragon ne pourra pas la cacher éternellement.'},
   prison0:{to:'exit',who:'narrateur',text:'Le sentier grimpe vers la plus profonde montagne. Une marionnette géante garde la clé du sceau.'},
   prison1:{to:'exit',who:'amarath',text:'Approchez… Posez les pierres sur les sceaux… Libérez-moi…'},
+  eastwatch0:{custom:true},
+  eastwatch1:{to:'exit',who:'narrateur',text:'Des adeptes vident les râteliers. Sur l’un d’eux, une lettre froissée : « Ouvrir la côte avant la nuit. »'},
+  eastwatch2:{to:'exit',who:'narrateur',text:'Le journal d’Osric traîne sur une couchette : « Ils m’ont promis la paix. Une paix sans guerre, sans peur… sans volonté. »'},
+  eastwatch3:{to:'exit',who:'adepte',text:'Trop tard. La flotte noire accoste cette nuit, et aucun feu ne l’annoncera.'},
+  eastwatch4:{to:'boss',who:'osric',text:'Trente ans que je veille sur cette côte. Pour rien. Amarath m’offre enfin le repos. Vous ne rallumerez pas ce feu.'},
   prison2:{to:'boss',who:'amarath',text:'Mes vieux compagnons envoient des enfants. Je vais vous montrer ce qu’est la vraie paix.'}};
-const DS_NAME={sinthara:'Sinthara',grinmir:'Grinmir Thunderhammer',virganth:'Virganth, l’Éternel',chef:'Le chef de guerre orc',adepte:'Le Haut-Adepte',amarath:'Amarath',narrateur:'La narratrice'};
+const DS_NAME={sinthara:'Sinthara',grinmir:'Grinmir Thunderhammer',virganth:'Virganth, l’Éternel',chef:'Le chef de guerre orc',adepte:'Le Haut-Adepte',osric:'Le Veilleur Noir',amarath:'Amarath',narrateur:'La narratrice'};
 function dunScene(m){const key=m.did+m.idx,d=DSCENE[key];if(!d)return null;const me=wpos(myIdx);let t=m.stairs;
   if(d.to==='boss'){const b=G.enemies.find(e=>e.type==='boss');if(b)t={x:b.rx??b.x,y:b.ry??b.y}}
   else if(d.to==='wave'&&m.goal&&m.goal.at)t=m.goal.at;else if(d.to==='mark'&&m.marks&&m.marks[0])t={x:(m.marks[0].x+.5)*TS,y:(m.marks[0].y+.5)*TS};
   const actors=[];if(d.add){const sp=d.who==='sinthara'?{k:'boss',bv:0}:{k:'npc',who:d.who};actors.push(Object.assign({id:'spk',x:t.x+(d.who==='grinmir'?40:0),y:t.y+(d.who==='virganth'?-40:20),name:DS_NAME[d.who]},sp))}
-  const portrait=d.who==='chef'?'narrateur':d.who==='adepte'?'narrateur':d.who;
-  return{cam:[me.x,me.y],actors,hideP:false,steps:[{cam:[t.x,t.y-30],dur:2.2},{wait:2.3},{line:{who:portrait,name:DS_NAME[d.who],text:d.text}},{cam:[me.x,me.y],dur:1.4},{wait:1.4}]}}
-function maybeDunScene(){const m=G&&G.m;if(!m||m.kind!=='dun'||window.__noStory)return;const key='sc_'+m.did+m.idx;if(!DSCENE[m.did+m.idx]||(hero.fl||[]).includes(key))return;
-  hero.fl.push(key);setTimeout(()=>{if(G&&G.m===m){const s=dunScene(m);if(s)Scene.play(s)}},700)}
+  const portrait=d.who==='chef'||d.who==='adepte'||d.who==='osric'?'narrateur':d.who;const nm=m.did==='eastwatch'&&d.who==='adepte'?'Le chef des adeptes':DS_NAME[d.who];
+  return{cam:[me.x,me.y],actors,hideP:false,steps:[{cam:[t.x,t.y-30],dur:2.2},{wait:2.3},{line:{who:portrait,name:nm,text:d.text}},{cam:[me.x,me.y],dur:1.4},{wait:1.4}]}}
+function maybeDunScene(){const m=G&&G.m;if(!m||m.kind!=='dun')return;
+  if(m.did==='eastwatch'){hero.fl=hero.fl||[];if(!hero.fl.includes('ew_start')){hero.fl.push('ew_start');doSave(false);toast('Nouvelle quête : Le feu d’Eastwatch.')}}
+  if(window.__noStory)return;const key='sc_'+m.did+m.idx;if(!DSCENE[m.did+m.idx]||(hero.fl||[]).includes(key))return;
+  hero.fl.push(key);setTimeout(()=>{if(G&&G.m===m){const s=DSCENE[m.did+m.idx].custom?ewOpenScene(m):dunScene(m);if(s)Scene.play(s)}},700)}
 // introduction : les héros réunis autour du feu, au bout des Wild Realms
 function introScene(){const camp=spx('start'),seal=placePx('prison')||spx('montsoublies'),honor=spx('honor'),pont=spx('pont');
   const fx0=camp.x+TS*2,fy0=camp.y-TS*3;const ftx=Math.floor(fx0/TS),fty=Math.floor(fy0/TS);const fire={id:'feu',k:'obj',o:{k:'feu',x:ftx,y:fty,w:1,h:1,s:.4},x:(ftx+.5)*TS,y:(fty+1)*TS};
@@ -137,3 +144,20 @@ function introScene(){const camp=spx('start'),seal=placePx('prison')||spx('monts
   const r0=storyLines('reinald0');steps.push(r0[0],r0[1]||{wait:0},{move:'rein',to:[cx-420,cy+30],dur:6},r0[2]||{wait:0});
   steps.push(...storyLines('ch0'),{del:'rein'});
   return{cam:[seal.x-200,seal.y-160],fadeIn:true,actors:[fire,...heroes,rein],steps,hideP:true,hideNpc:['virganth'],music:'cine'}}
+
+/* ----- La tour d'Eastwatch : arrivée avec le sergent Brann, puis le feu rallumé ----- */
+function ewOpenScene(m){const me=wpos(myIdx),t=m.stairs,cx=me.x,cy=me.y;
+  return{cam:[cx,cy],hideP:false,actors:[{id:'brann',k:'npc',who:'brann',x:cx+40,y:cy+70,name:'Le sergent Brann'}],steps:[
+    {title:['Le feu d’Eastwatch','Quête annexe'],titleDur:3800},{move:'brann',to:[cx+40,cy+8],dur:1.2},{wait:1.4},
+    {line:{who:'garde',name:'Le sergent Brann',text:'Le feu d’alarme est éteint depuis trois nuits. Le capitaine Osric est monté avec ses hommes. Aucun n’est redescendu.'}},
+    {cam:[cx,(cy+t.y)/2],dur:2.2},{wait:2.3},
+    {line:{who:'narrateur',name:'La narratrice',text:'Les gardes d’Eastwatch sont toujours à leur poste. Mais leurs yeux brillent d’une lueur violette.'}},
+    {cam:[t.x,t.y+40],dur:1.8},{wait:1.9},
+    {line:{who:'garde',name:'Le sergent Brann',text:'Cinq étages jusqu’au feu. Montez et rallumez-le. Je garde la porte derrière vous.'}},
+    {cam:[cx,cy],dur:1.4},{move:'brann',to:[cx+40,cy+90],dur:1.4},{wait:1.5},{del:'brann'}]}}
+function ewDone(){if(!hero||(hero.sqd||[]).includes('eastwatch'))return;const b=WORLD&&WORLD.builds.find(o=>o.act==='dun:eastwatch');const fin=()=>questEvent('tower');
+  if(!b||window.__noStory){if(G)G.ewLit=true;fin();return}
+  setTimeout(()=>{if(!G||!G.m||G.m.kind!=='world'){fin();return}const cx=(b.door.x+.5)*TS,top=(b.y+b.h)*TS-300;
+    Scene.play({cam:[L.x,L.y],actors:[],steps:[{cam:[cx,top+60],dur:2.2},{wait:2.3},{call:()=>{G.ewLit=true}},{fx:{k:'flash',x:cx,y:top-20,c:'#ffb347',d:2.5}},{wait:1},
+      {line:{who:'narrateur',name:'La narratrice',text:'Le feu d’alarme s’embrase au sommet de la tour. Au large, les voiles noires virent de bord et disparaissent.'}},
+      {cam:[L.x,L.y],dur:1.6},{wait:1.6},{line:{who:'garde',name:'Le sergent Brann',text:'Le feu brûle ! Eastwatch veille de nouveau. Merci, héros.'}}]},fin)},1000)}

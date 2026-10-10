@@ -70,7 +70,7 @@ function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.typ
   if(elite){const ol=SPR.outline(src,'#f0c95a','c_'+name);SPR.cell(g,ol,col,row,x,fy,PIX)}
   SPR.cell(g,src,col,row,x,fy,PIX);g.restore();return true}
 /* personnages de ville (PNJ nommés et villageois) */
-const NPC_SPR={garde:'GladiatorBlue',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3'};
+const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3'};
 const FOLK_SPR=['Villager','Villager2','Villager3','Villager4','Villager5','Woman','OldWoman','OldMan2','Child','Boy','Noble','Princess','Inspector'];
 function drawNPCPix(g,who,x,y,T,col,row){const name=NPC_SPR[who];if(!name||!SPR.ok('c_'+name))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x,y+12,9,3.2,0,0,6.28);g.fill();
@@ -145,7 +145,7 @@ function signCanvas(k){if(_sign[k])return _sign[k];const G2=SIGN_PX[k];if(!G2)re
 let _chaume=null;
 function chaumeCanvas(){if(_chaume)return _chaume;const T=SPR.im.t_TilesetHouse;const c=document.createElement('canvas');c.width=64;c.height=80;const q=c.getContext('2d');
   q.drawImage(T,25*16,7*16,64,80,0,0,64,80);q.drawImage(T,25*16+15,14*16+63,20,17,22,63,20,17);return _chaume=c}
-function drawHousePix(b,T){if(b.kind==='deco'&&drawDecoPix(b,T))return true;const L=b.spr&&HOUSE_SPR[b.spr]?[HOUSE_SPR[b.spr]]:((b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind]);if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
+function drawHousePix(b,T){if((b.kind==='deco'||b.kind==='tour')&&drawDecoPix(b,T))return true;const L=b.spr&&HOUSE_SPR[b.spr]?[HOUSE_SPR[b.spr]]:((b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind]);if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
   const[cx,cy,cw,chh,sk]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;const SRC=SPR.im[sk||'t_TilesetHouse'];if(sk&&!SPR.ok(sk))return false;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
   if(!sk&&cx===25&&cy===7&&cw===4&&chh===5)g.drawImage(chaumeCanvas(),0,0,64,80,dx,dy,W,H);else g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
@@ -229,6 +229,7 @@ function drawPropPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;
 
 
 /* ---- décor bâti des villes : feu de camp, phare, tour de guet, moulins, bateaux, grue ---- */
+function ewState(){if(typeof hero==='undefined'||!hero)return 0;if((hero.sqd||[]).includes('eastwatch')||(typeof G!=='undefined'&&G&&G.ewLit))return 2;return hero.q>=5?1:0}
 function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w/2,by=y+h,S=b.spr;g.save();g.imageSmoothingEnabled=false;
   const sh=(rx)=>{g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(cx,by-3,rx,6,0,0,6.28);g.fill()};
   const glow=(gx,gy,r,a)=>drawGlow(g,gx,gy,r,a);
@@ -243,6 +244,28 @@ function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w
     for(let yy=top+48;yy<by-14;yy+=22){g.fillStyle=PK.K;g.fillRect(cx-2,yy,4,8)}
     if(on)glow(cx,top+30,S==='phare'?150:90,.4);
     if(SPR.ok('f_FlagBlue')){const fr=Math.floor(T*6)%4;g.fillStyle=PK.K;g.fillRect(cx-1,top-30,2,24);g.drawImage(SPR.im.f_FlagBlue,fr*16,0,16,16,cx+1,top-30,24,24)}
+    g.restore();return true}
+  if(S==='tour'){const tw=136,hh=300,tx=Math.round(cx-tw/2),top=by-hh,lit=G.night||Sky.lamps,ew=ewState();g.strokeStyle=PK.K;g.lineWidth=2;sh(86);
+    // socle évasé, fût, bandeaux de pierre
+    pkBricks(g,tx-8,by-36,tx+tw+8,by,2);g.strokeRect(tx-8,by-36,tw+16,36);pkBricks(g,tx,top+40,tx+tw,by-36,1);g.strokeRect(tx,top+40,tw,hh-76);
+    g.fillStyle='rgba(20,12,30,.18)';g.fillRect(tx+tw-22,top+40,22,hh-76);
+    for(const yy of[top+128,top+204]){g.fillStyle=PK.S2;g.fillRect(tx-4,yy,tw+8,7);g.strokeRect(tx-4,yy,tw+8,7)}
+    // mâchicoulis et créneaux
+    g.fillStyle=PK.S2;g.fillRect(tx-14,top+26,tw+28,16);g.strokeRect(tx-14,top+26,tw+28,16);g.fillStyle=PK.S1;for(let xx=tx-10;xx<tx+tw+10;xx+=12)g.fillRect(xx,top+38,6,6);
+    for(let xx=tx-14;xx<tx+tw+14;xx+=17){g.fillStyle=PK.S3;g.fillRect(xx,top+8,11,18);g.strokeRect(xx,top+8,11,18)}
+    // meurtrières, éclairées le soir
+    for(const[wx,wy]of[[cx-36,top+70],[cx+26,top+70],[cx-5,top+150],[cx-36,top+228],[cx+26,top+228]]){g.fillStyle=PK.K;g.fillRect(wx-2,wy-2,14,28);g.fillStyle=lit?PK.LT:'#28323a';g.fillRect(wx,wy,10,24);if(lit)glow(wx+5,wy+12,34,.28)}
+    // porte cintrée au pied de la tour (alignée sur la porte du jeu)
+    const dx=(b.door.x+.5)*TS,dw=19;g.fillStyle=PK.K;g.beginPath();g.moveTo(dx-dw-2,by);g.lineTo(dx-dw-2,by-40);g.arc(dx,by-40,dw+2,Math.PI,0);g.lineTo(dx+dw+2,by);g.closePath();g.fill();
+    g.fillStyle='#6a4426';g.beginPath();g.moveTo(dx-dw,by);g.lineTo(dx-dw,by-40);g.arc(dx,by-40,dw,Math.PI,0);g.lineTo(dx+dw,by);g.closePath();g.fill();
+    g.fillStyle='#4e301a';for(let k=-dw+8;k<dw;k+=9)g.fillRect(dx+k,by-56,2,56);g.fillStyle=PK.K;g.fillRect(dx-dw,by-34,dw*2,3);g.fillRect(dx-dw,by-14,dw*2,3);g.fillStyle='#e0b45c';g.fillRect(dx+9,by-26,4,4);
+    // feu d'alarme au sommet : éteint tant que la quête n'est pas faite
+    g.fillStyle=PK.S1;g.fillRect(cx-18,top-4,36,12);g.strokeRect(cx-18,top-4,36,12);g.fillStyle=PK.K;g.fillRect(cx-14,top-8,28,5);
+    if(ew!==1){const f=Math.sin(T*9)*3,f2=Math.cos(T*7)*2;for(const[col,ww,hh2]of[[PK.R1,16,34+f],[PK.R2,11,26+f2],[PK.LT,6,16+f]]){g.fillStyle=col;g.beginPath();g.moveTo(cx-ww,top-6);g.lineTo(cx+f2*.6,top-6-hh2);g.lineTo(cx+ww,top-6);g.closePath();g.fill()}
+      glow(cx,top-20,ew===2?140:100,.35)}
+    if(Math.random()<.1&&parts.length<500)parts.push({k:'smoke',x:cx,y:top-(ew===1?10:40),vx:4,vy:-16,life:2.6,max:2.6,r:ew===1?6:7});
+    // mât et drapeau du pack
+    if(SPR.ok('f_FlagBlue')){const fr=Math.floor(T*6)%4,fx=tx+tw-4;g.fillStyle=PK.K;g.fillRect(fx-1,top-58,3,66);g.drawImage(SPR.im.f_FlagBlue,fr*16,0,16,16,fx+2,top-58,32,32)}
     g.restore();return true}
   if(S==='moulin'){if(!SPR.ok('a_Mill')){g.restore();return false}sh(26);const bw=40,bh=64,bx=cx-bw/2,top=by-bh;
     g.fillStyle='#eecf9b';g.beginPath();g.moveTo(bx,by);g.lineTo(bx+8,top+14);g.lineTo(bx+bw-8,top+14);g.lineTo(bx+bw,by);g.closePath();g.fill();g.strokeStyle=PK.K;g.lineWidth=2;g.stroke();
@@ -285,7 +308,10 @@ const BOSS_PX=[
    g:['................................','..........kkkkkkkkkkkk..........','........kkWWWWWWWWWWWWkk........','.......kWWWxxWWWWWWxxWWWk.......','......kWWxWWWWWWWWWWWWxWWk......','.....kWWxWWWWWWWWWWWWWWxWWk.....','..k..kWWWWWWWWWWWWWWWWWWWWk..k..','.kIkkkWWWWPPPPPPPPPPPPWWWWkkkIk.','.kIIikWWWPPPPPPPPPPPPPPWWWkiIIk.','..kIIiWWWPPPPPPPPPPPPPPWWWiIIk..','...kIIWWWPPeePPPPPPeePPWWWIIk...','....kIWWWPPeEPPPPPPEePPWWWIk....','.....kWWWPPPPPPPPPPPPPPWWWk.....','.....kWWWPPPPPPPPPPPPPPWWWk.....','.....kWWWWPPPkwkkwkPPPWWWWk.....','....kkWWWWWPPPPPPPPPPWWWWWkk....','...kHHWWWWWWHHHHHHHHWWWWWWHHk...','..kHhHWWWWWHHHHHHHHHHWWWWWHhHk..','.kHHhHWWWWHHHHHHHHHHHHWWWWHhHHk.','.kHhhHHWWWNNNNNNNNNNNNWWWHHhhHk.','.kBBBBBBWWYYYYYYYYYYYYWWBBBBBBk.','.kBBBBBBBWNNCCCCCCCCNNWBBBBBBBk.','.kBBbBBBBBBBCCcCCcCCBBBBBsBbBBk.','.kBBbBBBBBBBCCcCCcCCBBBBBsBbBBk.','.kBBbBBBBBBBCCCCCCCCBBBBkoOOkBk.','kBBbBBBBBBBBCCcCCcCCBBBBOWWOsBBk','kBBbBBBBBBBBCCcCCcCCBBBBOWWObsBk','BBBBBBBBBBBBCCCCCCCCBBBBkoOokBsB','BBBBBBBBBBBBCCCCCCCCBBBBBsBBBBBs','BBkBBBBkBBBBBBkBBkBBBBBBksBBBkBB','kk.kkkk.kkkkkk.kk.kkkkkk.kkkk.kk','................................']},
   {// Reinald
    au:'rgba(20,10,30,.55)',p:{'O':'#1d3a2a','o':'#2e5a3e','H':'#120c16','h':'#2a2034','P':'#e2d6d8','e':'#ff3a3a','E':'#ffb0a0','A':'#24262e','a':'#3a3d48','s':'#d8dbe6','G':'#e8ebf4','g':'#9ba7aa','B':'#4a4d58','D':'#16101c','x':'#2a1d14','X':'#120c16','v':'#2a1a3a','V':'#7a4cb0','k':'#141b1b'},
-   g:['............kkkkkkkk............','..........kkOOOOOOOOkk..........','........kkOOOOOOOOOOOOkk........','.......kOOOoOOOOOOOOoOOOk.......','......kOOoOOOOOOOOOOOOoOOk......','.....kOOoOOOOOOOOOOOOOOoOOk.....','.....kOOOHHHHHHHHHHHHHHOOOk.....','....kOOOHHHhHHHHHHHHhHHHOOOk....','....kOOHHHHHHhHHHHhHHHHHHOOk....','....kOOHHPPHHPPPPPPHHPPHHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHPPPeePPPPPPeePPPHOOk....','....kOOHPPPeEPPPPPPEePPPHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHHPPPPPPPPPPPPPPHHOOk....','....kOOOHHPPPPPPPPPPPPHHOOOk....','...kOOOOOOAAAAAAAAAAAAOOOOOOk...','..kOOoOOAAAaAAsAAsAAaAAAOOoOOk..','..kOOoOAAAaAAAAssAAAAaAAAOoOOk..','..kOoOOAAaAAAAAAAAAAAAakxkOoOk..','..kOoOAAAaAAAAAGGAAAAAkXxXkoOk..','..kOOOAAAAAAAAGggGAAAAAkVvkOOk..','..kOoOAAAAAAAAAGGAAAAAAkVvkoOk..','..kOoOBBBBBBBBBBBBBBBBBkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAkVvkOOk..','..kOoOAAAAAaAAAAAAAAaAAkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAAkVkOOk..','..kOOOkDDDDDkkkkkkkkDDDDkkOOOk..','..kOOkkDDDDDk......kDDDDDkkOOk..','..kOk.kDDDDDk......kDDDDDk.kOk..','...k..kkkkkkk......kkkkkkk..k...','.......kkkkk........kkkkk.......']},
+   g:['............kkkkkkkk............','..........kkOOOOOOOOkk..........','........kkOOOOOOOOOOOOkk........','.......kOOOoOOOOOOOOoOOOk.......','......kOOoOOOOOOOOOOOOoOOk......','.....kOOoOOOOOOOOOOOOOOoOOk.....','.....kOOOHHHHHHHHHHHHHHOOOk.....','....kOOOHHHhHHHHHHHHhHHHOOOk....','....kOOHHHHHHhHHHHhHHHHHHOOk....','....kOOHHPPHHPPPPPPHHPPHHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHPPPeePPPPPPeePPPHOOk....','....kOOHPPPeEPPPPPPEePPPHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHHPPPPPPPPPPPPPPHHOOk....','....kOOOHHPPPPPPPPPPPPHHOOOk....','...kOOOOOOAAAAAAAAAAAAOOOOOOk...','..kOOoOOAAAaAAsAAsAAaAAAOOoOOk..','..kOOoOAAAaAAAAssAAAAaAAAOoOOk..','..kOoOOAAaAAAAAAAAAAAAakxkOoOk..','..kOoOAAAaAAAAAGGAAAAAkXxXkoOk..','..kOOOAAAAAAAAGggGAAAAAkVvkOOk..','..kOoOAAAAAAAAAGGAAAAAAkVvkoOk..','..kOoOBBBBBBBBBBBBBBBBBkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAkVvkOOk..','..kOoOAAAAAaAAAAAAAAaAAkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAAkVkOOk..','..kOOOkDDDDDkkkkkkkkDDDDkkOOOk..','..kOOkkDDDDDk......kDDDDDkkOOk..','..kOk.kDDDDDk......kDDDDDk.kOk..','...k..kkkkkkk......kkkkkkk..k...','.......kkkkk........kkkkk.......']},,
+  {// Le Veilleur Noir (Osric) : l'armure de l'Everwatch noircie par les adeptes
+   au:'rgba(122,90,208,.32)',p:{'H':'#1a1420','h':'#2e2438','S':'#c9c4cc','s':'#9a94a0','r':'#8a7aa0','w':'#d8b8ff','L':'#5a5a68','m':'#44444f','n':'#2e2e38','A':'#3e3e4a','a':'#2a2a34','C':'#1b1622','c':'#2e2240','G':'#b98cff','Y':'#6a5a3a','y':'#8a7a4a','D':'#1b1b22','k':'#0c0a10'},
+   g:['................................','..............k..k..............','.............kLkkLk.............','........kkkk.kLmmLk.kkkk........','......kkHHHHkkLLLLkkHHHHkk......','.....kHHhhhHHLLmmLLHHhhhHHk.....','....kHHhHHHHHHLmmLHHHHHHhHHk....','....kHhHHHHHHHHHHHHHHHHHHhHk....','...kHHHHHSSSSSSSSSSSSSSHHHHHk...','...kHHHHSSSSSSSSSSSSSSSSHHHHk...','...kHHHSSSSSSSSSSSSSSSSSSHHHk...','...kHHHSSkkSSSSSSSSSSkkSSHHHk...','...kHHHSSkwSSSSSSSSSSwkSSHHHk...','...kHHHSrSSSSSSSSSSSSSSrSHHHk...','...kHHHHSSSSSSSSSSSSSSSSHHHHk...','...kHHHHHSSSSSSSSSSSSSSHHHHHk...','..kHHHHHHHHHssssssssHHHHHHHHHk..','..kHHHHkkaaAAAAAAAAAAaakkHHHHk..','.kLLLLHkCaAAAAAAAAAAAAakYyYkLLk.','kLLmmmLLCaAAAAAGGAAAAAakyYykmLLk','kLmmmmmLCaAAAAGGGGAAAAaCkLmkmmLk','knmmmmnLCaAAAAAGGAAAAAaCkLmkmmnk','.knnnnnCCaaAAAAAAAAAAaaCkLmknnk.','..kkCcCCYyYYYYYYYYYYYYyYkLmkkk..','..kCCcCAAAAaAAAAAAAAaAAAkLmkCk..','..kCCcAAAAAaAAAAAAAAaAAAkLmkCk..','.kCCcCaAAAAaAAAAAAAAaAAAkLmkCCk.','.kCCcCaaaaaaaaaaaaaaaaaakLmkCCk.','.kCCCkknnnnnkkkkkkkknnnnkLmkCCk.','.kCCk.knnnnnk......knnnnnkkkCCk.','..kk..kDDDDDk......kDDDDDkk.kk..','.......kkkkk........kkkkk.......']}
 ];
 const _bossC=[];
 function bossSheet(v){let c=_bossC[v];if(c)return c;const B=BOSS_PX[v];if(!B)return null;

@@ -9,13 +9,15 @@ const DSTYLE={
   tresor:{floor:'tresor',wall:'grotte',dark:.12},
   sentier:{floor:'neige',wall:'falaiseN',dark:0},
   sceaux:{floor:'sceau',wall:'sceau',dark:.26},
-  prison:{floor:'prison',wall:'sceau',dark:.3}};
+  prison:{floor:'prison',wall:'sceau',dark:.3},
+  sommet:{floor:'pave',wall:'creneau',dark:0}};
 // objectifs par étage
 const GOALS={
   levers:{type:'marks',mk:'levier',t:'Lève les trois herses du donjon',one:'Une herse se lève ({n}/{m}).',win:'Les herses sont levées : le donjon de Sinthara est ouvert !',hint:'Le donjon est fermé : lève les trois herses (leviers dorés).'},
   runes:{type:'marks',mk:'rune',t:'Rallume les pierres runiques de Virganth',one:'Une pierre runique se rallume ({n}/{m}).',win:'Les bois s’apaisent : l’antre de Virganth s’ouvre !',hint:'L’antre reste scellé : rallume les pierres runiques.'},
   seals:{type:'marks',mk:'sceau',t:'Pose les quatre pierres sur les sceaux',one:'Un sceau s’illumine ({n}/{m}).',win:'Les quatre sceaux brillent : l’escalier vers la prison s’ouvre !',hint:'L’escalier est scellé : active les quatre sceaux avec ton pendentif.'},
   waves:{type:'waves',mk:'cor',t:'Tiens les portes avec les nains',win:'Les orcs reculent ! Grinmir fait ouvrir les portes de Karaz Ankor.',hint:'Les portes restent closes tant que l’assaut n’est pas repoussé.'},
+  trappes:{type:'marks',mk:'levier',t:'Ouvre les trois trappes de l’escalier',one:'Une trappe s’ouvre ({n}/{m}).',win:'Les trappes sont ouvertes : l’escalier monte vers la salle des signaux !',hint:'L’escalier est condamné : actionne les trois leviers.'},
   key:{type:'key',t:'Prends la clé que garde',hint:'La porte est scellée : il faut la clé que porte '},
   boss:{type:'boss',t:'Bats',hint:'La sortie est scellée : bats '}};
 
@@ -39,7 +41,8 @@ function dunGrid(W,H,seed){const t=new Uint8Array(W*H).fill(1);const R=mulberry(
   return d}
 function pickMob(spec,R){const tot=spec.mobs.reduce((a,b)=>a+b[1],0);let v=R()*tot;for(const[k,w]of spec.mobs){if((v-=w)<0)return k}return spec.mobs[0][0]}
 
-const LSIZE={everwatch0: [46, 38], everwatch1: [40, 42], karazankor0: [46, 52], karazankor1: [44, 42], antre0: [52, 48], antre1: [42, 40], prison0: [42, 58], prison1: [42, 42], prison2: [38, 40]};
+const LSIZE={everwatch0: [46, 38], everwatch1: [40, 42], karazankor0: [46, 52], karazankor1: [44, 42], antre0: [52, 48], antre1: [42, 40], prison0: [42, 58], prison1: [42, 42], prison2: [38, 40],
+  eastwatch0: [36, 38], eastwatch1: [36, 38], eastwatch2: [36, 38], eastwatch3: [36, 38], eastwatch4: [34, 36]};
 const LAYOUTS={
   // ---------- La forteresse de l'Everwatch ----------
   everwatch0(d,spec){const W=d.W,H=d.H;
@@ -128,6 +131,39 @@ const LAYOUTS={
     d.res(21,37,2);d.chest(13,13,2);d.chest(29,27,2,true);
     d.group(['slime','archer','bat'],21,13,3,3);d.group(['slime','orc'],29,20,3,3);d.group(['bat','archer'],13,20,3,3);d.group(['slime','orc'],21,27,2,2);
     return{style:'sceaux',start:[21,38],exit:[21,20],goal:'seals',exitR:{x:8,y:7,w:26,h:26}}},
+  // ---------- La tour d'Eastwatch : une salle ronde par étage, on entre en bas et on monte en haut ----------
+  eastwatch0(d,spec){const c=twFloor(d,13);
+    d.scatter('tonneaux',4,7,8,29,28);d.scatter('caisses',3,7,8,29,28);d.scatter('ratelier',3,6,12,12,26);d.scatter('mannequin',2,24,12,30,26);
+    for(const[x,y]of[[10,10],[26,10],[10,26],[26,26]])d.obj('brasero',x,y,{light:1});d.obj('etendard',c,c);
+    d.group(['orc','orc'],11,20,3,3);d.group(['orc','archer'],25,20,3,3);d.group(['orc','archer'],18,10,2,2);
+    const p=d.free(15,9,21,13);if(p)d.spawns.push({type:'orc',elite:true,x:(p.x+.5)*TS,y:(p.y+.5)*TS});
+    d.chest(8,18,2);d.chest(28,18,2,true);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'key',who:'le caporal de la garnison',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch1(d,spec){const c=twFloor(d,13);
+    for(const y of[13,23])for(const x of[8,9,10,11,12,24,25,26,27,28])d.obj('ratelier',x,y);
+    d.scatter('caisses',4,7,8,29,28);d.obj('brasero',c-4,c,{light:1});d.obj('brasero',c+4,c,{light:1});
+    d.group(['archer','archer'],10,18,2,2);d.group(['archer','orc'],26,18,2,2);d.group(['archer','orc'],18,9,2,2);d.group(['orc'],18,27,1,2);
+    const p=d.free(14,15,22,21);if(p)d.spawns.push({type:'archer',elite:true,x:(p.x+.5)*TS,y:(p.y+.5)*TS});
+    d.chest(9,9,1);d.chest(27,27,1,true);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'key',who:'l’armurier des adeptes',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch2(d,spec){const c=twFloor(d,13);
+    d.scatter('tonneaux',3,7,8,29,28);d.scatter('chaines',3,7,8,29,28,{solid:false});d.scatter('os',4,7,8,29,28);d.scatter('bougies',4,7,8,29,28,{solid:false});
+    d.mark(8,c,{});d.mark(28,c,{});d.mark(c,9,{});
+    d.group(['bat','bat'],12,13,3,3);d.group(['bat','bat'],24,13,3,3);d.group(['bat','archer'],c,23,3,3);
+    for(const[x,y]of[[10,24],[26,24]]){const q=d.free(x-1,y-1,x+1,y+1);if(q)d.spawns.push({type:'mimic',x:(q.x+.5)*TS,y:(q.y+.5)*TS})}
+    d.chest(12,26,1);d.chest(24,10,1);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'trappes',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch3(d,spec){const c=twFloor(d,13);
+    d.feat.push({k:'tapis',x:c-2,y:8,w:5,h:22});d.obj('autel',c-1,c-1,{w:3,h:1});
+    for(const[x,y]of[[11,11],[25,11],[11,25],[25,25]])d.obj('brasero',x,y,{light:1});d.scatter('etendard',2,7,8,29,28);d.scatter('caisses',3,7,8,29,28);
+    d.group(['archer','orc'],11,18,3,3);d.group(['archer','orc'],25,18,3,3);d.group(['orc','orc'],c,26,2,2);
+    const p=d.free(15,8,21,12);if(p)d.spawns.push({type:'archer',elite:true,x:(p.x+.5)*TS,y:(p.y+.5)*TS});
+    d.chest(9,22,1,true);d.chest(27,14,1);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'key',who:'le chef des adeptes',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch4(d,spec){const c=17;d.ell(c,c,12,12,0);d.rect(c-2,c+11,5,4);
+    for(let k=0;k<16;k++){const a=k/16*6.283,x=Math.round(c+Math.cos(a)*11),y=Math.round(c+Math.sin(a)*11);if(y>c+8&&Math.abs(x-c)<3)continue;d.obj('pilier',x,y)}
+    d.res(c,c+13,2);d.res(c,c-9,1);d.obj('brasero',c-4,c-8,{light:1});d.obj('brasero',c+4,c-8,{light:1});d.chest(9,c,1);d.chest(25,c,1,true);
+    return{style:'sommet',start:[c,c+13],exit:[c,c-9],goal:'boss',boss:[c,c-2],exitR:{x:5,y:5,w:24,h:24}}},
   prison2(d,spec){const W=d.W,H=d.H;
     d.ell(19,18,14,12,0,.25);d.rect(17,30,5,7);d.rect(17,3,5,4);
     for(let k=0;k<10;k++){const a=k/10*6.283,x=Math.round(19+Math.cos(a)*11),y=Math.round(18+Math.sin(a)*9.5);if(y>27)continue;d.obj(k%2?'cristal':'pilier_v',x,y,k%2?{light:1}:{})}
@@ -136,6 +172,9 @@ const LAYOUTS={
     d.group(['slime','archer'],19,30,2,2);
     return{style:'prison',start:[19,35],exit:[19,4],goal:'boss',boss:[19,14],exitR:{x:7,y:7,w:24,h:20}}}};
 
+function twFloor(d,r){const c=18;d.ell(c,c,r,r,0);d.rect(c-2,c+r-1,5,4);d.rect(c-2,c-r-2,5,4);
+  for(let k=0;k<8;k++){const a=k/8*6.283+.39,x=Math.round(c+Math.cos(a)*(r-2.5)),y=Math.round(c+Math.sin(a)*(r-2.5));d.obj('pilier',x,y)}
+  d.res(c,c+r+1,2);d.res(c,c-r-1,1);return c}
 function genDungeon2(did,idx,seed,lv){const spec=DUNGEONS[did],key=did+idx;const sz=LSIZE[key];const d=dunGrid(sz[0],sz[1],(seed*9301+idx*49297+lv)>>>0);const L2=LAYOUTS[key](d,spec);const{W,H,t}=d;
   const ex=L2.exit;t[ex[1]*W+ex[0]]=3;
   const boss=L2.goal==='boss',spawns=d.spawns;
@@ -143,7 +182,7 @@ function genDungeon2(did,idx,seed,lv){const spec=DUNGEONS[did],key=did+idx;const
     for(const gt of BV.guards){const p=d.free(L2.boss[0]-4,L2.boss[1]-2,L2.boss[0]+4,L2.boss[1]+3);if(p)spawns.push({type:gt,x:(p.x+.5)*TS,y:(p.y+.5)*TS})}}
   // les ennemis ne doivent jamais apparaître trop près du départ
   const sx=(L2.start[0]+.5)*TS,sy=(L2.start[1]+.5)*TS;const sp2=spawns.filter(s=>Math.hypot(s.x-sx,s.y-sy)>5*TS);
-  const g=GOALS[L2.goal];const goal=Object.assign({id:L2.goal},g);if(L2.goal==='key')goal.who=spec.elite;if(L2.goal==='boss')goal.who=BOSSES[spec.boss].court;
+  const g=GOALS[L2.goal];const goal=Object.assign({id:L2.goal},g);if(L2.goal==='key')goal.who=L2.who||spec.elite;if(L2.goal==='boss')goal.who=BOSSES[spec.boss].court;
   if(L2.goal==='waves'){goal.at={x:(L2.wave[0]+.5)*TS,y:(L2.wave[1]+.5)*TS};goal.from=(d.waveFrom||[]).map(([x,y])=>({x:(x+.5)*TS,y:(y+.5)*TS}))}
   const marks=d.marks.map(m=>({x:m.x,y:m.y,c:m.c||null,i:m.i??-1,k:g.mk||'levier'}));
   return{f:lv,W,H,t,rooms:[],props:[],rein:false,theme:0,style:L2.style,st:DSTYLE[L2.style],soldat:!!spec.soldat,objs:d.objs,feat:d.feat,path:d.path,
@@ -196,10 +235,11 @@ function renderDun(m){const c=document.createElement('canvas');c.width=m.W*TS;c.
   // ombres au pied des murs
   for(let y=0;y<m.H;y++)for(let x=0;x<m.W;x++){if(wall(x,y))continue;const px=x*TS,py=y*TS;if(wall(x,y-1)){const gr=g.createLinearGradient(0,py,0,py+14);gr.addColorStop(0,'rgba(30,15,10,.4)');gr.addColorStop(1,'rgba(30,15,10,0)');g.fillStyle=gr;g.fillRect(px,py,TS,14)}if(wall(x-1,y)){g.fillStyle='rgba(30,15,10,.18)';g.fillRect(px,py,6,TS)}}
   // murs (ou décor plein) selon le style
-  const DEEP={rempart:'#8fa44c',salle:'#1c1820',nain:'#2a221c',grotte:'#33281e',sceau:'#14111b'}[S.wall];
+  const DEEP={creneau:'#2a5a78',rempart:'#8fa44c',salle:'#1c1820',nain:'#2a221c',grotte:'#33281e',sceau:'#14111b'}[S.wall];
   const near=(x,y)=>{for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(!wall(x+dx,y+dy))return true;return false};
   for(let y=0;y<m.H;y++)for(let x=0;x<m.W;x++){if(!wall(x,y))continue;if(DEEP&&!near(x,y)){const px=x*TS,py=y*TS,h=hash2(x,y,4);g.fillStyle=shade(DEEP,(vnoise(x/4,y/4,2)-.5)*.16);g.fillRect(px,py,TS,TS);
       if(S.wall==='rempart'){for(let k=0;k<3;k++){const gx=px+hash2(x,y,10+k)*28,gy=py+hash2(x,y,20+k)*28;poly(g,[gx,gy,gx+1.5,gy-5,gx+3,gy],shade(DEEP,k%2?-.2:.16))}if(h<.06)facetBlob(g,px+16,py+18,9,'#5a8a32',x*7+y,6)}
+      else if(S.wall==='creneau'){if(h<.3){g.fillStyle='rgba(200,230,245,.35)';g.fillRect(px+h*60%20,py+8+h*40%14,10,2)}}
       else if(h<.05){g.fillStyle='rgba(255,255,255,.05)';g.fillRect(px+h*300%24,py+8,6,4)}continue}
     dunWall(g,S.wall,x,y,!wall(x,y+1)&&y<m.H-1,wall,R)}
   for(const f of m.feat)if(f.k==='portenaine'){const x0=f.x*TS,y0=f.y*TS,w=f.w*TS,h=f.h*TS,cx=x0+w/2;prism(g,x0,y0+h-6,w,6,h-6,'#7a6a58');g.fillStyle='#e0b45c';g.fillRect(x0,y0+10,w,4);
@@ -210,18 +250,18 @@ function renderDun(m){const c=document.createElement('canvas');c.width=m.W*TS;c.
 function dunWall(g,st,x,y,face,wall,R){const px=x*TS,py=y*TS,h=hash2(x,y,9),h2=hash2(x,y,12);
   if(st==='foret'){g.fillStyle='#2f5a28';g.fillRect(px,py,TS,TS);if(face){g.fillStyle='#4a3020';for(let k=0;k<3;k++)g.fillRect(px+5+k*10+h*3,py+16,4,16);g.fillStyle='rgba(20,30,10,.35)';g.fillRect(px,py+28,TS,4)}
     facetBlob(g,px+16+(h-.5)*8,py+(face?10:16),18+h*5,['#3f7a34','#4f8a3a','#36702e'][Math.floor(h*3)],x*7+y,7);if(h2<.12){g.fillStyle='#f2d65a';g.beginPath();g.arc(px+8+h*16,py+12,2,0,6.28);g.fill()}return}
-  const P={rempart:['#8f877a','#a39b8c','#6e675d'],salle:['#3a3240','#5e5262','#2a2430'],falaise:['#a8613c','#c27a4c','#7a4228'],falaiseN:['#8f9aa6','#eef2f4','#6b7480'],nain:['#5a4a38','#9a7a48','#3a2e24'],grotte:['#4a3a2c','#7a6040','#33281e'],sceau:['#2a2433','#4a4058','#1a1622']}[st]||['#555','#777','#333'];
+  const P={rempart:['#8f877a','#a39b8c','#6e675d'],creneau:['#8f877a','#a39b8c','#6e675d'],salle:['#3a3240','#5e5262','#2a2430'],falaise:['#a8613c','#c27a4c','#7a4228'],falaiseN:['#8f9aa6','#eef2f4','#6b7480'],nain:['#5a4a38','#9a7a48','#3a2e24'],grotte:['#4a3a2c','#7a6040','#33281e'],sceau:['#2a2433','#4a4058','#1a1622']}[st]||['#555','#777','#333'];
   if(!face){g.fillStyle=P[1];g.fillRect(px,py,TS,TS);
     if(st==='falaise'||st==='falaiseN'||st==='grotte'){poly(g,[px,py,px+TS,py,px+16+(h-.5)*10,py+16+(h2-.5)*10],shade(P[1],.06));poly(g,[px+TS,py,px+TS,py+TS,px+16+(h-.5)*10,py+16+(h2-.5)*10],shade(P[1],-.12));poly(g,[px,py+TS,px+TS,py+TS,px+16+(h-.5)*10,py+16+(h2-.5)*10],shade(P[1],-.04))
       if(st==='falaiseN'&&h<.4){g.fillStyle='#ffffff';g.beginPath();g.ellipse(px+16,py+14,12,7,0,0,6.28);g.fill()}}
-    else if(st==='rempart'){g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=1;g.strokeRect(px+.5,py+.5,TS-1,TS-1)}
+    else if(st==='rempart'||st==='creneau'){g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=1;g.strokeRect(px+.5,py+.5,TS-1,TS-1)}
     else if(st==='nain'&&h<.15){g.strokeStyle='rgba(240,200,90,.45)';g.strokeRect(px+6.5,py+6.5,TS-13,TS-13)}
     else if(st==='sceau'&&h<.12){g.fillStyle='rgba(185,140,255,.45)';g.fillRect(px+14,py+8,3,14);g.fillRect(px+9,py+13,13,3)}
     // bord crénelé ou rebord quand un sol est au-dessus / à côté
     return}
   // face visible (sud)
   g.fillStyle=P[1];g.fillRect(px,py,TS,8);g.fillStyle=P[0];g.fillRect(px,py+8,TS,TS-8);
-  if(st==='rempart'){for(let r=0;r<3;r++){const off=((r+x)%2)*8;for(let bx=-off;bx<TS;bx+=16){const x0=Math.max(px,px+bx),x1=Math.min(px+TS,px+bx+15);if(x1>x0){g.fillStyle=shade(P[0],(hash2(x*3+bx,y*5+r,4)-.5)*.16);g.fillRect(x0,py+9+r*8,x1-x0,7)}}}
+  if(st==='rempart'||st==='creneau'){for(let r=0;r<3;r++){const off=((r+x)%2)*8;for(let bx=-off;bx<TS;bx+=16){const x0=Math.max(px,px+bx),x1=Math.min(px+TS,px+bx+15);if(x1>x0){g.fillStyle=shade(P[0],(hash2(x*3+bx,y*5+r,4)-.5)*.16);g.fillRect(x0,py+9+r*8,x1-x0,7)}}}
     g.fillStyle=P[1];for(let k=0;k<2;k++)prism(g,px+3+k*16,py-2,10,4,6,P[1],{edge:false});if(h<.07){g.fillStyle='#1f3358';g.fillRect(px+9,py+9,14,20);g.fillStyle='#efe6cf';g.beginPath();g.ellipse(px+16,py+17,5,3,0,0,6.28);g.fill();g.fillStyle='#1f3358';g.beginPath();g.arc(px+16,py+17,1.6,0,6.28);g.fill()}}
   else if(st==='salle'){g.fillStyle=P[2];g.fillRect(px,py+8,3,TS-8);g.fillRect(px+TS-3,py+8,3,TS-8);g.fillStyle='rgba(255,255,255,.06)';g.fillRect(px+6,py+12,TS-12,TS-16);if(h<.12){g.fillStyle='#8e2f3a';g.fillRect(px+9,py+9,14,22);g.fillStyle='#d6b04a';g.fillRect(px+9,py+9,14,2);g.beginPath();g.arc(px+16,py+19,3,0,6.28);g.fill()}}
   else if(st==='falaise'||st==='falaiseN'||st==='grotte'){for(let k=0;k<4;k++){const sx=px+k*8;poly(g,[sx,py+8,sx+8,py+8,sx+4+(hash2(x*4+k,y,3)-.5)*5,py+TS],shade(P[0],k%2?-.22:.08))}if(st==='falaiseN'){g.fillStyle='#ffffff';g.fillRect(px,py+4,TS,6)}

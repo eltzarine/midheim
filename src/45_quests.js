@@ -12,9 +12,10 @@ const SQ=[
   {id:'pics',nom:'Les orcs des Pics Rouges',from:'Grinmir Thunderhammer',desc:'Les orcs qui assiègent Karaz Ankor pillent les Pics Rouges. Grinmir paiera chaque bande dispersée.',type:'kill',reg:'pics',n:8,rw:{g:200,xp:300,sh:6,rel:1},need:3},
   {id:'larme',nom:'Les adeptes de la Première Larme',from:'Virganth',desc:'Les adeptes d’Amarath cherchent l’antre de Virganth. Repousse-les hors des bois.',type:'kill',reg:'firsttear',n:10,rw:{g:220,xp:340,rel:1},need:4},
   {id:'oublies',nom:'Le silence des Monts Oubliés',from:'Une ermite des montagnes',desc:'Les marionnettes d’Amarath descendent des Monts Oubliés. Arrête-les avant qu’elles n’atteignent les villages.',type:'kill',reg:'oublies',n:10,rw:{g:260,xp:420,rel:1},need:5},
-  {id:'echos',nom:'Les échos de la prison',from:'Virganth',desc:'Le sceau tient, mais les lieux de l’histoire sont plus dangereux. Termine deux donjons.',type:'dun',n:2,rw:{g:300,rel:1},need:6}];
+  {id:'echos',nom:'Les échos de la prison',from:'Virganth',desc:'Le sceau tient, mais les lieux de l’histoire sont plus dangereux. Termine deux donjons.',type:'dun',n:2,rw:{g:300,rel:1},need:6},
+  {id:'eastwatch',nom:'Le feu d’Eastwatch',from:'Le sergent Brann',desc:'Le feu d’alarme d’Eastwatch est éteint et la garnison ne répond plus. Monte les cinq étages de la tour, bats le Veilleur Noir et rallume le feu.',type:'tower',n:1,rw:{g:400,xp:600,sh:8,rel:1},need:5,start:'ew_start'}];
 const SQ_BY=Object.fromEntries(SQ.map(q=>[q.id,q]));
-function sqActive(q){return hero.q>=q.need&&!(hero.sqd||[]).includes(q.id)}
+function sqActive(q){return hero.q>=q.need&&!(hero.sqd||[]).includes(q.id)&&(!q.start||(hero.fl||[]).includes(q.start))}
 function sqProg(id){return(hero.sq&&hero.sq[id])|0}
 function questEvent(type,o){if(!hero||!G)return;o=o||{};hero.sq=hero.sq||{};let changed=false;
   for(const q of SQ){if(!sqActive(q)||q.type!==type)continue;if(q.reg&&o.reg!==q.reg)continue;
@@ -37,6 +38,7 @@ function questTarget(){const id=hero&&hero.track;if(!id||id==='main'||!WORLD||!G
   if(q.type==='elite')return near(WORLD.camps.filter((c,i)=>c.elite&&(!G.camps[i]||G.camps[i].state!=='cleared')));
   if(q.type==='upgrade')return near(WORLD.builds.filter(b=>b.kind==='forge').map(b=>({x:b.door.x,y:b.door.y})));
   if(q.type==='wp')return near(Object.keys(WAYPOINTS).filter(k=>!hero.wp.includes(k)).map(k=>({x:WAYPOINTS[k].pt[0],y:WAYPOINTS[k].pt[1]})));
+  if(q.type==='tower')return near(WORLD.builds.filter(b=>b.act==='dun:eastwatch').map(b=>({x:b.door.x,y:b.door.y})));
   if(q.type==='dun')return near(WORLD.builds.filter(b=>b.act&&b.act.startsWith('dun:')).map(b=>({x:b.door.x,y:b.door.y})));return null}
 function trackedText(){const id=hero.track;if(id&&id!=='main'){const q=SQ_BY[id];if(q&&sqActive(q))return[q.nom,q.desc.split('.')[0]+' : '+sqProg(q.id)+'/'+q.n]}return null}
 
@@ -52,7 +54,7 @@ function renderQuests(){const box=$('#questList');box.textContent='';hero.track=
     if(!done)b.onclick=()=>{hero.track=id;doSave(false);renderQuests();toast('Quête suivie : '+title+'. La flèche dorée t’y guide.')};return b};
   box.append(el('h3','qsec','Histoire'));
   const o=OBJ[Math.min(hero.q,6)];box.append(card('main','Les quatre pierres','Virganth, l’Éternel',o.t,stonesQ(hero.q),4,hero.q<6?{g:0,rel:1}:null,false));
-  const act=SQ.filter(sqActive),done=SQ.filter(q=>(hero.sqd||[]).includes(q.id)),later=SQ.filter(q=>hero.q<q.need&&!(hero.sqd||[]).includes(q.id));
+  const act=SQ.filter(sqActive),done=SQ.filter(q=>(hero.sqd||[]).includes(q.id)),later=SQ.filter(q=>!q.start&&hero.q<q.need&&!(hero.sqd||[]).includes(q.id));
   box.append(el('h3','qsec','Sous-quêtes ('+act.length+')'));for(const q of act)box.append(card(q.id,q.nom,q.from,q.desc,sqProg(q.id),q.n,q.rw,false));
   if(later.length){const p=el('p','muted',later.length+' autre'+(later.length>1?'s':'')+' sous-quête'+(later.length>1?'s':'')+' se débloquer'+(later.length>1?'ont':'a')+' en avançant dans l’histoire.');box.append(p)}
   if(done.length){box.append(el('h3','qsec','Terminées'));for(const q of done)box.append(card(q.id,q.nom,q.from,q.desc,q.n,q.n,null,true))}}

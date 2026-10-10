@@ -192,7 +192,7 @@ function defeat(){if(G.m.kind==='world'){const wp=nearestWp(Math.floor(L.x/TS),M
   else hostEnter(G.zd,null,{heal:true}),msg(pickL(MJ.defeat))}
 function nearestWp(tx,ty){let b='start',bd=1e9;for(const k of hero.wp){const w=WAYPOINTS[k];if(!w)continue;const d=(w.pt[0]-tx)**2+(w.pt[1]-ty)**2;if(d<bd){bd=d;b=k}}return b}
 function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){hostEnter('d:'+m.did+':'+(m.idx+1)+':'+((Math.random()*1e6)|0)+':'+m.lv,null);msg('Le Maître du Donjon : '+pickL(MJ.floor));return}
-  const ret=G.dun&&G.dun.ret||WORLD.start;const did=m.did;hostEnter('w',ret);G.dun=null;fx(44,ret.x,ret.y,0);
+  const ret=G.dun&&G.dun.ret||WORLD.start;const did=m.did;hostEnter('w',ret);G.dun=null;fx(44,ret.x,ret.y,did==='eastwatch'?1:0);
   if(spec.done===G.q)setQ(G.q+1,({everwatch:'stone0',karazankor:'stone2',antre:'stone3',prison:'epilogue'})[did]);else msg(spec.nom+' : vous en ressortez plus riches.')}
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
@@ -205,7 +205,7 @@ function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=
     const lv=Math.max(spec.lv,partyLv()+(G.q>=6?1:0));G.dun={id,ret:{x:it.x,y:it.y+TS*.9}};hostEnter('d:'+id+':0:'+((Math.random()*1e6)|0)+':'+lv,null,{heal:true});if(spec.story&&G.q===spec.need)storyEvent(spec.story);return}
   if(act.startsWith('house:')){hostEnter(act.replace('house:','h:'),null);return}
   if(act==='arena'){if(G.q>=3&&!G.abhOn)spawnAbhorash(Math.max(5,partyLv()+1));return}}
-function lockText(id){return({karazankor:'Les portes de Karaz Ankor sont closes. Le Witangamot délibère.',antre:'L’entrée de l’antre est gardée par une force invisible. Pas encore.',prison:'Une porte noire à quatre emplacements. Il faut les quatre pierres.'})[id]||'Fermé.'}
+function lockText(id){return({karazankor:'Les portes de Karaz Ankor sont closes. Le Witangamot délibère.',antre:'L’entrée de l’antre est gardée par une force invisible. Pas encore.',prison:'Une porte noire à quatre emplacements. Il faut les quatre pierres.',eastwatch:'Le sergent Brann garde la porte : « La tour est à la garnison. On ne monte pas sans ordre. »'})[id]||'Fermé.'}
 function spawnAbhorash(lv){const a=WORLD.arena;const e=spawnEnemy('boss',a.x,a.y-TS,false,false,1,lv);e.act=true;G.abhOn=true;sayE(e);msg('Abhorash, le Dragon de Sang, accepte le défi.')}
 function startReinald(){G.reinOn=true;G.night=1;storyEvent('reinald1');const p=G.players.find(q=>!q.down)||G.players[0];const s=freeNear(p.x,p.y,4*TS,6*TS);const e=spawnEnemy('boss',s.x,s.y,false,false,5,Math.max(4,partyLv()+1));sayE(e)}
 function checkQuest(){const q=G.q,pl=G.players.filter(p=>!p.down);if(!pl.length)return;
@@ -416,5 +416,6 @@ function talkTo(k){const q=G.q;
   if(k==='virganth'){const d=q===0?DIALOG.virganth0:DIALOG.virganth1;showDialog('virganth',d[0],d[1]);return}
   if(k==='grinmir'){if(q===3){queueStoryKey('ch2');if(!hero.story.includes('ch2'))return}const d=q>3?DIALOG.grinmir1:DIALOG.grinmir0;showDialog('grinmir',d[0],d[1]);return}
   if(k==='garde'){showDialog('garde',DIALOG.garde[0],DIALOG.garde[1]);return}
+  if(k==='brann'){const st=ewState();showDialog('garde','Le sergent Brann',st===2?'Le feu brûle chaque nuit, et les voiles noires ne sont jamais revenues. Eastwatch vous doit une fière chandelle.':st===1?'Le feu d’alarme est éteint depuis trois nuits. Le capitaine Osric est monté avec ses hommes, et aucun n’est redescendu. Montez, je vous en prie : la porte est ouverte.':'Rien à signaler sur la côte. Le feu d’alarme veille, et moi avec.');return}
   if(k==='nains'){showDialog('grinmir',DIALOG.nains[0],DIALOG.nains[1]);return}
   if(k==='abhorash'){showDialog('abhorash',DIALOG.abhorash[0],DIALOG.abhorash[1]);return}}

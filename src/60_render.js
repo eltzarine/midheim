@@ -23,7 +23,7 @@ function processFx(list){for(const f of list){if(f.id<=lastFx)continue;lastFx=f.
     case 18:sparks(f.x,f.y,'#f0c95a',10);Snd.play('chest');if(G&&G.m&&G.m.kind==='world'&&Math.hypot(f.x-L.x,f.y-L.y)<700)questEvent('chest');break;
     case 42:if(Math.hypot(f.x-L.x,f.y-L.y)<1000)questEvent('camp');break;
     case 43:if(Math.hypot(f.x-L.x,f.y-L.y)<1000)questEvent('elite');break;
-    case 44:questEvent('dun');break;
+    case 44:questEvent('dun');if(f.v===1)ewDone();break;
     case 19:Snd.play('hit');break;
     case 20:sparks(f.x,f.y,'#c9c2e0',20);Snd.play('gate');break;
     case 21:if(BUB[f.v])addBubble({who:'p',o:f.o,txt:BUB[f.v],life:3,max:3});break;
@@ -139,7 +139,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}
@@ -255,7 +255,7 @@ function render(dt){
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
   if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&bd.act.startsWith('house:')))continue;   // maisons : l'enseigne remplace le nom
-    const dx=(bd.door.x+.5)*TS,dy=bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
+    const dx=(bd.door.x+.5)*TS,dy=bd.kind==='tour'?bd.door.y*TS-78:bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(Math.hypot(n.x-L.x,n.y-L.y)<220)label(NPC_NAMES[n.who]||'',n.x,n.y-(n.who==='virganth'?62:34),'#cfe8ff',11)}
     for(const k2 in TOWNS){const p=PL[k2];const tx=(p[0]+.5)*TS,ty=(p[1]-11)*TS;if(Math.hypot(tx-L.x,ty-L.y)<520){ctx.font='400 22px "Uncial Antiqua",Georgia,serif';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(TOWNS[k2].nom,tx+1.5,ty+1.5);ctx.fillStyle='#efe6cf';ctx.fillText(TOWNS[k2].nom,tx,ty)}}}
   else for(const n of m.npcs||[])label(NPC_NAMES[n.who]||'',n.x,n.y-34,'#cfe8ff',11);

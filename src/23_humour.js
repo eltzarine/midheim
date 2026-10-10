@@ -16,7 +16,8 @@ const LINES={
   boss3:{aggro:['Seule la mort de chaque combattant apportera la paix !','Le Maître reviendra !'],rage:['Levez-vous, marionnettes !']},
   boss4:{aggro:['Je voulais la paix. Seule la mort l’apporte.'],rage:['Mes anciens compagnons ont échoué. Vous aussi.','Devenez mes marionnettes !']},
   boss5:{aggro:['J’ai mis un certain temps à vous rattraper.','Je vais vous donner une chance de mourir sans souffrance.'],rage:['Vous n’avez pas idée de l’énergie que je dépense pour ne pas être senti.','Soyons équitables.'],mist:['Vous pensez sérieusement pouvoir m’affronter ?','1 grain de courage pour 3 grains de folie.']},
-  mimic:{aggro:['SURPRISE !']}
+  mimic:{aggro:['SURPRISE !']},
+  boss6:{aggro:['Trente ans de veille. Pour rien.','Ce feu ne brûlera plus.'],rage:['Gardes ! Défendez le sommet !','Amarath m’a promis le repos !']}
 };
 const BUB=[],BIDX={};
 for(const who in LINES)for(const cat in LINES[who]){BIDX[who+'.'+cat]=[];for(const t of LINES[who][cat]){BIDX[who+'.'+cat].push(BUB.length);BUB.push(t)}}

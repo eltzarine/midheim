@@ -654,7 +654,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='e072998c';
+const BUILD='7e19ff4f';
 /* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
 const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -779,7 +779,8 @@ const RELICS={
   pics:{s:'arme',b:0,suf:' de Grinmir',e:'talos',lore:'Forgée à Karaz Ankor. Grinmir Thunderhammer jure qu’elle gronde comme l’orage.'},
   larme:{s:'armure',b:2,suf:' de la Première Larme',e:'feu',lore:'Reprise aux adeptes d’Amarath. Elle brûle ceux qui osent frapper.'},
   oublies:{s:'armure',b:1,suf:' des Monts Oubliés',e:'kel',lore:'L’ermite des montagnes l’a bénie : la mort hésite devant elle.'},
-  echos:{s:'talisman',b:2,nom:'Sceau de Virganth',tk:'cdr',sp:'xp',lore:'Un fragment du sceau qui retient Amarath. Il murmure encore.'}};
+  echos:{s:'talisman',b:2,nom:'Sceau de Virganth',tk:'cdr',sp:'xp',lore:'Un fragment du sceau qui retient Amarath. Il murmure encore.'},
+  eastwatch:{s:'talisman',b:3,nom:'Lanterne d’Osric',tk:'reg',sp:'pot',lore:'La lanterne du capitaine Osric. Elle s’allume seule quand des voiles noires approchent.'}};
 function makeRelic(qid,cls,lvl){const D=RELICS[qid];if(!D)return null;const seed=900000+Object.keys(RELICS).indexOf(qid)*97;const it=genItem(seed,lvl,4,cls,D.s);it.b=D.b;it.rq=qid;it.lore=D.lore;
   if(D.s==='talisman'){it.n=D.nom;it.tk=D.tk;it.sp=D.sp;const v=affVal(D.tk,Math.max(1,lvl|0),mulberry(seed));it.p=D.tk==='reg'?+(v*2.1).toFixed(1):Math.round(v*2.1+(D.tk==='crit'||D.tk==='cdr'?1:0));it.a=it.a.filter(a=>a[0]!==D.tk)}
   else{it.n=BASES[D.s][cls][D.b]+D.suf;it.e=D.e}return it}
@@ -814,7 +815,7 @@ function newHero(cls){return{cls,lvl:1,xp:0,pts:0,tal:{for:0,vit:0,cel:0,esp:0,a
 function fixItem(it,cls){if(!it||typeof it!=='object'||!SLOTS.includes(it.s))return null;if(typeof it.rq==='string'&&RELICS[it.rq]){const r=makeRelic(it.rq,cls,it.l|0);if(r.s!==it.s)return null;r.u=clamp(it.u|0,0,5);return r}const o=genItem(it.id|0,it.l|0,it.r|0,cls,it.s);o.u=clamp(it.u|0,0,5);o.e=it.e&&enchOf(it.s,it.e)?it.e:null;if(typeof it.n==='string'&&it.n.length<60)o.n=it.n;return o}
 function fixHero(h,cls){const n=newHero(cls);if(!h||typeof h!=='object')return n;const o=Object.assign(n,h);o.cls=cls;o.tal=Object.assign(newHero(cls).tal,h.tal||{});
   for(const k of['lvl','xp','pts','gold','pot','sh','q'])o[k]=clamp(Math.floor(+o[k]||0),0,1e7);o.lvl=clamp(o.lvl,1,99);o.pts=Math.min(o.pts,99);o.q=clamp(o.q,0,6);o.pot=Math.min(POT_MAX,o.pot);
-  o.fl=Array.isArray(h.fl)?h.fl.filter(x=>typeof x==='string').slice(0,30):[];o.wp=Array.isArray(h.wp)?h.wp.filter(x=>typeof x==='string').slice(0,40):['start'];if(!o.wp.includes('start'))o.wp.push('start');
+  o.fl=Array.isArray(h.fl)?h.fl.filter(x=>typeof x==='string').slice(0,60):[];o.wp=Array.isArray(h.wp)?h.wp.filter(x=>typeof x==='string').slice(0,40):['start'];if(!o.wp.includes('start'))o.wp.push('start');
   o.story=Array.isArray(h.story)?h.story.filter(k=>typeof k==='string').slice(0,40):[];
   o.sq={};if(h.sq&&typeof h.sq==='object')for(const k in h.sq){if(/^[a-z]{2,12}$/.test(k))o.sq[k]=Math.max(0,Math.min(99,h.sq[k]|0))}
   o.sqd=Array.isArray(h.sqd)?h.sqd.filter(k=>typeof k==='string'&&/^[a-z]{2,12}$/.test(k)).slice(0,40):[];o.track=typeof h.track==='string'&&/^[a-z]{2,12}$/.test(h.track)?h.track:'main';
@@ -973,7 +974,7 @@ function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.typ
   if(elite){const ol=SPR.outline(src,'#f0c95a','c_'+name);SPR.cell(g,ol,col,row,x,fy,PIX)}
   SPR.cell(g,src,col,row,x,fy,PIX);g.restore();return true}
 /* personnages de ville (PNJ nommés et villageois) */
-const NPC_SPR={garde:'GladiatorBlue',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3'};
+const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3'};
 const FOLK_SPR=['Villager','Villager2','Villager3','Villager4','Villager5','Woman','OldWoman','OldMan2','Child','Boy','Noble','Princess','Inspector'];
 function drawNPCPix(g,who,x,y,T,col,row){const name=NPC_SPR[who];if(!name||!SPR.ok('c_'+name))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x,y+12,9,3.2,0,0,6.28);g.fill();
@@ -1048,7 +1049,7 @@ function signCanvas(k){if(_sign[k])return _sign[k];const G2=SIGN_PX[k];if(!G2)re
 let _chaume=null;
 function chaumeCanvas(){if(_chaume)return _chaume;const T=SPR.im.t_TilesetHouse;const c=document.createElement('canvas');c.width=64;c.height=80;const q=c.getContext('2d');
   q.drawImage(T,25*16,7*16,64,80,0,0,64,80);q.drawImage(T,25*16+15,14*16+63,20,17,22,63,20,17);return _chaume=c}
-function drawHousePix(b,T){if(b.kind==='deco'&&drawDecoPix(b,T))return true;const L=b.spr&&HOUSE_SPR[b.spr]?[HOUSE_SPR[b.spr]]:((b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind]);if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
+function drawHousePix(b,T){if((b.kind==='deco'||b.kind==='tour')&&drawDecoPix(b,T))return true;const L=b.spr&&HOUSE_SPR[b.spr]?[HOUSE_SPR[b.spr]]:((b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind]);if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
   const[cx,cy,cw,chh,sk]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;const SRC=SPR.im[sk||'t_TilesetHouse'];if(sk&&!SPR.ok(sk))return false;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
   if(!sk&&cx===25&&cy===7&&cw===4&&chh===5)g.drawImage(chaumeCanvas(),0,0,64,80,dx,dy,W,H);else g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
@@ -1132,6 +1133,7 @@ function drawPropPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;
 
 
 /* ---- décor bâti des villes : feu de camp, phare, tour de guet, moulins, bateaux, grue ---- */
+function ewState(){if(typeof hero==='undefined'||!hero)return 0;if((hero.sqd||[]).includes('eastwatch')||(typeof G!=='undefined'&&G&&G.ewLit))return 2;return hero.q>=5?1:0}
 function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w/2,by=y+h,S=b.spr;g.save();g.imageSmoothingEnabled=false;
   const sh=(rx)=>{g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(cx,by-3,rx,6,0,0,6.28);g.fill()};
   const glow=(gx,gy,r,a)=>drawGlow(g,gx,gy,r,a);
@@ -1146,6 +1148,28 @@ function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w
     for(let yy=top+48;yy<by-14;yy+=22){g.fillStyle=PK.K;g.fillRect(cx-2,yy,4,8)}
     if(on)glow(cx,top+30,S==='phare'?150:90,.4);
     if(SPR.ok('f_FlagBlue')){const fr=Math.floor(T*6)%4;g.fillStyle=PK.K;g.fillRect(cx-1,top-30,2,24);g.drawImage(SPR.im.f_FlagBlue,fr*16,0,16,16,cx+1,top-30,24,24)}
+    g.restore();return true}
+  if(S==='tour'){const tw=136,hh=300,tx=Math.round(cx-tw/2),top=by-hh,lit=G.night||Sky.lamps,ew=ewState();g.strokeStyle=PK.K;g.lineWidth=2;sh(86);
+    // socle évasé, fût, bandeaux de pierre
+    pkBricks(g,tx-8,by-36,tx+tw+8,by,2);g.strokeRect(tx-8,by-36,tw+16,36);pkBricks(g,tx,top+40,tx+tw,by-36,1);g.strokeRect(tx,top+40,tw,hh-76);
+    g.fillStyle='rgba(20,12,30,.18)';g.fillRect(tx+tw-22,top+40,22,hh-76);
+    for(const yy of[top+128,top+204]){g.fillStyle=PK.S2;g.fillRect(tx-4,yy,tw+8,7);g.strokeRect(tx-4,yy,tw+8,7)}
+    // mâchicoulis et créneaux
+    g.fillStyle=PK.S2;g.fillRect(tx-14,top+26,tw+28,16);g.strokeRect(tx-14,top+26,tw+28,16);g.fillStyle=PK.S1;for(let xx=tx-10;xx<tx+tw+10;xx+=12)g.fillRect(xx,top+38,6,6);
+    for(let xx=tx-14;xx<tx+tw+14;xx+=17){g.fillStyle=PK.S3;g.fillRect(xx,top+8,11,18);g.strokeRect(xx,top+8,11,18)}
+    // meurtrières, éclairées le soir
+    for(const[wx,wy]of[[cx-36,top+70],[cx+26,top+70],[cx-5,top+150],[cx-36,top+228],[cx+26,top+228]]){g.fillStyle=PK.K;g.fillRect(wx-2,wy-2,14,28);g.fillStyle=lit?PK.LT:'#28323a';g.fillRect(wx,wy,10,24);if(lit)glow(wx+5,wy+12,34,.28)}
+    // porte cintrée au pied de la tour (alignée sur la porte du jeu)
+    const dx=(b.door.x+.5)*TS,dw=19;g.fillStyle=PK.K;g.beginPath();g.moveTo(dx-dw-2,by);g.lineTo(dx-dw-2,by-40);g.arc(dx,by-40,dw+2,Math.PI,0);g.lineTo(dx+dw+2,by);g.closePath();g.fill();
+    g.fillStyle='#6a4426';g.beginPath();g.moveTo(dx-dw,by);g.lineTo(dx-dw,by-40);g.arc(dx,by-40,dw,Math.PI,0);g.lineTo(dx+dw,by);g.closePath();g.fill();
+    g.fillStyle='#4e301a';for(let k=-dw+8;k<dw;k+=9)g.fillRect(dx+k,by-56,2,56);g.fillStyle=PK.K;g.fillRect(dx-dw,by-34,dw*2,3);g.fillRect(dx-dw,by-14,dw*2,3);g.fillStyle='#e0b45c';g.fillRect(dx+9,by-26,4,4);
+    // feu d'alarme au sommet : éteint tant que la quête n'est pas faite
+    g.fillStyle=PK.S1;g.fillRect(cx-18,top-4,36,12);g.strokeRect(cx-18,top-4,36,12);g.fillStyle=PK.K;g.fillRect(cx-14,top-8,28,5);
+    if(ew!==1){const f=Math.sin(T*9)*3,f2=Math.cos(T*7)*2;for(const[col,ww,hh2]of[[PK.R1,16,34+f],[PK.R2,11,26+f2],[PK.LT,6,16+f]]){g.fillStyle=col;g.beginPath();g.moveTo(cx-ww,top-6);g.lineTo(cx+f2*.6,top-6-hh2);g.lineTo(cx+ww,top-6);g.closePath();g.fill()}
+      glow(cx,top-20,ew===2?140:100,.35)}
+    if(Math.random()<.1&&parts.length<500)parts.push({k:'smoke',x:cx,y:top-(ew===1?10:40),vx:4,vy:-16,life:2.6,max:2.6,r:ew===1?6:7});
+    // mât et drapeau du pack
+    if(SPR.ok('f_FlagBlue')){const fr=Math.floor(T*6)%4,fx=tx+tw-4;g.fillStyle=PK.K;g.fillRect(fx-1,top-58,3,66);g.drawImage(SPR.im.f_FlagBlue,fr*16,0,16,16,fx+2,top-58,32,32)}
     g.restore();return true}
   if(S==='moulin'){if(!SPR.ok('a_Mill')){g.restore();return false}sh(26);const bw=40,bh=64,bx=cx-bw/2,top=by-bh;
     g.fillStyle='#eecf9b';g.beginPath();g.moveTo(bx,by);g.lineTo(bx+8,top+14);g.lineTo(bx+bw-8,top+14);g.lineTo(bx+bw,by);g.closePath();g.fill();g.strokeStyle=PK.K;g.lineWidth=2;g.stroke();
@@ -1188,7 +1212,10 @@ const BOSS_PX=[
    g:['................................','..........kkkkkkkkkkkk..........','........kkWWWWWWWWWWWWkk........','.......kWWWxxWWWWWWxxWWWk.......','......kWWxWWWWWWWWWWWWxWWk......','.....kWWxWWWWWWWWWWWWWWxWWk.....','..k..kWWWWWWWWWWWWWWWWWWWWk..k..','.kIkkkWWWWPPPPPPPPPPPPWWWWkkkIk.','.kIIikWWWPPPPPPPPPPPPPPWWWkiIIk.','..kIIiWWWPPPPPPPPPPPPPPWWWiIIk..','...kIIWWWPPeePPPPPPeePPWWWIIk...','....kIWWWPPeEPPPPPPEePPWWWIk....','.....kWWWPPPPPPPPPPPPPPWWWk.....','.....kWWWPPPPPPPPPPPPPPWWWk.....','.....kWWWWPPPkwkkwkPPPWWWWk.....','....kkWWWWWPPPPPPPPPPWWWWWkk....','...kHHWWWWWWHHHHHHHHWWWWWWHHk...','..kHhHWWWWWHHHHHHHHHHWWWWWHhHk..','.kHHhHWWWWHHHHHHHHHHHHWWWWHhHHk.','.kHhhHHWWWNNNNNNNNNNNNWWWHHhhHk.','.kBBBBBBWWYYYYYYYYYYYYWWBBBBBBk.','.kBBBBBBBWNNCCCCCCCCNNWBBBBBBBk.','.kBBbBBBBBBBCCcCCcCCBBBBBsBbBBk.','.kBBbBBBBBBBCCcCCcCCBBBBBsBbBBk.','.kBBbBBBBBBBCCCCCCCCBBBBkoOOkBk.','kBBbBBBBBBBBCCcCCcCCBBBBOWWOsBBk','kBBbBBBBBBBBCCcCCcCCBBBBOWWObsBk','BBBBBBBBBBBBCCCCCCCCBBBBkoOokBsB','BBBBBBBBBBBBCCCCCCCCBBBBBsBBBBBs','BBkBBBBkBBBBBBkBBkBBBBBBksBBBkBB','kk.kkkk.kkkkkk.kk.kkkkkk.kkkk.kk','................................']},
   {// Reinald
    au:'rgba(20,10,30,.55)',p:{'O':'#1d3a2a','o':'#2e5a3e','H':'#120c16','h':'#2a2034','P':'#e2d6d8','e':'#ff3a3a','E':'#ffb0a0','A':'#24262e','a':'#3a3d48','s':'#d8dbe6','G':'#e8ebf4','g':'#9ba7aa','B':'#4a4d58','D':'#16101c','x':'#2a1d14','X':'#120c16','v':'#2a1a3a','V':'#7a4cb0','k':'#141b1b'},
-   g:['............kkkkkkkk............','..........kkOOOOOOOOkk..........','........kkOOOOOOOOOOOOkk........','.......kOOOoOOOOOOOOoOOOk.......','......kOOoOOOOOOOOOOOOoOOk......','.....kOOoOOOOOOOOOOOOOOoOOk.....','.....kOOOHHHHHHHHHHHHHHOOOk.....','....kOOOHHHhHHHHHHHHhHHHOOOk....','....kOOHHHHHHhHHHHhHHHHHHOOk....','....kOOHHPPHHPPPPPPHHPPHHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHPPPeePPPPPPeePPPHOOk....','....kOOHPPPeEPPPPPPEePPPHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHHPPPPPPPPPPPPPPHHOOk....','....kOOOHHPPPPPPPPPPPPHHOOOk....','...kOOOOOOAAAAAAAAAAAAOOOOOOk...','..kOOoOOAAAaAAsAAsAAaAAAOOoOOk..','..kOOoOAAAaAAAAssAAAAaAAAOoOOk..','..kOoOOAAaAAAAAAAAAAAAakxkOoOk..','..kOoOAAAaAAAAAGGAAAAAkXxXkoOk..','..kOOOAAAAAAAAGggGAAAAAkVvkOOk..','..kOoOAAAAAAAAAGGAAAAAAkVvkoOk..','..kOoOBBBBBBBBBBBBBBBBBkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAkVvkOOk..','..kOoOAAAAAaAAAAAAAAaAAkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAAkVkOOk..','..kOOOkDDDDDkkkkkkkkDDDDkkOOOk..','..kOOkkDDDDDk......kDDDDDkkOOk..','..kOk.kDDDDDk......kDDDDDk.kOk..','...k..kkkkkkk......kkkkkkk..k...','.......kkkkk........kkkkk.......']},
+   g:['............kkkkkkkk............','..........kkOOOOOOOOkk..........','........kkOOOOOOOOOOOOkk........','.......kOOOoOOOOOOOOoOOOk.......','......kOOoOOOOOOOOOOOOoOOk......','.....kOOoOOOOOOOOOOOOOOoOOk.....','.....kOOOHHHHHHHHHHHHHHOOOk.....','....kOOOHHHhHHHHHHHHhHHHOOOk....','....kOOHHHHHHhHHHHhHHHHHHOOk....','....kOOHHPPHHPPPPPPHHPPHHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHPPPeePPPPPPeePPPHOOk....','....kOOHPPPeEPPPPPPEePPPHOOk....','....kOOHPPPPPPPPPPPPPPPPHOOk....','....kOOHHPPPPPPPPPPPPPPHHOOk....','....kOOOHHPPPPPPPPPPPPHHOOOk....','...kOOOOOOAAAAAAAAAAAAOOOOOOk...','..kOOoOOAAAaAAsAAsAAaAAAOOoOOk..','..kOOoOAAAaAAAAssAAAAaAAAOoOOk..','..kOoOOAAaAAAAAAAAAAAAakxkOoOk..','..kOoOAAAaAAAAAGGAAAAAkXxXkoOk..','..kOOOAAAAAAAAGggGAAAAAkVvkOOk..','..kOoOAAAAAAAAAGGAAAAAAkVvkoOk..','..kOoOBBBBBBBBBBBBBBBBBkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAkVvkOOk..','..kOoOAAAAAaAAAAAAAAaAAkVvkoOk..','..kOOOAAAAAaAAAAAAAAaAAAkVkOOk..','..kOOOkDDDDDkkkkkkkkDDDDkkOOOk..','..kOOkkDDDDDk......kDDDDDkkOOk..','..kOk.kDDDDDk......kDDDDDk.kOk..','...k..kkkkkkk......kkkkkkk..k...','.......kkkkk........kkkkk.......']},,
+  {// Le Veilleur Noir (Osric) : l'armure de l'Everwatch noircie par les adeptes
+   au:'rgba(122,90,208,.32)',p:{'H':'#1a1420','h':'#2e2438','S':'#c9c4cc','s':'#9a94a0','r':'#8a7aa0','w':'#d8b8ff','L':'#5a5a68','m':'#44444f','n':'#2e2e38','A':'#3e3e4a','a':'#2a2a34','C':'#1b1622','c':'#2e2240','G':'#b98cff','Y':'#6a5a3a','y':'#8a7a4a','D':'#1b1b22','k':'#0c0a10'},
+   g:['................................','..............k..k..............','.............kLkkLk.............','........kkkk.kLmmLk.kkkk........','......kkHHHHkkLLLLkkHHHHkk......','.....kHHhhhHHLLmmLLHHhhhHHk.....','....kHHhHHHHHHLmmLHHHHHHhHHk....','....kHhHHHHHHHHHHHHHHHHHHhHk....','...kHHHHHSSSSSSSSSSSSSSHHHHHk...','...kHHHHSSSSSSSSSSSSSSSSHHHHk...','...kHHHSSSSSSSSSSSSSSSSSSHHHk...','...kHHHSSkkSSSSSSSSSSkkSSHHHk...','...kHHHSSkwSSSSSSSSSSwkSSHHHk...','...kHHHSrSSSSSSSSSSSSSSrSHHHk...','...kHHHHSSSSSSSSSSSSSSSSHHHHk...','...kHHHHHSSSSSSSSSSSSSSHHHHHk...','..kHHHHHHHHHssssssssHHHHHHHHHk..','..kHHHHkkaaAAAAAAAAAAaakkHHHHk..','.kLLLLHkCaAAAAAAAAAAAAakYyYkLLk.','kLLmmmLLCaAAAAAGGAAAAAakyYykmLLk','kLmmmmmLCaAAAAGGGGAAAAaCkLmkmmLk','knmmmmnLCaAAAAAGGAAAAAaCkLmkmmnk','.knnnnnCCaaAAAAAAAAAAaaCkLmknnk.','..kkCcCCYyYYYYYYYYYYYYyYkLmkkk..','..kCCcCAAAAaAAAAAAAAaAAAkLmkCk..','..kCCcAAAAAaAAAAAAAAaAAAkLmkCk..','.kCCcCaAAAAaAAAAAAAAaAAAkLmkCCk.','.kCCcCaaaaaaaaaaaaaaaaaakLmkCCk.','.kCCCkknnnnnkkkkkkkknnnnkLmkCCk.','.kCCk.knnnnnk......knnnnnkkkCCk.','..kk..kDDDDDk......kDDDDDkk.kk..','.......kkkkk........kkkkk.......']}
 ];
 const _bossC=[];
 function bossSheet(v){let c=_bossC[v];if(c)return c;const B=BOSS_PX[v];if(!B)return null;
@@ -1476,9 +1503,9 @@ const TOWNS={
   ironhaven:{nom:'Ironhaven',roof:'#3a5a6e',b:[['marchand','Comptoir d’Ironhaven','house:marchand'],['auberge','Auberge d’Ironhaven','house:auberge'],['forge','Forge d’Ironhaven','house:forge'],['maison'],['maison']]},
   oka:{nom:'Oka',roof:'#6e5a2a',b:[['auberge','Auberge d’Oka','house:auberge'],['marchand','Marchand d’Oka','house:marchand'],['maison'],['maison']]},
   vindheim:{nom:'Vindheim',roof:'#5a2a2a',b:[['auberge','Auberge de Vindheim','house:auberge'],['marchand','Marchand de Vindheim','house:marchand'],['maison'],['maison']]},
-  eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['auberge','Auberge d’Eastwatch','house:auberge'],['maison'],['maison']]},
+  eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['tour','La tour d’Eastwatch','dun:eastwatch'],['auberge','Auberge d’Eastwatch','house:auberge'],['maison'],['maison']]},
 };
-const BSIZE={maison:[4,2],statue:[2,2],auberge:[4,3],marchand:[3,3],forge:[4,3],keep:[6,5],palais:[7,5],puits:[1,1]};
+const BSIZE={maison:[4,2],statue:[2,2],auberge:[4,3],marchand:[3,3],forge:[4,3],keep:[6,5],palais:[7,5],puits:[1,1],tour:[5,2]};
 const WAYPOINTS={start:{nom:'Le Pont de Lathandre (ouest)',pt:PL.start},tarkin:{nom:'Tarkin',pt:PL.tarkin},lastfire:{nom:'Last Fire',pt:PL.lastfire},honor:{nom:'Honor',pt:PL.honor},cibellos:{nom:'Cibellos',pt:PL.cibellos},ironhaven:{nom:'Ironhaven',pt:PL.ironhaven},oka:{nom:'Oka',pt:PL.oka},vindheim:{nom:'Vindheim',pt:PL.vindheim},eastwatch:{nom:'Eastwatch',pt:PL.eastwatch},karazankor:{nom:'Karaz Ankor',pt:PL.karazankor},firsttear:{nom:'Woods of the First Tear',pt:PL.firsttear}};
 /* Donjons et monuments où l'on entre */
 const DUNGEONS={
@@ -1486,6 +1513,9 @@ const DUNGEONS={
   karazankor:{nom:'Karaz Ankor',pal:2,floors:2,lv:6,mobs:[['orc',5],['bat',2],['archer',2]],eliteType:'orc',elite:'le chef orc',boss:2,fl:['Le col des Pics Rouges','Le Trône des Âges'],need:3,done:3,story:null},
   antre:{nom:'L’antre de Virganth',pal:1,floors:2,lv:8,mobs:[['slime',3],['bat',3],['archer',4]],eliteType:'archer',elite:'le grand adepte',boss:3,fl:['Les bois de la Première Larme','Le trésor de Virganth'],need:4,done:4,story:null},
   prison:{nom:'La prison d’Amarath',pal:3,floors:3,lv:10,mobs:[['slime',4],['bat',3],['archer',3],['orc',2]],eliteType:'slime',elite:'la marionnette géante',boss:4,fl:['Le sentier des Monts Oubliés','Les sceaux de la prison','La prison d’Amarath'],need:5,done:5,story:'ch4'},
+  // quête annexe de fin de partie : la tour de guet d'Eastwatch, cinq étages à gravir
+  eastwatch:{nom:'La tour d’Eastwatch',pal:3,soldat:true,floors:5,lv:9,mobs:[['orc',3],['archer',3],['bat',2]],eliteType:'orc',elite:'le caporal de la garnison',boss:6,
+    fl:['Le corps de garde','L’armurerie','Les quartiers','La salle des signaux','Le sommet de la tour'],need:5,done:-1,story:null},
 };
 /* Étapes de l'histoire (hero.q) */
 const OBJ=[
@@ -1521,7 +1551,9 @@ const BOSSES=[
   {nom:'Amarath',court:'Amarath',hp:1.6,ring:18,triple:true,charge:true,tp:true,minions:['slime','bat'],guards:['slime','slime'],
    win:'Amarath s’effondre ! Le sceau se referme.'},
   {nom:'Reinald Sterkov, Maître des Ombres',court:'Reinald',hp:.6,ring:0,triple:false,charge:true,tp:true,near:true,regen:.01,minions:['slime','bat'],guards:[],
-   win:'Reinald se change en brouillard et disparaît.'}
+   win:'Reinald se change en brouillard et disparaît.'},
+  {nom:'Le Veilleur Noir, capitaine Osric',court:'le Veilleur Noir',hp:.9,ring:10,triple:false,charge:true,tp:false,minions:['orc','archer'],guards:['orc','archer'],
+   win:'Le Veilleur Noir tombe. Rallumez le feu d’alarme !'}
 ];
 const STONES=[['la pierre de l’Everwatch','#cfe2ff'],['la pierre de la déesse du feu','#ff7a3a'],['la pierre de Talos','#f0c95a'],['la pierre de Kelemvor','#b98cff']];
 /* ---- 22_story.js ---- */
@@ -1602,7 +1634,8 @@ const LINES={
   boss3:{aggro:['Seule la mort de chaque combattant apportera la paix !','Le Maître reviendra !'],rage:['Levez-vous, marionnettes !']},
   boss4:{aggro:['Je voulais la paix. Seule la mort l’apporte.'],rage:['Mes anciens compagnons ont échoué. Vous aussi.','Devenez mes marionnettes !']},
   boss5:{aggro:['J’ai mis un certain temps à vous rattraper.','Je vais vous donner une chance de mourir sans souffrance.'],rage:['Vous n’avez pas idée de l’énergie que je dépense pour ne pas être senti.','Soyons équitables.'],mist:['Vous pensez sérieusement pouvoir m’affronter ?','1 grain de courage pour 3 grains de folie.']},
-  mimic:{aggro:['SURPRISE !']}
+  mimic:{aggro:['SURPRISE !']},
+  boss6:{aggro:['Trente ans de veille. Pour rien.','Ce feu ne brûlera plus.'],rage:['Gardes ! Défendez le sommet !','Amarath m’a promis le repos !']}
 };
 const BUB=[],BIDX={};
 for(const who in LINES)for(const cat in LINES[who]){BIDX[who+'.'+cat]=[];for(const t of LINES[who][cat]){BIDX[who+'.'+cat].push(BUB.length);BUB.push(t)}}
@@ -1815,6 +1848,7 @@ function buildWorld(){
   npc('garde','garde',PL.pont[0]+5,PL.pont[1]+2,'talk:garde','Garde du Conseil');
   if(kz)npc('grinmir','grinmir',kz.door.x+3,kz.door.y,'talk:grinmir','Grinmir Thunderhammer');
   if(cave)npc('virganth2','virganth',cave.door.x-4,cave.door.y,'talk:virganth','Virganth');
+  {const ew=builds.find(b=>b.act==='dun:eastwatch');if(ew)npc('brann','brann',ew.door.x+2,ew.door.y+1,'talk:brann','Le sergent Brann')}
   // végétation et rochers (déterministe)
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=idx(x,y);if(clear[i]||occ[i]||sol[i])continue;const v=t[i],h=hash2(x,y,7),h2=hash2(x,y,13);
     if(v===4){if(h<.36)obj[i]=h2<.75?1:2}
@@ -1925,8 +1959,8 @@ const TOWN_PLANS={
     tr:[[3,0,0],[3,2,1],[3,4,0],[3,6,1],[3,8,0],[3,10,1],[3,0,24],[3,2,25],[3,5,24],[3,20,20],[3,20,25],[3,12,25]]},
   eastwatch:{base:'h',g:[['e',0,0,21,7],['s',0,8,21,10],['e',17,8,21,12],['t',9,11,11,27],['t',4,16,16,17]],
     pal:[['H',1,8,12],['H',13,20,12],['H',1,8,26],['H',13,20,26],['V',1,13,25],['V',20,13,25]],
-    b:{auberge:[[3,20,4,3,'chaume']],maison:[[4,13,3,3,'hutte'],[14,21,4,3,'bois']]},
-    d:[['guet',10,10,2,1],['feu',13,9,2,1],['paille',15,13,3,3],['bateau',3,5,3,1],['barque',15,3,3,1]],
+    b:{tour:[[8,9,5,2,'tour']],auberge:[[3,20,4,3,'chaume']],maison:[[4,13,3,3,'hutte'],[14,21,4,3,'bois']]},
+    d:[['feu',15,9,2,1],['paille',15,13,3,3],['bateau',3,5,3,1],['barque',15,3,3,1]],
     o:[[10,8,14],[10,12,15],[10,12,21],[10,8,22],[8,7,21],[8,7,22],[8,18,16]],
     tr:[[2,0,27],[1,3,27],[2,6,27],[1,13,27],[2,16,27],[1,19,27]]}};
 /* ---- 35_dungeons.js ---- */
@@ -1941,13 +1975,15 @@ const DSTYLE={
   tresor:{floor:'tresor',wall:'grotte',dark:.12},
   sentier:{floor:'neige',wall:'falaiseN',dark:0},
   sceaux:{floor:'sceau',wall:'sceau',dark:.26},
-  prison:{floor:'prison',wall:'sceau',dark:.3}};
+  prison:{floor:'prison',wall:'sceau',dark:.3},
+  sommet:{floor:'pave',wall:'creneau',dark:0}};
 // objectifs par étage
 const GOALS={
   levers:{type:'marks',mk:'levier',t:'Lève les trois herses du donjon',one:'Une herse se lève ({n}/{m}).',win:'Les herses sont levées : le donjon de Sinthara est ouvert !',hint:'Le donjon est fermé : lève les trois herses (leviers dorés).'},
   runes:{type:'marks',mk:'rune',t:'Rallume les pierres runiques de Virganth',one:'Une pierre runique se rallume ({n}/{m}).',win:'Les bois s’apaisent : l’antre de Virganth s’ouvre !',hint:'L’antre reste scellé : rallume les pierres runiques.'},
   seals:{type:'marks',mk:'sceau',t:'Pose les quatre pierres sur les sceaux',one:'Un sceau s’illumine ({n}/{m}).',win:'Les quatre sceaux brillent : l’escalier vers la prison s’ouvre !',hint:'L’escalier est scellé : active les quatre sceaux avec ton pendentif.'},
   waves:{type:'waves',mk:'cor',t:'Tiens les portes avec les nains',win:'Les orcs reculent ! Grinmir fait ouvrir les portes de Karaz Ankor.',hint:'Les portes restent closes tant que l’assaut n’est pas repoussé.'},
+  trappes:{type:'marks',mk:'levier',t:'Ouvre les trois trappes de l’escalier',one:'Une trappe s’ouvre ({n}/{m}).',win:'Les trappes sont ouvertes : l’escalier monte vers la salle des signaux !',hint:'L’escalier est condamné : actionne les trois leviers.'},
   key:{type:'key',t:'Prends la clé que garde',hint:'La porte est scellée : il faut la clé que porte '},
   boss:{type:'boss',t:'Bats',hint:'La sortie est scellée : bats '}};
 
@@ -1971,7 +2007,8 @@ function dunGrid(W,H,seed){const t=new Uint8Array(W*H).fill(1);const R=mulberry(
   return d}
 function pickMob(spec,R){const tot=spec.mobs.reduce((a,b)=>a+b[1],0);let v=R()*tot;for(const[k,w]of spec.mobs){if((v-=w)<0)return k}return spec.mobs[0][0]}
 
-const LSIZE={everwatch0: [46, 38], everwatch1: [40, 42], karazankor0: [46, 52], karazankor1: [44, 42], antre0: [52, 48], antre1: [42, 40], prison0: [42, 58], prison1: [42, 42], prison2: [38, 40]};
+const LSIZE={everwatch0: [46, 38], everwatch1: [40, 42], karazankor0: [46, 52], karazankor1: [44, 42], antre0: [52, 48], antre1: [42, 40], prison0: [42, 58], prison1: [42, 42], prison2: [38, 40],
+  eastwatch0: [36, 38], eastwatch1: [36, 38], eastwatch2: [36, 38], eastwatch3: [36, 38], eastwatch4: [34, 36]};
 const LAYOUTS={
   // ---------- La forteresse de l'Everwatch ----------
   everwatch0(d,spec){const W=d.W,H=d.H;
@@ -2060,6 +2097,39 @@ const LAYOUTS={
     d.res(21,37,2);d.chest(13,13,2);d.chest(29,27,2,true);
     d.group(['slime','archer','bat'],21,13,3,3);d.group(['slime','orc'],29,20,3,3);d.group(['bat','archer'],13,20,3,3);d.group(['slime','orc'],21,27,2,2);
     return{style:'sceaux',start:[21,38],exit:[21,20],goal:'seals',exitR:{x:8,y:7,w:26,h:26}}},
+  // ---------- La tour d'Eastwatch : une salle ronde par étage, on entre en bas et on monte en haut ----------
+  eastwatch0(d,spec){const c=twFloor(d,13);
+    d.scatter('tonneaux',4,7,8,29,28);d.scatter('caisses',3,7,8,29,28);d.scatter('ratelier',3,6,12,12,26);d.scatter('mannequin',2,24,12,30,26);
+    for(const[x,y]of[[10,10],[26,10],[10,26],[26,26]])d.obj('brasero',x,y,{light:1});d.obj('etendard',c,c);
+    d.group(['orc','orc'],11,20,3,3);d.group(['orc','archer'],25,20,3,3);d.group(['orc','archer'],18,10,2,2);
+    const p=d.free(15,9,21,13);if(p)d.spawns.push({type:'orc',elite:true,x:(p.x+.5)*TS,y:(p.y+.5)*TS});
+    d.chest(8,18,2);d.chest(28,18,2,true);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'key',who:'le caporal de la garnison',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch1(d,spec){const c=twFloor(d,13);
+    for(const y of[13,23])for(const x of[8,9,10,11,12,24,25,26,27,28])d.obj('ratelier',x,y);
+    d.scatter('caisses',4,7,8,29,28);d.obj('brasero',c-4,c,{light:1});d.obj('brasero',c+4,c,{light:1});
+    d.group(['archer','archer'],10,18,2,2);d.group(['archer','orc'],26,18,2,2);d.group(['archer','orc'],18,9,2,2);d.group(['orc'],18,27,1,2);
+    const p=d.free(14,15,22,21);if(p)d.spawns.push({type:'archer',elite:true,x:(p.x+.5)*TS,y:(p.y+.5)*TS});
+    d.chest(9,9,1);d.chest(27,27,1,true);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'key',who:'l’armurier des adeptes',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch2(d,spec){const c=twFloor(d,13);
+    d.scatter('tonneaux',3,7,8,29,28);d.scatter('chaines',3,7,8,29,28,{solid:false});d.scatter('os',4,7,8,29,28);d.scatter('bougies',4,7,8,29,28,{solid:false});
+    d.mark(8,c,{});d.mark(28,c,{});d.mark(c,9,{});
+    d.group(['bat','bat'],12,13,3,3);d.group(['bat','bat'],24,13,3,3);d.group(['bat','archer'],c,23,3,3);
+    for(const[x,y]of[[10,24],[26,24]]){const q=d.free(x-1,y-1,x+1,y+1);if(q)d.spawns.push({type:'mimic',x:(q.x+.5)*TS,y:(q.y+.5)*TS})}
+    d.chest(12,26,1);d.chest(24,10,1);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'trappes',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch3(d,spec){const c=twFloor(d,13);
+    d.feat.push({k:'tapis',x:c-2,y:8,w:5,h:22});d.obj('autel',c-1,c-1,{w:3,h:1});
+    for(const[x,y]of[[11,11],[25,11],[11,25],[25,25]])d.obj('brasero',x,y,{light:1});d.scatter('etendard',2,7,8,29,28);d.scatter('caisses',3,7,8,29,28);
+    d.group(['archer','orc'],11,18,3,3);d.group(['archer','orc'],25,18,3,3);d.group(['orc','orc'],c,26,2,2);
+    const p=d.free(15,8,21,12);if(p)d.spawns.push({type:'archer',elite:true,x:(p.x+.5)*TS,y:(p.y+.5)*TS});
+    d.chest(9,22,1,true);d.chest(27,14,1);
+    return{style:'salle',start:[c,33],exit:[c,4],goal:'key',who:'le chef des adeptes',exitR:{x:4,y:4,w:28,h:28}}},
+  eastwatch4(d,spec){const c=17;d.ell(c,c,12,12,0);d.rect(c-2,c+11,5,4);
+    for(let k=0;k<16;k++){const a=k/16*6.283,x=Math.round(c+Math.cos(a)*11),y=Math.round(c+Math.sin(a)*11);if(y>c+8&&Math.abs(x-c)<3)continue;d.obj('pilier',x,y)}
+    d.res(c,c+13,2);d.res(c,c-9,1);d.obj('brasero',c-4,c-8,{light:1});d.obj('brasero',c+4,c-8,{light:1});d.chest(9,c,1);d.chest(25,c,1,true);
+    return{style:'sommet',start:[c,c+13],exit:[c,c-9],goal:'boss',boss:[c,c-2],exitR:{x:5,y:5,w:24,h:24}}},
   prison2(d,spec){const W=d.W,H=d.H;
     d.ell(19,18,14,12,0,.25);d.rect(17,30,5,7);d.rect(17,3,5,4);
     for(let k=0;k<10;k++){const a=k/10*6.283,x=Math.round(19+Math.cos(a)*11),y=Math.round(18+Math.sin(a)*9.5);if(y>27)continue;d.obj(k%2?'cristal':'pilier_v',x,y,k%2?{light:1}:{})}
@@ -2068,6 +2138,9 @@ const LAYOUTS={
     d.group(['slime','archer'],19,30,2,2);
     return{style:'prison',start:[19,35],exit:[19,4],goal:'boss',boss:[19,14],exitR:{x:7,y:7,w:24,h:20}}}};
 
+function twFloor(d,r){const c=18;d.ell(c,c,r,r,0);d.rect(c-2,c+r-1,5,4);d.rect(c-2,c-r-2,5,4);
+  for(let k=0;k<8;k++){const a=k/8*6.283+.39,x=Math.round(c+Math.cos(a)*(r-2.5)),y=Math.round(c+Math.sin(a)*(r-2.5));d.obj('pilier',x,y)}
+  d.res(c,c+r+1,2);d.res(c,c-r-1,1);return c}
 function genDungeon2(did,idx,seed,lv){const spec=DUNGEONS[did],key=did+idx;const sz=LSIZE[key];const d=dunGrid(sz[0],sz[1],(seed*9301+idx*49297+lv)>>>0);const L2=LAYOUTS[key](d,spec);const{W,H,t}=d;
   const ex=L2.exit;t[ex[1]*W+ex[0]]=3;
   const boss=L2.goal==='boss',spawns=d.spawns;
@@ -2075,7 +2148,7 @@ function genDungeon2(did,idx,seed,lv){const spec=DUNGEONS[did],key=did+idx;const
     for(const gt of BV.guards){const p=d.free(L2.boss[0]-4,L2.boss[1]-2,L2.boss[0]+4,L2.boss[1]+3);if(p)spawns.push({type:gt,x:(p.x+.5)*TS,y:(p.y+.5)*TS})}}
   // les ennemis ne doivent jamais apparaître trop près du départ
   const sx=(L2.start[0]+.5)*TS,sy=(L2.start[1]+.5)*TS;const sp2=spawns.filter(s=>Math.hypot(s.x-sx,s.y-sy)>5*TS);
-  const g=GOALS[L2.goal];const goal=Object.assign({id:L2.goal},g);if(L2.goal==='key')goal.who=spec.elite;if(L2.goal==='boss')goal.who=BOSSES[spec.boss].court;
+  const g=GOALS[L2.goal];const goal=Object.assign({id:L2.goal},g);if(L2.goal==='key')goal.who=L2.who||spec.elite;if(L2.goal==='boss')goal.who=BOSSES[spec.boss].court;
   if(L2.goal==='waves'){goal.at={x:(L2.wave[0]+.5)*TS,y:(L2.wave[1]+.5)*TS};goal.from=(d.waveFrom||[]).map(([x,y])=>({x:(x+.5)*TS,y:(y+.5)*TS}))}
   const marks=d.marks.map(m=>({x:m.x,y:m.y,c:m.c||null,i:m.i??-1,k:g.mk||'levier'}));
   return{f:lv,W,H,t,rooms:[],props:[],rein:false,theme:0,style:L2.style,st:DSTYLE[L2.style],soldat:!!spec.soldat,objs:d.objs,feat:d.feat,path:d.path,
@@ -2128,10 +2201,11 @@ function renderDun(m){const c=document.createElement('canvas');c.width=m.W*TS;c.
   // ombres au pied des murs
   for(let y=0;y<m.H;y++)for(let x=0;x<m.W;x++){if(wall(x,y))continue;const px=x*TS,py=y*TS;if(wall(x,y-1)){const gr=g.createLinearGradient(0,py,0,py+14);gr.addColorStop(0,'rgba(30,15,10,.4)');gr.addColorStop(1,'rgba(30,15,10,0)');g.fillStyle=gr;g.fillRect(px,py,TS,14)}if(wall(x-1,y)){g.fillStyle='rgba(30,15,10,.18)';g.fillRect(px,py,6,TS)}}
   // murs (ou décor plein) selon le style
-  const DEEP={rempart:'#8fa44c',salle:'#1c1820',nain:'#2a221c',grotte:'#33281e',sceau:'#14111b'}[S.wall];
+  const DEEP={creneau:'#2a5a78',rempart:'#8fa44c',salle:'#1c1820',nain:'#2a221c',grotte:'#33281e',sceau:'#14111b'}[S.wall];
   const near=(x,y)=>{for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(!wall(x+dx,y+dy))return true;return false};
   for(let y=0;y<m.H;y++)for(let x=0;x<m.W;x++){if(!wall(x,y))continue;if(DEEP&&!near(x,y)){const px=x*TS,py=y*TS,h=hash2(x,y,4);g.fillStyle=shade(DEEP,(vnoise(x/4,y/4,2)-.5)*.16);g.fillRect(px,py,TS,TS);
       if(S.wall==='rempart'){for(let k=0;k<3;k++){const gx=px+hash2(x,y,10+k)*28,gy=py+hash2(x,y,20+k)*28;poly(g,[gx,gy,gx+1.5,gy-5,gx+3,gy],shade(DEEP,k%2?-.2:.16))}if(h<.06)facetBlob(g,px+16,py+18,9,'#5a8a32',x*7+y,6)}
+      else if(S.wall==='creneau'){if(h<.3){g.fillStyle='rgba(200,230,245,.35)';g.fillRect(px+h*60%20,py+8+h*40%14,10,2)}}
       else if(h<.05){g.fillStyle='rgba(255,255,255,.05)';g.fillRect(px+h*300%24,py+8,6,4)}continue}
     dunWall(g,S.wall,x,y,!wall(x,y+1)&&y<m.H-1,wall,R)}
   for(const f of m.feat)if(f.k==='portenaine'){const x0=f.x*TS,y0=f.y*TS,w=f.w*TS,h=f.h*TS,cx=x0+w/2;prism(g,x0,y0+h-6,w,6,h-6,'#7a6a58');g.fillStyle='#e0b45c';g.fillRect(x0,y0+10,w,4);
@@ -2142,18 +2216,18 @@ function renderDun(m){const c=document.createElement('canvas');c.width=m.W*TS;c.
 function dunWall(g,st,x,y,face,wall,R){const px=x*TS,py=y*TS,h=hash2(x,y,9),h2=hash2(x,y,12);
   if(st==='foret'){g.fillStyle='#2f5a28';g.fillRect(px,py,TS,TS);if(face){g.fillStyle='#4a3020';for(let k=0;k<3;k++)g.fillRect(px+5+k*10+h*3,py+16,4,16);g.fillStyle='rgba(20,30,10,.35)';g.fillRect(px,py+28,TS,4)}
     facetBlob(g,px+16+(h-.5)*8,py+(face?10:16),18+h*5,['#3f7a34','#4f8a3a','#36702e'][Math.floor(h*3)],x*7+y,7);if(h2<.12){g.fillStyle='#f2d65a';g.beginPath();g.arc(px+8+h*16,py+12,2,0,6.28);g.fill()}return}
-  const P={rempart:['#8f877a','#a39b8c','#6e675d'],salle:['#3a3240','#5e5262','#2a2430'],falaise:['#a8613c','#c27a4c','#7a4228'],falaiseN:['#8f9aa6','#eef2f4','#6b7480'],nain:['#5a4a38','#9a7a48','#3a2e24'],grotte:['#4a3a2c','#7a6040','#33281e'],sceau:['#2a2433','#4a4058','#1a1622']}[st]||['#555','#777','#333'];
+  const P={rempart:['#8f877a','#a39b8c','#6e675d'],creneau:['#8f877a','#a39b8c','#6e675d'],salle:['#3a3240','#5e5262','#2a2430'],falaise:['#a8613c','#c27a4c','#7a4228'],falaiseN:['#8f9aa6','#eef2f4','#6b7480'],nain:['#5a4a38','#9a7a48','#3a2e24'],grotte:['#4a3a2c','#7a6040','#33281e'],sceau:['#2a2433','#4a4058','#1a1622']}[st]||['#555','#777','#333'];
   if(!face){g.fillStyle=P[1];g.fillRect(px,py,TS,TS);
     if(st==='falaise'||st==='falaiseN'||st==='grotte'){poly(g,[px,py,px+TS,py,px+16+(h-.5)*10,py+16+(h2-.5)*10],shade(P[1],.06));poly(g,[px+TS,py,px+TS,py+TS,px+16+(h-.5)*10,py+16+(h2-.5)*10],shade(P[1],-.12));poly(g,[px,py+TS,px+TS,py+TS,px+16+(h-.5)*10,py+16+(h2-.5)*10],shade(P[1],-.04))
       if(st==='falaiseN'&&h<.4){g.fillStyle='#ffffff';g.beginPath();g.ellipse(px+16,py+14,12,7,0,0,6.28);g.fill()}}
-    else if(st==='rempart'){g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=1;g.strokeRect(px+.5,py+.5,TS-1,TS-1)}
+    else if(st==='rempart'||st==='creneau'){g.strokeStyle='rgba(0,0,0,.18)';g.lineWidth=1;g.strokeRect(px+.5,py+.5,TS-1,TS-1)}
     else if(st==='nain'&&h<.15){g.strokeStyle='rgba(240,200,90,.45)';g.strokeRect(px+6.5,py+6.5,TS-13,TS-13)}
     else if(st==='sceau'&&h<.12){g.fillStyle='rgba(185,140,255,.45)';g.fillRect(px+14,py+8,3,14);g.fillRect(px+9,py+13,13,3)}
     // bord crénelé ou rebord quand un sol est au-dessus / à côté
     return}
   // face visible (sud)
   g.fillStyle=P[1];g.fillRect(px,py,TS,8);g.fillStyle=P[0];g.fillRect(px,py+8,TS,TS-8);
-  if(st==='rempart'){for(let r=0;r<3;r++){const off=((r+x)%2)*8;for(let bx=-off;bx<TS;bx+=16){const x0=Math.max(px,px+bx),x1=Math.min(px+TS,px+bx+15);if(x1>x0){g.fillStyle=shade(P[0],(hash2(x*3+bx,y*5+r,4)-.5)*.16);g.fillRect(x0,py+9+r*8,x1-x0,7)}}}
+  if(st==='rempart'||st==='creneau'){for(let r=0;r<3;r++){const off=((r+x)%2)*8;for(let bx=-off;bx<TS;bx+=16){const x0=Math.max(px,px+bx),x1=Math.min(px+TS,px+bx+15);if(x1>x0){g.fillStyle=shade(P[0],(hash2(x*3+bx,y*5+r,4)-.5)*.16);g.fillRect(x0,py+9+r*8,x1-x0,7)}}}
     g.fillStyle=P[1];for(let k=0;k<2;k++)prism(g,px+3+k*16,py-2,10,4,6,P[1],{edge:false});if(h<.07){g.fillStyle='#1f3358';g.fillRect(px+9,py+9,14,20);g.fillStyle='#efe6cf';g.beginPath();g.ellipse(px+16,py+17,5,3,0,0,6.28);g.fill();g.fillStyle='#1f3358';g.beginPath();g.arc(px+16,py+17,1.6,0,6.28);g.fill()}}
   else if(st==='salle'){g.fillStyle=P[2];g.fillRect(px,py+8,3,TS-8);g.fillRect(px+TS-3,py+8,3,TS-8);g.fillStyle='rgba(255,255,255,.06)';g.fillRect(px+6,py+12,TS-12,TS-16);if(h<.12){g.fillStyle='#8e2f3a';g.fillRect(px+9,py+9,14,22);g.fillStyle='#d6b04a';g.fillRect(px+9,py+9,14,2);g.beginPath();g.arc(px+16,py+19,3,0,6.28);g.fill()}}
   else if(st==='falaise'||st==='falaiseN'||st==='grotte'){for(let k=0;k<4;k++){const sx=px+k*8;poly(g,[sx,py+8,sx+8,py+8,sx+4+(hash2(x*4+k,y,3)-.5)*5,py+TS],shade(P[0],k%2?-.22:.08))}if(st==='falaiseN'){g.fillStyle='#ffffff';g.fillRect(px,py+4,TS,6)}
@@ -2413,7 +2487,7 @@ function defeat(){if(G.m.kind==='world'){const wp=nearestWp(Math.floor(L.x/TS),M
   else hostEnter(G.zd,null,{heal:true}),msg(pickL(MJ.defeat))}
 function nearestWp(tx,ty){let b='start',bd=1e9;for(const k of hero.wp){const w=WAYPOINTS[k];if(!w)continue;const d=(w.pt[0]-tx)**2+(w.pt[1]-ty)**2;if(d<bd){bd=d;b=k}}return b}
 function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){hostEnter('d:'+m.did+':'+(m.idx+1)+':'+((Math.random()*1e6)|0)+':'+m.lv,null);msg('Le Maître du Donjon : '+pickL(MJ.floor));return}
-  const ret=G.dun&&G.dun.ret||WORLD.start;const did=m.did;hostEnter('w',ret);G.dun=null;fx(44,ret.x,ret.y,0);
+  const ret=G.dun&&G.dun.ret||WORLD.start;const did=m.did;hostEnter('w',ret);G.dun=null;fx(44,ret.x,ret.y,did==='eastwatch'?1:0);
   if(spec.done===G.q)setQ(G.q+1,({everwatch:'stone0',karazankor:'stone2',antre:'stone3',prison:'epilogue'})[did]);else msg(spec.nom+' : vous en ressortez plus riches.')}
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
@@ -2426,7 +2500,7 @@ function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=
     const lv=Math.max(spec.lv,partyLv()+(G.q>=6?1:0));G.dun={id,ret:{x:it.x,y:it.y+TS*.9}};hostEnter('d:'+id+':0:'+((Math.random()*1e6)|0)+':'+lv,null,{heal:true});if(spec.story&&G.q===spec.need)storyEvent(spec.story);return}
   if(act.startsWith('house:')){hostEnter(act.replace('house:','h:'),null);return}
   if(act==='arena'){if(G.q>=3&&!G.abhOn)spawnAbhorash(Math.max(5,partyLv()+1));return}}
-function lockText(id){return({karazankor:'Les portes de Karaz Ankor sont closes. Le Witangamot délibère.',antre:'L’entrée de l’antre est gardée par une force invisible. Pas encore.',prison:'Une porte noire à quatre emplacements. Il faut les quatre pierres.'})[id]||'Fermé.'}
+function lockText(id){return({karazankor:'Les portes de Karaz Ankor sont closes. Le Witangamot délibère.',antre:'L’entrée de l’antre est gardée par une force invisible. Pas encore.',prison:'Une porte noire à quatre emplacements. Il faut les quatre pierres.',eastwatch:'Le sergent Brann garde la porte : « La tour est à la garnison. On ne monte pas sans ordre. »'})[id]||'Fermé.'}
 function spawnAbhorash(lv){const a=WORLD.arena;const e=spawnEnemy('boss',a.x,a.y-TS,false,false,1,lv);e.act=true;G.abhOn=true;sayE(e);msg('Abhorash, le Dragon de Sang, accepte le défi.')}
 function startReinald(){G.reinOn=true;G.night=1;storyEvent('reinald1');const p=G.players.find(q=>!q.down)||G.players[0];const s=freeNear(p.x,p.y,4*TS,6*TS);const e=spawnEnemy('boss',s.x,s.y,false,false,5,Math.max(4,partyLv()+1));sayE(e)}
 function checkQuest(){const q=G.q,pl=G.players.filter(p=>!p.down);if(!pl.length)return;
@@ -2637,6 +2711,7 @@ function talkTo(k){const q=G.q;
   if(k==='virganth'){const d=q===0?DIALOG.virganth0:DIALOG.virganth1;showDialog('virganth',d[0],d[1]);return}
   if(k==='grinmir'){if(q===3){queueStoryKey('ch2');if(!hero.story.includes('ch2'))return}const d=q>3?DIALOG.grinmir1:DIALOG.grinmir0;showDialog('grinmir',d[0],d[1]);return}
   if(k==='garde'){showDialog('garde',DIALOG.garde[0],DIALOG.garde[1]);return}
+  if(k==='brann'){const st=ewState();showDialog('garde','Le sergent Brann',st===2?'Le feu brûle chaque nuit, et les voiles noires ne sont jamais revenues. Eastwatch vous doit une fière chandelle.':st===1?'Le feu d’alarme est éteint depuis trois nuits. Le capitaine Osric est monté avec ses hommes, et aucun n’est redescendu. Montez, je vous en prie : la porte est ouverte.':'Rien à signaler sur la côte. Le feu d’alarme veille, et moi avec.');return}
   if(k==='nains'){showDialog('grinmir',DIALOG.nains[0],DIALOG.nains[1]);return}
   if(k==='abhorash'){showDialog('abhorash',DIALOG.abhorash[0],DIALOG.abhorash[1]);return}}
 /* ---- 45_quests.js ---- */
@@ -2654,9 +2729,10 @@ const SQ=[
   {id:'pics',nom:'Les orcs des Pics Rouges',from:'Grinmir Thunderhammer',desc:'Les orcs qui assiègent Karaz Ankor pillent les Pics Rouges. Grinmir paiera chaque bande dispersée.',type:'kill',reg:'pics',n:8,rw:{g:200,xp:300,sh:6,rel:1},need:3},
   {id:'larme',nom:'Les adeptes de la Première Larme',from:'Virganth',desc:'Les adeptes d’Amarath cherchent l’antre de Virganth. Repousse-les hors des bois.',type:'kill',reg:'firsttear',n:10,rw:{g:220,xp:340,rel:1},need:4},
   {id:'oublies',nom:'Le silence des Monts Oubliés',from:'Une ermite des montagnes',desc:'Les marionnettes d’Amarath descendent des Monts Oubliés. Arrête-les avant qu’elles n’atteignent les villages.',type:'kill',reg:'oublies',n:10,rw:{g:260,xp:420,rel:1},need:5},
-  {id:'echos',nom:'Les échos de la prison',from:'Virganth',desc:'Le sceau tient, mais les lieux de l’histoire sont plus dangereux. Termine deux donjons.',type:'dun',n:2,rw:{g:300,rel:1},need:6}];
+  {id:'echos',nom:'Les échos de la prison',from:'Virganth',desc:'Le sceau tient, mais les lieux de l’histoire sont plus dangereux. Termine deux donjons.',type:'dun',n:2,rw:{g:300,rel:1},need:6},
+  {id:'eastwatch',nom:'Le feu d’Eastwatch',from:'Le sergent Brann',desc:'Le feu d’alarme d’Eastwatch est éteint et la garnison ne répond plus. Monte les cinq étages de la tour, bats le Veilleur Noir et rallume le feu.',type:'tower',n:1,rw:{g:400,xp:600,sh:8,rel:1},need:5,start:'ew_start'}];
 const SQ_BY=Object.fromEntries(SQ.map(q=>[q.id,q]));
-function sqActive(q){return hero.q>=q.need&&!(hero.sqd||[]).includes(q.id)}
+function sqActive(q){return hero.q>=q.need&&!(hero.sqd||[]).includes(q.id)&&(!q.start||(hero.fl||[]).includes(q.start))}
 function sqProg(id){return(hero.sq&&hero.sq[id])|0}
 function questEvent(type,o){if(!hero||!G)return;o=o||{};hero.sq=hero.sq||{};let changed=false;
   for(const q of SQ){if(!sqActive(q)||q.type!==type)continue;if(q.reg&&o.reg!==q.reg)continue;
@@ -2679,6 +2755,7 @@ function questTarget(){const id=hero&&hero.track;if(!id||id==='main'||!WORLD||!G
   if(q.type==='elite')return near(WORLD.camps.filter((c,i)=>c.elite&&(!G.camps[i]||G.camps[i].state!=='cleared')));
   if(q.type==='upgrade')return near(WORLD.builds.filter(b=>b.kind==='forge').map(b=>({x:b.door.x,y:b.door.y})));
   if(q.type==='wp')return near(Object.keys(WAYPOINTS).filter(k=>!hero.wp.includes(k)).map(k=>({x:WAYPOINTS[k].pt[0],y:WAYPOINTS[k].pt[1]})));
+  if(q.type==='tower')return near(WORLD.builds.filter(b=>b.act==='dun:eastwatch').map(b=>({x:b.door.x,y:b.door.y})));
   if(q.type==='dun')return near(WORLD.builds.filter(b=>b.act&&b.act.startsWith('dun:')).map(b=>({x:b.door.x,y:b.door.y})));return null}
 function trackedText(){const id=hero.track;if(id&&id!=='main'){const q=SQ_BY[id];if(q&&sqActive(q))return[q.nom,q.desc.split('.')[0]+' : '+sqProg(q.id)+'/'+q.n]}return null}
 
@@ -2694,7 +2771,7 @@ function renderQuests(){const box=$('#questList');box.textContent='';hero.track=
     if(!done)b.onclick=()=>{hero.track=id;doSave(false);renderQuests();toast('Quête suivie : '+title+'. La flèche dorée t’y guide.')};return b};
   box.append(el('h3','qsec','Histoire'));
   const o=OBJ[Math.min(hero.q,6)];box.append(card('main','Les quatre pierres','Virganth, l’Éternel',o.t,stonesQ(hero.q),4,hero.q<6?{g:0,rel:1}:null,false));
-  const act=SQ.filter(sqActive),done=SQ.filter(q=>(hero.sqd||[]).includes(q.id)),later=SQ.filter(q=>hero.q<q.need&&!(hero.sqd||[]).includes(q.id));
+  const act=SQ.filter(sqActive),done=SQ.filter(q=>(hero.sqd||[]).includes(q.id)),later=SQ.filter(q=>!q.start&&hero.q<q.need&&!(hero.sqd||[]).includes(q.id));
   box.append(el('h3','qsec','Sous-quêtes ('+act.length+')'));for(const q of act)box.append(card(q.id,q.nom,q.from,q.desc,sqProg(q.id),q.n,q.rw,false));
   if(later.length){const p=el('p','muted',later.length+' autre'+(later.length>1?'s':'')+' sous-quête'+(later.length>1?'s':'')+' se débloquer'+(later.length>1?'ont':'a')+' en avançant dans l’histoire.');box.append(p)}
   if(done.length){box.append(el('h3','qsec','Terminées'));for(const q of done)box.append(card(q.id,q.nom,q.from,q.desc,q.n,q.n,null,true))}}
@@ -2882,7 +2959,7 @@ function processFx(list){for(const f of list){if(f.id<=lastFx)continue;lastFx=f.
     case 18:sparks(f.x,f.y,'#f0c95a',10);Snd.play('chest');if(G&&G.m&&G.m.kind==='world'&&Math.hypot(f.x-L.x,f.y-L.y)<700)questEvent('chest');break;
     case 42:if(Math.hypot(f.x-L.x,f.y-L.y)<1000)questEvent('camp');break;
     case 43:if(Math.hypot(f.x-L.x,f.y-L.y)<1000)questEvent('elite');break;
-    case 44:questEvent('dun');break;
+    case 44:questEvent('dun');if(f.v===1)ewDone();break;
     case 19:Snd.play('hit');break;
     case 20:sparks(f.x,f.y,'#c9c2e0',20);Snd.play('gate');break;
     case 21:if(BUB[f.v])addBubble({who:'p',o:f.o,txt:BUB[f.v],life:3,max:3});break;
@@ -2998,7 +3075,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}
@@ -3114,7 +3191,7 @@ function render(dt){
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
   if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&bd.act.startsWith('house:')))continue;   // maisons : l'enseigne remplace le nom
-    const dx=(bd.door.x+.5)*TS,dy=bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
+    const dx=(bd.door.x+.5)*TS,dy=bd.kind==='tour'?bd.door.y*TS-78:bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(Math.hypot(n.x-L.x,n.y-L.y)<220)label(NPC_NAMES[n.who]||'',n.x,n.y-(n.who==='virganth'?62:34),'#cfe8ff',11)}
     for(const k2 in TOWNS){const p=PL[k2];const tx=(p[0]+.5)*TS,ty=(p[1]-11)*TS;if(Math.hypot(tx-L.x,ty-L.y)<520){ctx.font='400 22px "Uncial Antiqua",Georgia,serif';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(TOWNS[k2].nom,tx+1.5,ty+1.5);ctx.fillStyle='#efe6cf';ctx.fillText(TOWNS[k2].nom,tx,ty)}}}
   else for(const n of m.npcs||[])label(NPC_NAMES[n.who]||'',n.x,n.y-34,'#cfe8ff',11);
@@ -3176,7 +3253,7 @@ function drawTorch(t,T){const g=ctx,px=(t.x+.5)*TS,py=t.y*TS+13;g.fillStyle='#3a
   const fl=Math.sin(T*13+t.x)*1.6+Math.sin(T*7.3+t.y)*1;const gr=g.createRadialGradient(px,py-4,0,px,py-4,14);gr.addColorStop(0,'rgba(255,200,110,.45)');gr.addColorStop(1,'rgba(255,160,60,0)');g.fillStyle=gr;g.beginPath();g.arc(px,py-4,14,0,6.28);g.fill();
   g.fillStyle='#e8661e';g.beginPath();g.moveTo(px-4.5,py);g.quadraticCurveTo(px-5,py-8,px+fl*.5,py-13-fl);g.quadraticCurveTo(px+5,py-8,px+4.5,py);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px-2.6,py);g.quadraticCurveTo(px-3,py-5,px+fl*.3,py-9-fl*.6);g.quadraticCurveTo(px+3,py-5,px+2.6,py);g.fill();g.fillStyle='#fff3c8';g.beginPath();g.ellipse(px,py-2,1.3,2.4,0,0,6.28);g.fill();
   if(Math.random()<.03)parts.push({k:'ember',x:px+(Math.random()-.5)*4,y:py-10,vx:(Math.random()-.5)*10,vy:-25-Math.random()*20,life:.9,max:.9})}
-function drawProj(p){if(p.k===4){const v=G.bossPal||0;const c=[['#9fc6ff','#e8f2ff'],['#e8402a','#ffd0a0'],['#b9b6c6','#ffffff'],['#b067e8','#ead6ff'],['#c0305a','#ffd6e6']][v];ctx.fillStyle=c[0];ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();ctx.fillStyle=c[1];ctx.beginPath();ctx.arc(p.x,p.y,3,0,6.28);ctx.fill();return}if(p.k===1){ctx.fillStyle='#ff8a2b';ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();ctx.fillStyle='#ffe08a';ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,6.28);ctx.fill()}
+function drawProj(p){if(p.k===4){const v=G.bossPal||0;const c=([['#9fc6ff','#e8f2ff'],['#e8402a','#ffd0a0'],['#b9b6c6','#ffffff'],['#b067e8','#ead6ff'],['#c0305a','#ffd6e6'],['#5a3a6a','#c9a6ff'],['#7a5ad0','#e0d0ff']][v]||['#9fc6ff','#e8f2ff']);ctx.fillStyle=c[0];ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();ctx.fillStyle=c[1];ctx.beginPath();ctx.arc(p.x,p.y,3,0,6.28);ctx.fill();return}if(p.k===1){ctx.fillStyle='#ff8a2b';ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();ctx.fillStyle='#ffe08a';ctx.beginPath();ctx.arc(p.x,p.y,3.5,0,6.28);ctx.fill()}
   else if(p.k===2){ctx.fillStyle='#fff2b0';ctx.beginPath();ctx.arc(p.x,p.y,6,0,6.28);ctx.fill();ctx.strokeStyle='#f0d36a';ctx.lineWidth=2;ctx.stroke()}
   else if(p.k===3){ctx.fillStyle='rgba(176,103,232,.35)';ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();ctx.fillStyle='#d88cff';ctx.beginPath();ctx.arc(p.x,p.y,3.6,0,6.28);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(p.x-1,p.y-1,2,2)}
   else{ctx.fillStyle='#b067e8';ctx.beginPath();ctx.arc(p.x,p.y,7,0,6.28);ctx.fill();ctx.fillStyle='#ead6ff';ctx.beginPath();ctx.arc(p.x,p.y,3,0,6.28);ctx.fill()}}
@@ -4179,16 +4256,23 @@ const DSCENE={
   antre1:{to:'boss',who:'adepte',text:'La pierre de Kelemvor reviendra au maître. Le vieux dragon ne pourra pas la cacher éternellement.'},
   prison0:{to:'exit',who:'narrateur',text:'Le sentier grimpe vers la plus profonde montagne. Une marionnette géante garde la clé du sceau.'},
   prison1:{to:'exit',who:'amarath',text:'Approchez… Posez les pierres sur les sceaux… Libérez-moi…'},
+  eastwatch0:{custom:true},
+  eastwatch1:{to:'exit',who:'narrateur',text:'Des adeptes vident les râteliers. Sur l’un d’eux, une lettre froissée : « Ouvrir la côte avant la nuit. »'},
+  eastwatch2:{to:'exit',who:'narrateur',text:'Le journal d’Osric traîne sur une couchette : « Ils m’ont promis la paix. Une paix sans guerre, sans peur… sans volonté. »'},
+  eastwatch3:{to:'exit',who:'adepte',text:'Trop tard. La flotte noire accoste cette nuit, et aucun feu ne l’annoncera.'},
+  eastwatch4:{to:'boss',who:'osric',text:'Trente ans que je veille sur cette côte. Pour rien. Amarath m’offre enfin le repos. Vous ne rallumerez pas ce feu.'},
   prison2:{to:'boss',who:'amarath',text:'Mes vieux compagnons envoient des enfants. Je vais vous montrer ce qu’est la vraie paix.'}};
-const DS_NAME={sinthara:'Sinthara',grinmir:'Grinmir Thunderhammer',virganth:'Virganth, l’Éternel',chef:'Le chef de guerre orc',adepte:'Le Haut-Adepte',amarath:'Amarath',narrateur:'La narratrice'};
+const DS_NAME={sinthara:'Sinthara',grinmir:'Grinmir Thunderhammer',virganth:'Virganth, l’Éternel',chef:'Le chef de guerre orc',adepte:'Le Haut-Adepte',osric:'Le Veilleur Noir',amarath:'Amarath',narrateur:'La narratrice'};
 function dunScene(m){const key=m.did+m.idx,d=DSCENE[key];if(!d)return null;const me=wpos(myIdx);let t=m.stairs;
   if(d.to==='boss'){const b=G.enemies.find(e=>e.type==='boss');if(b)t={x:b.rx??b.x,y:b.ry??b.y}}
   else if(d.to==='wave'&&m.goal&&m.goal.at)t=m.goal.at;else if(d.to==='mark'&&m.marks&&m.marks[0])t={x:(m.marks[0].x+.5)*TS,y:(m.marks[0].y+.5)*TS};
   const actors=[];if(d.add){const sp=d.who==='sinthara'?{k:'boss',bv:0}:{k:'npc',who:d.who};actors.push(Object.assign({id:'spk',x:t.x+(d.who==='grinmir'?40:0),y:t.y+(d.who==='virganth'?-40:20),name:DS_NAME[d.who]},sp))}
-  const portrait=d.who==='chef'?'narrateur':d.who==='adepte'?'narrateur':d.who;
-  return{cam:[me.x,me.y],actors,hideP:false,steps:[{cam:[t.x,t.y-30],dur:2.2},{wait:2.3},{line:{who:portrait,name:DS_NAME[d.who],text:d.text}},{cam:[me.x,me.y],dur:1.4},{wait:1.4}]}}
-function maybeDunScene(){const m=G&&G.m;if(!m||m.kind!=='dun'||window.__noStory)return;const key='sc_'+m.did+m.idx;if(!DSCENE[m.did+m.idx]||(hero.fl||[]).includes(key))return;
-  hero.fl.push(key);setTimeout(()=>{if(G&&G.m===m){const s=dunScene(m);if(s)Scene.play(s)}},700)}
+  const portrait=d.who==='chef'||d.who==='adepte'||d.who==='osric'?'narrateur':d.who;const nm=m.did==='eastwatch'&&d.who==='adepte'?'Le chef des adeptes':DS_NAME[d.who];
+  return{cam:[me.x,me.y],actors,hideP:false,steps:[{cam:[t.x,t.y-30],dur:2.2},{wait:2.3},{line:{who:portrait,name:nm,text:d.text}},{cam:[me.x,me.y],dur:1.4},{wait:1.4}]}}
+function maybeDunScene(){const m=G&&G.m;if(!m||m.kind!=='dun')return;
+  if(m.did==='eastwatch'){hero.fl=hero.fl||[];if(!hero.fl.includes('ew_start')){hero.fl.push('ew_start');doSave(false);toast('Nouvelle quête : Le feu d’Eastwatch.')}}
+  if(window.__noStory)return;const key='sc_'+m.did+m.idx;if(!DSCENE[m.did+m.idx]||(hero.fl||[]).includes(key))return;
+  hero.fl.push(key);setTimeout(()=>{if(G&&G.m===m){const s=DSCENE[m.did+m.idx].custom?ewOpenScene(m):dunScene(m);if(s)Scene.play(s)}},700)}
 // introduction : les héros réunis autour du feu, au bout des Wild Realms
 function introScene(){const camp=spx('start'),seal=placePx('prison')||spx('montsoublies'),honor=spx('honor'),pont=spx('pont');
   const fx0=camp.x+TS*2,fy0=camp.y-TS*3;const ftx=Math.floor(fx0/TS),fty=Math.floor(fy0/TS);const fire={id:'feu',k:'obj',o:{k:'feu',x:ftx,y:fty,w:1,h:1,s:.4},x:(ftx+.5)*TS,y:(fty+1)*TS};
@@ -4212,6 +4296,23 @@ function introScene(){const camp=spx('start'),seal=placePx('prison')||spx('monts
   const r0=storyLines('reinald0');steps.push(r0[0],r0[1]||{wait:0},{move:'rein',to:[cx-420,cy+30],dur:6},r0[2]||{wait:0});
   steps.push(...storyLines('ch0'),{del:'rein'});
   return{cam:[seal.x-200,seal.y-160],fadeIn:true,actors:[fire,...heroes,rein],steps,hideP:true,hideNpc:['virganth'],music:'cine'}}
+
+/* ----- La tour d'Eastwatch : arrivée avec le sergent Brann, puis le feu rallumé ----- */
+function ewOpenScene(m){const me=wpos(myIdx),t=m.stairs,cx=me.x,cy=me.y;
+  return{cam:[cx,cy],hideP:false,actors:[{id:'brann',k:'npc',who:'brann',x:cx+40,y:cy+70,name:'Le sergent Brann'}],steps:[
+    {title:['Le feu d’Eastwatch','Quête annexe'],titleDur:3800},{move:'brann',to:[cx+40,cy+8],dur:1.2},{wait:1.4},
+    {line:{who:'garde',name:'Le sergent Brann',text:'Le feu d’alarme est éteint depuis trois nuits. Le capitaine Osric est monté avec ses hommes. Aucun n’est redescendu.'}},
+    {cam:[cx,(cy+t.y)/2],dur:2.2},{wait:2.3},
+    {line:{who:'narrateur',name:'La narratrice',text:'Les gardes d’Eastwatch sont toujours à leur poste. Mais leurs yeux brillent d’une lueur violette.'}},
+    {cam:[t.x,t.y+40],dur:1.8},{wait:1.9},
+    {line:{who:'garde',name:'Le sergent Brann',text:'Cinq étages jusqu’au feu. Montez et rallumez-le. Je garde la porte derrière vous.'}},
+    {cam:[cx,cy],dur:1.4},{move:'brann',to:[cx+40,cy+90],dur:1.4},{wait:1.5},{del:'brann'}]}}
+function ewDone(){if(!hero||(hero.sqd||[]).includes('eastwatch'))return;const b=WORLD&&WORLD.builds.find(o=>o.act==='dun:eastwatch');const fin=()=>questEvent('tower');
+  if(!b||window.__noStory){if(G)G.ewLit=true;fin();return}
+  setTimeout(()=>{if(!G||!G.m||G.m.kind!=='world'){fin();return}const cx=(b.door.x+.5)*TS,top=(b.y+b.h)*TS-300;
+    Scene.play({cam:[L.x,L.y],actors:[],steps:[{cam:[cx,top+60],dur:2.2},{wait:2.3},{call:()=>{G.ewLit=true}},{fx:{k:'flash',x:cx,y:top-20,c:'#ffb347',d:2.5}},{wait:1},
+      {line:{who:'narrateur',name:'La narratrice',text:'Le feu d’alarme s’embrase au sommet de la tour. Au large, les voiles noires virent de bord et disparaissent.'}},
+      {cam:[L.x,L.y],dur:1.6},{wait:1.6},{line:{who:'garde',name:'Le sergent Brann',text:'Le feu brûle ! Eastwatch veille de nouveau. Merci, héros.'}}]},fin)},1000)}
 /* ---- 67_splash.js ---- */
 /* ================= Écran de démarrage : reste affiché le temps de tout charger ================= */
 const Splash={t0:performance.now(),

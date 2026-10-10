@@ -112,6 +112,7 @@ function buildWorld(){
   npc('garde','garde',PL.pont[0]+5,PL.pont[1]+2,'talk:garde','Garde du Conseil');
   if(kz)npc('grinmir','grinmir',kz.door.x+3,kz.door.y,'talk:grinmir','Grinmir Thunderhammer');
   if(cave)npc('virganth2','virganth',cave.door.x-4,cave.door.y,'talk:virganth','Virganth');
+  {const ew=builds.find(b=>b.act==='dun:eastwatch');if(ew)npc('brann','brann',ew.door.x+2,ew.door.y+1,'talk:brann','Le sergent Brann')}
   // végétation et rochers (déterministe)
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=idx(x,y);if(clear[i]||occ[i]||sol[i])continue;const v=t[i],h=hash2(x,y,7),h2=hash2(x,y,13);
     if(v===4){if(h<.36)obj[i]=h2<.75?1:2}

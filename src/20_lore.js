@@ -27,9 +27,9 @@ const TOWNS={
   ironhaven:{nom:'Ironhaven',roof:'#3a5a6e',b:[['marchand','Comptoir d’Ironhaven','house:marchand'],['auberge','Auberge d’Ironhaven','house:auberge'],['forge','Forge d’Ironhaven','house:forge'],['maison'],['maison']]},
   oka:{nom:'Oka',roof:'#6e5a2a',b:[['auberge','Auberge d’Oka','house:auberge'],['marchand','Marchand d’Oka','house:marchand'],['maison'],['maison']]},
   vindheim:{nom:'Vindheim',roof:'#5a2a2a',b:[['auberge','Auberge de Vindheim','house:auberge'],['marchand','Marchand de Vindheim','house:marchand'],['maison'],['maison']]},
-  eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['auberge','Auberge d’Eastwatch','house:auberge'],['maison'],['maison']]},
+  eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['tour','La tour d’Eastwatch','dun:eastwatch'],['auberge','Auberge d’Eastwatch','house:auberge'],['maison'],['maison']]},
 };
-const BSIZE={maison:[4,2],statue:[2,2],auberge:[4,3],marchand:[3,3],forge:[4,3],keep:[6,5],palais:[7,5],puits:[1,1]};
+const BSIZE={maison:[4,2],statue:[2,2],auberge:[4,3],marchand:[3,3],forge:[4,3],keep:[6,5],palais:[7,5],puits:[1,1],tour:[5,2]};
 const WAYPOINTS={start:{nom:'Le Pont de Lathandre (ouest)',pt:PL.start},tarkin:{nom:'Tarkin',pt:PL.tarkin},lastfire:{nom:'Last Fire',pt:PL.lastfire},honor:{nom:'Honor',pt:PL.honor},cibellos:{nom:'Cibellos',pt:PL.cibellos},ironhaven:{nom:'Ironhaven',pt:PL.ironhaven},oka:{nom:'Oka',pt:PL.oka},vindheim:{nom:'Vindheim',pt:PL.vindheim},eastwatch:{nom:'Eastwatch',pt:PL.eastwatch},karazankor:{nom:'Karaz Ankor',pt:PL.karazankor},firsttear:{nom:'Woods of the First Tear',pt:PL.firsttear}};
 /* Donjons et monuments où l'on entre */
 const DUNGEONS={
@@ -37,6 +37,9 @@ const DUNGEONS={
   karazankor:{nom:'Karaz Ankor',pal:2,floors:2,lv:6,mobs:[['orc',5],['bat',2],['archer',2]],eliteType:'orc',elite:'le chef orc',boss:2,fl:['Le col des Pics Rouges','Le Trône des Âges'],need:3,done:3,story:null},
   antre:{nom:'L’antre de Virganth',pal:1,floors:2,lv:8,mobs:[['slime',3],['bat',3],['archer',4]],eliteType:'archer',elite:'le grand adepte',boss:3,fl:['Les bois de la Première Larme','Le trésor de Virganth'],need:4,done:4,story:null},
   prison:{nom:'La prison d’Amarath',pal:3,floors:3,lv:10,mobs:[['slime',4],['bat',3],['archer',3],['orc',2]],eliteType:'slime',elite:'la marionnette géante',boss:4,fl:['Le sentier des Monts Oubliés','Les sceaux de la prison','La prison d’Amarath'],need:5,done:5,story:'ch4'},
+  // quête annexe de fin de partie : la tour de guet d'Eastwatch, cinq étages à gravir
+  eastwatch:{nom:'La tour d’Eastwatch',pal:3,soldat:true,floors:5,lv:9,mobs:[['orc',3],['archer',3],['bat',2]],eliteType:'orc',elite:'le caporal de la garnison',boss:6,
+    fl:['Le corps de garde','L’armurerie','Les quartiers','La salle des signaux','Le sommet de la tour'],need:5,done:-1,story:null},
 };
 /* Étapes de l'histoire (hero.q) */
 const OBJ=[

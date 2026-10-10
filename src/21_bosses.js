@@ -10,6 +10,8 @@ const BOSSES=[
   {nom:'Amarath',court:'Amarath',hp:1.6,ring:18,triple:true,charge:true,tp:true,minions:['slime','bat'],guards:['slime','slime'],
    win:'Amarath s’effondre ! Le sceau se referme.'},
   {nom:'Reinald Sterkov, Maître des Ombres',court:'Reinald',hp:.6,ring:0,triple:false,charge:true,tp:true,near:true,regen:.01,minions:['slime','bat'],guards:[],
-   win:'Reinald se change en brouillard et disparaît.'}
+   win:'Reinald se change en brouillard et disparaît.'},
+  {nom:'Le Veilleur Noir, capitaine Osric',court:'le Veilleur Noir',hp:.9,ring:10,triple:false,charge:true,tp:false,minions:['orc','archer'],guards:['orc','archer'],
+   win:'Le Veilleur Noir tombe. Rallumez le feu d’alarme !'}
 ];
 const STONES=[['la pierre de l’Everwatch','#cfe2ff'],['la pierre de la déesse du feu','#ff7a3a'],['la pierre de Talos','#f0c95a'],['la pierre de Kelemvor','#b98cff']];
