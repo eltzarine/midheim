@@ -109,7 +109,7 @@ function buildWorld(){
   // personnages
   const npc=(id,who,tx,ty,act,label)=>{for(let r=0;r<6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=tx+dx,y=ty+dy;if(inb(x,y)&&!sol[idx(x,y)]&&passT(t[idx(x,y)])){const n={id,who,x:(x+.5)*TS,y:(y+.5)*TS};npcs.push(n);inter.push({x:n.x,y:n.y,r:40,kind:'talk',act,label,npc:n});return n}}};
   npc('virganth','virganth',PL.start[0]+1,PL.start[1]-4,'talk:virganth','Virganth');
-  npc('garde','garde',PL.pont[0]+5,PL.pont[1]+2,'talk:garde','Garde du Conseil');
+  npc('garde','garde',PL.pont[0]-4,PL.pont[1]+2,'talk:garde','Garde du Conseil');   // à gauche du pont
   if(kz)npc('grinmir','grinmir',kz.door.x+3,kz.door.y,'talk:grinmir','Grinmir Thunderhammer');
   if(cave)npc('virganth2','virganth',cave.door.x-4,cave.door.y,'talk:virganth','Virganth');
   {const ew=builds.find(b=>b.act==='dun:eastwatch');if(ew)npc('brann','brann',ew.door.x+2,ew.door.y+1,'talk:brann','Le sergent Brann')}

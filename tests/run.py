@@ -191,6 +191,8 @@ with sync_playwright() as pw:
     go(pg, "doInteract(G.m.inter[0])"); pg.wait_for_timeout(150)
     check('Maître des talents : il ouvre l’arbre avec Apprendre', go(pg, "!$('#talents').hidden&&talHouse"))
     go(pg, "toggleTalents();hostEnter('w',G.m.exitTo)"); pg.wait_for_timeout(700)
+    check('Garde du Conseil à gauche du pont', go(pg, "(()=>{const n=WORLD.npcs.find(n=>n.id==='garde');return n.x<(PL.pont[0]-2)*TS})()"))
+    tele(pg, *go(pg, "[PL.pont[0]-2,PL.pont[1]+1]")); pg.wait_for_timeout(700); go(pg, "QDone.q.length=0;QDone.close()"); clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/b2_garde_pont.png')
     pg.wait_for_timeout(1200); go(pg, "QDone.q.length=0;QDone.close()")
     go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(100); pg.screenshot(path=f'{OUT}/a7_competences.png'); go(pg, "paused=false;G.enemies=[]")
     go(pg, "(()=>{hero.cls='guerrier';hero.eq={arme:starter('guerrier','arme'),armure:starter('guerrier','armure'),talisman:null};refreshStats();G.players[0].cls='guerrier';G.players[0].st=ST;buildSkillUI()})()")
