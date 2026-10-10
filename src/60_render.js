@@ -186,6 +186,10 @@ function render(dt){
     ctx.fillStyle='rgba(127,224,122,.13)';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.28);ctx.fill();ctx.strokeStyle='rgba(159,240,138,'+(.4+.3*Math.sin(T*6))+')';ctx.lineWidth=2;ctx.stroke()}
   for(const f of G.fires){ctx.fillStyle='rgba(255,110,40,.18)';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,6.28);ctx.fill();for(let k2=0;k2<6;k2++){const a=T*3+k2,rr2=f.r*.7*((k2%3)/3+.2);const fx2=f.x+Math.cos(a)*rr2,fy2=f.y+Math.sin(a*1.3)*rr2*.6;ctx.fillStyle='#ff8a2b';ctx.beginPath();ctx.moveTo(fx2-4,fy2);ctx.quadraticCurveTo(fx2,fy2-14-Math.sin(T*9+k2)*4,fx2+4,fy2);ctx.fill()}}
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
+  {const w=wpos(myIdx);if(w)for(const e of G.enemies){if(e.hp<=0||e.type==='boss'||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;   // zones d'alerte
+    if(Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS||!vis(ex,ey))continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
+    if(e.act){ctx.fillStyle='rgba(226,75,74,.16)';ctx.fill();ctx.strokeStyle='rgba(240,149,149,.85)';ctx.lineWidth=2;ctx.stroke()}
+    else{ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}}}
   // tri en profondeur
   const Z=[];
   for(const c of m.chests){const op=G.opened.has(c.id);const py=(c.y+.5)*TS;if(vis((c.x+.5)*TS,py))Z.push([py+6,()=>drawChest(c,op)])}

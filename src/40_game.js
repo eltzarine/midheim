@@ -223,6 +223,8 @@ function updCamps(){const pl=G.players.filter(p=>!p.down);if(!pl.length)return;
     else if(s.state==='live'){const al=G.enemies.some(e=>e.camp===i&&e.hp>0);if(!al){s.state='cleared';s.t=150;fx(42,cx,cy,i)}else if(dm>36*TS){G.enemies=G.enemies.filter(e=>e.camp!==i);s.state='idle'}}
     else if(s.state==='cleared'){s.t-=.5;if(s.t<=0&&dm>30*TS)s.state='idle'}})}
 
+/* réaction en chaîne : chaque ennemi alerté réveille ceux dont la zone touche la sienne */
+function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='boss'&&Math.hypot(o.x-s.x,o.y-s.y)<2*AGGRO*TS&&los(s.x,s.y,o.x,o.y)){o.act=true;q.push(o)}}}
 function updEnemies(dt){
   const alive=G.players.filter(p=>!p.down&&!(p.stealthT>0));
   for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=dt;e.blind-=dt;if(e.mistT>0){e.mistT-=dt;continue}
@@ -233,7 +235,7 @@ function updEnemies(dt){
     let tp=null,td=1e9;if(e.taunt>0&&G.players[e.tauntP]&&!G.players[e.tauntP].down){tp=G.players[e.tauntP];td=Math.hypot(tp.x-e.x,tp.y-e.y)}
     else for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
     if(!tp||e.blind>0)continue;
-    if(!e.act){if(td<7*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);for(const o of G.enemies)if(!o.act&&!o.ret&&o.camp===e.camp&&Math.hypot(o.x-e.x,o.y-e.y)<4*TS)o.act=true}else continue}
+    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
     if(e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
     if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}

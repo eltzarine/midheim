@@ -641,7 +641,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='b509b0cf';
+const BUILD='111748a4';
 /* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
 const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -825,6 +825,9 @@ function derive(h){const C=CLS[h.cls],L=h.lvl-1,t=h.tal,g=gearSum(h);return{
 /* rencontres dans le monde : camps espacés (CAMP_GAP cases), qui s'éveillent à CAMP_WAKE cases ;
    un ennemi qui s'éloigne de plus de LEASH cases de son poste (ou à plus de LEASH_P cases du héros) abandonne et y retourne */
 const CAMP_GAP=18,CAMP_WAKE=14,LEASH=10,LEASH_P=12;
+/* zone d'alerte : un ennemi attaque si un héros entre à moins de AGGRO cases ; il réveille en chaîne les ennemis
+   dont la zone touche la sienne (distance < 2×AGGRO). Le cercle n'est dessiné qu'à moins de AGGRO_SHOW cases. */
+const AGGRO=3,AGGRO_SHOW=4;
 const ETYPES=['slime','bat','archer','orc','boss','mimic'];
 const EN={slime:{hp:26,spd:55,dmg:8,xp:6,r:12},bat:{hp:14,spd:118,dmg:6,xp:6,r:9},archer:{hp:20,spd:72,dmg:9,xp:10,r:11},orc:{hp:70,spd:62,dmg:16,xp:20,r:15},boss:{hp:560,spd:55,dmg:14,xp:220,r:26},mimic:{hp:48,spd:88,dmg:12,xp:26,r:14}};
 /* ---- 11_store.js ---- */
@@ -2428,6 +2431,8 @@ function updCamps(){const pl=G.players.filter(p=>!p.down);if(!pl.length)return;
     else if(s.state==='live'){const al=G.enemies.some(e=>e.camp===i&&e.hp>0);if(!al){s.state='cleared';s.t=150;fx(42,cx,cy,i)}else if(dm>36*TS){G.enemies=G.enemies.filter(e=>e.camp!==i);s.state='idle'}}
     else if(s.state==='cleared'){s.t-=.5;if(s.t<=0&&dm>30*TS)s.state='idle'}})}
 
+/* réaction en chaîne : chaque ennemi alerté réveille ceux dont la zone touche la sienne */
+function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='boss'&&Math.hypot(o.x-s.x,o.y-s.y)<2*AGGRO*TS&&los(s.x,s.y,o.x,o.y)){o.act=true;q.push(o)}}}
 function updEnemies(dt){
   const alive=G.players.filter(p=>!p.down&&!(p.stealthT>0));
   for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=dt;e.blind-=dt;if(e.mistT>0){e.mistT-=dt;continue}
@@ -2438,7 +2443,7 @@ function updEnemies(dt){
     let tp=null,td=1e9;if(e.taunt>0&&G.players[e.tauntP]&&!G.players[e.tauntP].down){tp=G.players[e.tauntP];td=Math.hypot(tp.x-e.x,tp.y-e.y)}
     else for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
     if(!tp||e.blind>0)continue;
-    if(!e.act){if(td<7*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);for(const o of G.enemies)if(!o.act&&!o.ret&&o.camp===e.camp&&Math.hypot(o.x-e.x,o.y-e.y)<4*TS)o.act=true}else continue}
+    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
     if(e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
     if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
@@ -2800,7 +2805,7 @@ function onState(s,first){
   G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;
   const nm=s.nm||[];
   G.players=(s.p||[]).map((a,i)=>{const old=G.players[i]||{};return{name:clean(nm[i])||('Joueur '+(i+1)),cls:CLS_IDS[a[6]]||'guerrier',x:a[0],y:a[1],rx:old.rx!=null?old.rx:a[0],ry:old.ry!=null?old.ry:a[1],hp:a[2],mhp:a[3]||1,down:!!a[4],rev:(a[5]||0)/40,drT:a[7]&1?1:0,shield:a[7]&2?1:0,stealthT:a[7]&4?1:0,aim:(a[8]||0)/10,sh:a[9]||0,lk:a[10]|0}});
-  const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;em.set(a[0],o)}
+  const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);em.set(a[0],o)}
   G.emap=em;G.enemies=[...em.values()];
   G.projs=(s.j||[]).map(a=>({x:a[0],y:a[1],k:a[2],ang:(a[3]||0)/10}));
   G.drops=(s.d||[]).map(a=>({id:a[0],k:a[1],x:a[2],y:a[3],r:a[4]|0,t:1}));
@@ -2819,7 +2824,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
   const s={z:G.zd,ep:G.ep,t:r(G.time*10),q:G.q,n:G.night,lv:G.lv,
     p:G.players.map(p=>[r(p.x),r(p.y),Math.ceil(p.hp),p.mhp,p.down?1:0,r(p.rev*40),CLS_IDS.indexOf(p.cls),(p.drT>0?1:0)|(p.shield>0?2:0)|(p.stealthT>0?4:0),Math.round((p.aim||0)*10),Math.round(p.shield||0),p.lk|0]),
     nm:G.players.map(p=>p.name),
-    e:G.enemies.filter(e=>e.hp>0&&near(e.x,e.y)).slice(0,34).map(e=>[e.id,ETYPES.indexOf(e.type),r(e.x),r(e.y),Math.max(1,Math.ceil(e.hp/e.mhp*100)),(e.frz>0?1:0)|(e.tele>0?2:0)|(e.flash>0?4:0)|(e.elite?8:0)|(e.chg>0?16:0)|(e.mistT>0?32:0)|(e.burn>0?64:0),e.bv??-1]),
+    e:G.enemies.filter(e=>e.hp>0&&near(e.x,e.y)).slice(0,34).map(e=>[e.id,ETYPES.indexOf(e.type),r(e.x),r(e.y),Math.max(1,Math.ceil(e.hp/e.mhp*100)),(e.frz>0?1:0)|(e.tele>0?2:0)|(e.flash>0?4:0)|(e.elite?8:0)|(e.chg>0?16:0)|(e.mistT>0?32:0)|(e.burn>0?64:0)|(e.act?128:0),e.bv??-1]),
     j:G.projs.slice(0,34).map(p=>[r(p.x),r(p.y),p.k,r(Math.atan2(p.vy,p.vx)*10)]),
     d:G.drops.filter(d=>near(d.x,d.y)).slice(0,26).map(d=>[d.id,d.k,r(d.x),r(d.y),d.r]),
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),
@@ -3024,6 +3029,10 @@ function render(dt){
     ctx.fillStyle='rgba(127,224,122,.13)';ctx.beginPath();ctx.arc(z.x,z.y,z.r,0,6.28);ctx.fill();ctx.strokeStyle='rgba(159,240,138,'+(.4+.3*Math.sin(T*6))+')';ctx.lineWidth=2;ctx.stroke()}
   for(const f of G.fires){ctx.fillStyle='rgba(255,110,40,.18)';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,6.28);ctx.fill();for(let k2=0;k2<6;k2++){const a=T*3+k2,rr2=f.r*.7*((k2%3)/3+.2);const fx2=f.x+Math.cos(a)*rr2,fy2=f.y+Math.sin(a*1.3)*rr2*.6;ctx.fillStyle='#ff8a2b';ctx.beginPath();ctx.moveTo(fx2-4,fy2);ctx.quadraticCurveTo(fx2,fy2-14-Math.sin(T*9+k2)*4,fx2+4,fy2);ctx.fill()}}
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
+  {const w=wpos(myIdx);if(w)for(const e of G.enemies){if(e.hp<=0||e.type==='boss'||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;   // zones d'alerte
+    if(Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS||!vis(ex,ey))continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
+    if(e.act){ctx.fillStyle='rgba(226,75,74,.16)';ctx.fill();ctx.strokeStyle='rgba(240,149,149,.85)';ctx.lineWidth=2;ctx.stroke()}
+    else{ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}}}
   // tri en profondeur
   const Z=[];
   for(const c of m.chests){const op=G.opened.has(c.id);const py=(c.y+.5)*TS;if(vis((c.x+.5)*TS,py))Z.push([py+6,()=>drawChest(c,op)])}

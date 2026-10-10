@@ -139,5 +139,8 @@ function derive(h){const C=CLS[h.cls],L=h.lvl-1,t=h.tal,g=gearSum(h);return{
 /* rencontres dans le monde : camps espacés (CAMP_GAP cases), qui s'éveillent à CAMP_WAKE cases ;
    un ennemi qui s'éloigne de plus de LEASH cases de son poste (ou à plus de LEASH_P cases du héros) abandonne et y retourne */
 const CAMP_GAP=18,CAMP_WAKE=14,LEASH=10,LEASH_P=12;
+/* zone d'alerte : un ennemi attaque si un héros entre à moins de AGGRO cases ; il réveille en chaîne les ennemis
+   dont la zone touche la sienne (distance < 2×AGGRO). Le cercle n'est dessiné qu'à moins de AGGRO_SHOW cases. */
+const AGGRO=3,AGGRO_SHOW=4;
 const ETYPES=['slime','bat','archer','orc','boss','mimic'];
 const EN={slime:{hp:26,spd:55,dmg:8,xp:6,r:12},bat:{hp:14,spd:118,dmg:6,xp:6,r:9},archer:{hp:20,spd:72,dmg:9,xp:10,r:11},orc:{hp:70,spd:62,dmg:16,xp:20,r:15},boss:{hp:560,spd:55,dmg:14,xp:220,r:26},mimic:{hp:48,spd:88,dmg:12,xp:26,r:14}};
