@@ -250,7 +250,8 @@ function render(dt){
   if(!hideP)G.players.forEach((p,i)=>{const w=wpos(i);label(p.name,w.x,w.y-38,i===myIdx?'#ffe9c2':'#cfe8ff');
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
-  if(isW){for(const bd of m.builds){if(!bd.label)continue;const dx=(bd.door.x+.5)*TS,dy=bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
+  if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&bd.act.startsWith('house:')))continue;   // maisons : l'enseigne remplace le nom
+    const dx=(bd.door.x+.5)*TS,dy=bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(Math.hypot(n.x-L.x,n.y-L.y)<220)label(NPC_NAMES[n.who]||'',n.x,n.y-(n.who==='virganth'?62:34),'#cfe8ff',11)}
     for(const k2 in TOWNS){const p=PL[k2];const tx=(p[0]+.5)*TS,ty=(p[1]-11)*TS;if(Math.hypot(tx-L.x,ty-L.y)<520){ctx.font='400 22px "Uncial Antiqua",Georgia,serif';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(TOWNS[k2].nom,tx+1.5,ty+1.5);ctx.fillStyle='#efe6cf';ctx.fillText(TOWNS[k2].nom,tx,ty)}}}
   else for(const n of m.npcs||[])label(NPC_NAMES[n.who]||'',n.x,n.y-34,'#cfe8ff',11);

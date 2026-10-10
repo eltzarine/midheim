@@ -132,10 +132,24 @@ const HOUSE_T={auberge:[[12,0,4,3]],auberge_tarkin:[[25,7,4,5]],marchand:[[16,0,
   maison:[[0,0,4,3],[4,0,4,3],[8,0,4,3],[0,7,3,3],[3,7,3,3]]};
 const HOUSE_SPR={orange:[0,0,4,3],beige:[4,0,4,3],orange2:[8,0,4,3],rouge:[12,0,4,3],boutique:[16,0,3,3],bois:[25,14,4,5],chaume:[25,7,4,5],four:[29,4,4,4],
   hutte:[0,7,3,3],paille:[3,7,3,3],igloo:[0,11,3,3],statue:[3,15,2,2],torii:[0,5,3,2],tente:[4,0,3,3,'t_Camp'],tente2:[7,0,3,3,'t_Camp'],tente3:[10,0,3,3,'t_Camp']};
+/* enseignes des maisons (16×16, palette du pack) : potence en fer et planche peinte, posées à droite de la porte */
+const SIGN_PAL={'k':'#141b1b','i':'#4e484a','I':'#8d977f','W':'#7a4a2a','w':'#5a341e','h':'#a5704a','f':'#f4f1e6','y':'#f0c95a','Y':'#c9952e','o':'#965340','b':'#e0b48a','B':'#fce2ca','n':'#b8784a','c':'#f0c95a','C':'#c9952e','a':'#5f7160','A':'#8d977f','L':'#abc2bc','r':'#e3f1f5','t':'#e0b48a','s':'#ffe18d'};
+const SIGN_PX={
+  auberge:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhffffhhhhk..','.kWWffffffWWWk..','.kWWyyyyyykkWk..','.kWWyYyyyyWkWk..','.kWWyYyyyyWkWk..','.kWWyyyyyykkWk..','.kWWooooooWWWk..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..'],
+  marchand:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhhkkhhhhhk..','.kWWWnkknWWWWk..','.kWWWWbbWWWWWk..','.kWWbbBbbbWWWk..','.kWbbBbbbbbcck..','.kWbbbbbbbcCck..','.kWWnnnnnnWcck..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..'],
+  forge:['kkkkkkkkkkkkkkk.','kIIIIIIIIIIIIIk.','kiiiiiiiiiiiiik.','kkkkkkkkkkkkkkk.','...k.......k....','...k.......k....','.kkkkkkkkkkkkk..','.khhhhAAAhshhk..','.kWWWWArAWWsWk..','.kWWWWWtWsWWWk..','.kWWLLLLLLLWWk..','.kWAAAAAAAAAWk..','.kWWWWaaaWWWWk..','.kWWWaaaaaWWWk..','.kwwwwwwwwwwwk..','.kkkkkkkkkkkkk..']};
+const _sign={};
+function signCanvas(k){if(_sign[k])return _sign[k];const G2=SIGN_PX[k];if(!G2)return null;const c=document.createElement('canvas');c.width=c.height=16;const q=c.getContext('2d');
+  G2.forEach((r,y)=>{for(let x=0;x<16;x++){const ch=r[x];if(ch==='.')continue;q.fillStyle=SIGN_PAL[ch];q.fillRect(x,y,1,1)}});return _sign[k]=c}
+/* la maison au toit de chaume du pack n'a pas de porte : on lui greffe celle de la maison en bois */
+let _chaume=null;
+function chaumeCanvas(){if(_chaume)return _chaume;const T=SPR.im.t_TilesetHouse;const c=document.createElement('canvas');c.width=64;c.height=80;const q=c.getContext('2d');
+  q.drawImage(T,25*16,7*16,64,80,0,0,64,80);q.drawImage(T,25*16+15,14*16+63,20,17,22,63,20,17);return _chaume=c}
 function drawHousePix(b,T){if(b.kind==='deco'&&drawDecoPix(b,T))return true;const L=b.spr&&HOUSE_SPR[b.spr]?[HOUSE_SPR[b.spr]]:((b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind]);if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
   const[cx,cy,cw,chh,sk]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;const SRC=SPR.im[sk||'t_TilesetHouse'];if(sk&&!SPR.ok(sk))return false;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
-  g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
+  if(!sk&&cx===25&&cy===7&&cw===4&&chh===5)g.drawImage(chaumeCanvas(),0,0,64,80,dx,dy,W,H);else g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
+  {const kd=b.act&&b.act.startsWith('house:')?b.act.split(':')[1]:null,sg=kd&&signCanvas(kd);if(sg)g.drawImage(sg,0,0,16,16,dx+W/2+16,dy+H-34,32,32)}
   if(typeof Vitrine!=='undefined'&&Vitrine.lit&&Vitrine.lit(b))drawGlow(g,x+w/2,y+h-8,40,.35);
   g.restore();
   if((b.kind==='forge'||(b.kind==='maison'&&hash2(b.x,b.y,5)<.5))&&Math.random()<(b.kind==='forge'?.09:.03)&&parts.length<500)
