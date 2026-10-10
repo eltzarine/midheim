@@ -430,7 +430,13 @@ body.scene .skytag{display:none}
   font:700 14px/1 var(--f-ui);cursor:pointer;white-space:nowrap;box-shadow:0 3px 0 #6a2412}
 .updbar-btn[aria-busy="true"]{cursor:progress;opacity:.85}
 .updbar.nudge .updbar-in{animation:updNudge .45s ease}
-html.ingame .updbar{display:none}
+/* en partie : bandeau tout en haut, compact ; « Mettre à jour » sauvegarde, quitte la partie puis recharge */
+html.ingame .updbar{top:0;bottom:auto;z-index:130;padding:calc(6px + env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) 0 max(8px,env(safe-area-inset-left,0px))}
+html.ingame .updbar-in{padding:6px 6px 6px 12px;gap:10px;animation-name:updbar-down}
+html.ingame .updbar-txt{font-size:13.5px}
+html.ingame .updbar-btn{padding:7px 14px}
+.updbar .u-game{display:none}html.ingame .updbar .u-game{display:inline}html.ingame .updbar .u-menu{display:none}
+@keyframes updbar-down{from{transform:translateY(-16px);opacity:0}}
 html.has-update #menu .wrap{padding-bottom:84px}
 html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 @keyframes updbar-in{from{transform:translateY(16px);opacity:0}}
@@ -453,7 +459,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 <div class="updbar" id="updateBanner" role="status" aria-live="polite" hidden>
   <div class="updbar-in">
     <span class="updbar-dot" aria-hidden="true"></span>
-    <span class="updbar-txt" id="updTxt"><b>Nouvelle version disponible.</b>Mets à jour pour lancer une partie.</span>
+    <span class="updbar-txt" id="updTxt"><b>Nouvelle version disponible.</b><span class="u-menu">Mets à jour pour lancer une partie.</span><span class="u-game">Ta partie est sauvegardée avant la mise à jour.</span></span>
     <button type="button" class="updbar-btn" id="updateBtn">Mettre à jour</button>
   </div>
 </div>
@@ -635,7 +641,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='59a45c87';
+const BUILD='1bf2a920';
 /* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
 const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -4236,15 +4242,17 @@ const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastChec
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')this.check()});
     addEventListener('online',()=>this.check());
     addEventListener('pageshow',e=>{if(e.persisted)this.check()});
-    btn.addEventListener('click',()=>{
-      if(this.clicked)return;this.clicked=true;btn.setAttribute('aria-busy','true');btn.textContent='Mise à jour…';
-      if(hero)doSave(true);
-      /* La nouvelle version a déjà pris la main (depuis un autre onglet) : simple rechargement. */
-      if(!this.waiting||this.waiting.state!=='installed'){this.reload();return}
-      this.waiting.postMessage({type:'SKIP_WAITING'});
-      setTimeout(()=>this.reload(),4000)});
+    btn.addEventListener('click',()=>this.apply());
     navigator.serviceWorker.addEventListener('controllerchange',()=>{if(this.clicked)this.reload()});
   },
+  /* « Mettre à jour » : en partie, on sauvegarde et on quitte proprement (la place à deux se libère), puis on recharge */
+  apply(){const btn=$('#updateBtn');
+    if(this.clicked)return;this.clicked=true;btn.setAttribute('aria-busy','true');btn.textContent='Mise à jour…';
+    if(typeof mode!=='undefined'&&mode!=='menu'&&typeof quitGame==='function'){Log.ev('appli','mise à jour demandée en partie',mode);quitGame()}else if(hero)doSave(true);
+    /* La nouvelle version a déjà pris la main (depuis un autre onglet) : simple rechargement. */
+    if(!this.waiting||this.waiting.state!=='installed'){this.reload();return}
+    this.waiting.postMessage({type:'SKIP_WAITING'});
+    setTimeout(()=>this.reload(),4000)},
   reload(){if(this.reloading)return;this.reloading=true;location.reload()},
   offer(sw){this.waiting=sw;const b=$('#updateBanner');if(b.hidden){b.hidden=false;document.documentElement.classList.add('has-update')}},
   /* Suit un service worker en cours d'installation jusqu'à ce qu'il attende son tour. */
@@ -4267,7 +4275,7 @@ const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastChec
       const b=$('#updateBanner'),t=$('#updTxt');b.hidden=false;document.documentElement.classList.add('has-update');
       t.innerHTML='<b>Nouvelle version en cours de téléchargement…</b>Encore un instant.';
       await within(new Promise(r=>inst.addEventListener('statechange',()=>{if(inst.state!=='installing')r()})),20000);
-      t.innerHTML='<b>Nouvelle version disponible.</b>Mets à jour pour lancer une partie.';
+      t.innerHTML='<b>Nouvelle version disponible.</b><span class="u-menu">Mets à jour pour lancer une partie.</span><span class="u-game">Ta partie est sauvegardée avant la mise à jour.</span>';
       if(inst.state==='installed')this.offer(inst);
       else{b.hidden=true;document.documentElement.classList.remove('has-update')}
     }

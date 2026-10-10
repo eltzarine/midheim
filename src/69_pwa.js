@@ -19,15 +19,17 @@ const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastChec
     document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')this.check()});
     addEventListener('online',()=>this.check());
     addEventListener('pageshow',e=>{if(e.persisted)this.check()});
-    btn.addEventListener('click',()=>{
-      if(this.clicked)return;this.clicked=true;btn.setAttribute('aria-busy','true');btn.textContent='Mise à jour…';
-      if(hero)doSave(true);
-      /* La nouvelle version a déjà pris la main (depuis un autre onglet) : simple rechargement. */
-      if(!this.waiting||this.waiting.state!=='installed'){this.reload();return}
-      this.waiting.postMessage({type:'SKIP_WAITING'});
-      setTimeout(()=>this.reload(),4000)});
+    btn.addEventListener('click',()=>this.apply());
     navigator.serviceWorker.addEventListener('controllerchange',()=>{if(this.clicked)this.reload()});
   },
+  /* « Mettre à jour » : en partie, on sauvegarde et on quitte proprement (la place à deux se libère), puis on recharge */
+  apply(){const btn=$('#updateBtn');
+    if(this.clicked)return;this.clicked=true;btn.setAttribute('aria-busy','true');btn.textContent='Mise à jour…';
+    if(typeof mode!=='undefined'&&mode!=='menu'&&typeof quitGame==='function'){Log.ev('appli','mise à jour demandée en partie',mode);quitGame()}else if(hero)doSave(true);
+    /* La nouvelle version a déjà pris la main (depuis un autre onglet) : simple rechargement. */
+    if(!this.waiting||this.waiting.state!=='installed'){this.reload();return}
+    this.waiting.postMessage({type:'SKIP_WAITING'});
+    setTimeout(()=>this.reload(),4000)},
   reload(){if(this.reloading)return;this.reloading=true;location.reload()},
   offer(sw){this.waiting=sw;const b=$('#updateBanner');if(b.hidden){b.hidden=false;document.documentElement.classList.add('has-update')}},
   /* Suit un service worker en cours d'installation jusqu'à ce qu'il attende son tour. */
@@ -50,7 +52,7 @@ const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastChec
       const b=$('#updateBanner'),t=$('#updTxt');b.hidden=false;document.documentElement.classList.add('has-update');
       t.innerHTML='<b>Nouvelle version en cours de téléchargement…</b>Encore un instant.';
       await within(new Promise(r=>inst.addEventListener('statechange',()=>{if(inst.state!=='installing')r()})),20000);
-      t.innerHTML='<b>Nouvelle version disponible.</b>Mets à jour pour lancer une partie.';
+      t.innerHTML='<b>Nouvelle version disponible.</b><span class="u-menu">Mets à jour pour lancer une partie.</span><span class="u-game">Ta partie est sauvegardée avant la mise à jour.</span>';
       if(inst.state==='installed')this.offer(inst);
       else{b.hidden=true;document.documentElement.classList.remove('has-update')}
     }

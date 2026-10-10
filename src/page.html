@@ -413,7 +413,13 @@ body.scene .skytag{display:none}
   font:700 14px/1 var(--f-ui);cursor:pointer;white-space:nowrap;box-shadow:0 3px 0 #6a2412}
 .updbar-btn[aria-busy="true"]{cursor:progress;opacity:.85}
 .updbar.nudge .updbar-in{animation:updNudge .45s ease}
-html.ingame .updbar{display:none}
+/* en partie : bandeau tout en haut, compact ; « Mettre à jour » sauvegarde, quitte la partie puis recharge */
+html.ingame .updbar{top:0;bottom:auto;z-index:130;padding:calc(6px + env(safe-area-inset-top,0px)) max(8px,env(safe-area-inset-right,0px)) 0 max(8px,env(safe-area-inset-left,0px))}
+html.ingame .updbar-in{padding:6px 6px 6px 12px;gap:10px;animation-name:updbar-down}
+html.ingame .updbar-txt{font-size:13.5px}
+html.ingame .updbar-btn{padding:7px 14px}
+.updbar .u-game{display:none}html.ingame .updbar .u-game{display:inline}html.ingame .updbar .u-menu{display:none}
+@keyframes updbar-down{from{transform:translateY(-16px);opacity:0}}
 html.has-update #menu .wrap{padding-bottom:84px}
 html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 @keyframes updbar-in{from{transform:translateY(16px);opacity:0}}
@@ -433,7 +439,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 <div class="updbar" id="updateBanner" role="status" aria-live="polite" hidden>
   <div class="updbar-in">
     <span class="updbar-dot" aria-hidden="true"></span>
-    <span class="updbar-txt" id="updTxt"><b>Nouvelle version disponible.</b>Mets à jour pour lancer une partie.</span>
+    <span class="updbar-txt" id="updTxt"><b>Nouvelle version disponible.</b><span class="u-menu">Mets à jour pour lancer une partie.</span><span class="u-game">Ta partie est sauvegardée avant la mise à jour.</span></span>
     <button type="button" class="updbar-btn" id="updateBtn">Mettre à jour</button>
   </div>
 </div>
