@@ -27,6 +27,11 @@ const SPR={im:{},_t:new Map(),_o:new Map(),
   cell(g,src,col,row,x,y,sc){g.drawImage(src,col*16,row*16,16,16,Math.round(x-8*sc),Math.round(y-16*sc),16*sc,16*sc)},
   dir(ax,ay){return Math.abs(ax)>Math.abs(ay)*1.15?(ax<0?2:3):(ay<0?1:0)}};
 SPR.load();
+/* halo chaud pré-calculé (évite de recréer un dégradé à chaque image) */
+let _glow=null;
+function drawGlow(g,x,y,r,a){if(!_glow){_glow=document.createElement('canvas');_glow.width=_glow.height=64;const q=_glow.getContext('2d'),gl=q.createRadialGradient(32,32,1,32,32,32);
+    gl.addColorStop(0,'rgba(255,195,105,1)');gl.addColorStop(1,'rgba(255,195,105,0)');q.fillStyle=gl;q.fillRect(0,0,64,64)}
+  g.save();g.globalCompositeOperation='lighter';g.globalAlpha=a;g.imageSmoothingEnabled=true;g.drawImage(_glow,x-r,y-r,r*2,r*2);g.restore()}
 const PIX=2.25;   // agrandissement des personnages (16 px -> 36 px du monde)
 const HERO_SPR={guerrier:['Knight','GladiatorBlue','KnightGold'],mage:['SorcererBlack','NinjaMageOrange','NinjaMageBlack'],
   voleur:['NinjaDark','NinjaGray','Hunter'],soigneur:['Monk2','Master','Monk']};
@@ -131,7 +136,7 @@ function drawHousePix(b,T){if(b.kind==='deco'&&drawDecoPix(b,T))return true;cons
   const[cx,cy,cw,chh,sk]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;const SRC=SPR.im[sk||'t_TilesetHouse'];if(sk&&!SPR.ok(sk))return false;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
   g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
-  if(typeof Vitrine!=='undefined'&&Vitrine.lit&&Vitrine.lit(b)){g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(x+w/2,y+h-8,2,x+w/2,y+h-8,40);gl.addColorStop(0,'rgba(255,190,100,.35)');gl.addColorStop(1,'rgba(255,190,100,0)');g.fillStyle=gl;g.fillRect(x+w/2-40,y+h-48,80,60)}
+  if(typeof Vitrine!=='undefined'&&Vitrine.lit&&Vitrine.lit(b))drawGlow(g,x+w/2,y+h-8,40,.35);
   g.restore();
   if((b.kind==='forge'||(b.kind==='maison'&&hash2(b.x,b.y,5)<.5))&&Math.random()<(b.kind==='forge'?.09:.03)&&parts.length<500)
     parts.push({k:'smoke',x:dx+W*.72,y:dy+8,vx:5,vy:-16,life:2.6,max:2.6,r:b.kind==='forge'?7:5});
@@ -202,7 +207,7 @@ const PROP_T={8:[[16,15,1,1],[17,15,1,1]],11:[[19,14,1,1],[20,15,1,1]],12:[[19,1
 function drawPropPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;
   if(k===10){g.save();g.imageSmoothingEnabled=false;const on=G.night||Sky.lamps;g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+16,y+30,7,3,0,0,6.28);g.fill();
     g.fillStyle=PK.K;g.fillRect(x+14,y-6,4,36);g.fillRect(x+10,y-18,12,14);g.fillStyle=on?PK.LT:'#e8d9a0';g.fillRect(x+12,y-16,8,10);g.fillStyle=PK.K;g.fillRect(x+15,y-16,2,10);
-    if(on){g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(x+16,y-11,1,x+16,y-11,30);gl.addColorStop(0,'rgba(255,200,110,.35)');gl.addColorStop(1,'rgba(255,200,110,0)');g.fillStyle=gl;g.fillRect(x-14,y-41,60,60)}
+    if(on)drawGlow(g,x+16,y-11,30,.35);
     g.restore();return true}
   const L=PROP_T[k];if(!L||!SPR.ok('t_TilesetHouse'))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+16,y+29,13,4,0,0,6.28);g.fill();
@@ -212,7 +217,7 @@ function drawPropPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;
 /* ---- décor bâti des villes : feu de camp, phare, tour de guet, moulins, bateaux, grue ---- */
 function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w/2,by=y+h,S=b.spr;g.save();g.imageSmoothingEnabled=false;
   const sh=(rx)=>{g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(cx,by-3,rx,6,0,0,6.28);g.fill()};
-  const glow=(gx,gy,r,a)=>{g.save();g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(gx,gy,2,gx,gy,r);gl.addColorStop(0,'rgba(255,190,100,'+a+')');gl.addColorStop(1,'rgba(255,190,100,0)');g.fillStyle=gl;g.fillRect(gx-r,gy-r,r*2,r*2);g.restore()};
+  const glow=(gx,gy,r,a)=>drawGlow(g,gx,gy,r,a);
   if(S==='feu'){for(let i=0;i<10;i++){const a=i/10*6.28,px=cx+Math.cos(a)*26,py=by-14+Math.sin(a)*12;g.fillStyle=PK.S2;g.fillRect(px-7,py-5,14,10);g.strokeStyle=PK.K;g.strokeRect(px-6.5,py-4.5,13,9)}
     g.fillStyle=PK.R0;g.fillRect(cx-16,by-18,32,6);const f=Math.sin(T*9)*3,f2=Math.cos(T*7)*2;
     for(const[col,ww,hh]of[[PK.R1,20,46+f],[PK.R2,15,36+f2],[PK.LT,8,22+f]]){g.fillStyle=col;g.beginPath();g.moveTo(cx-ww,by-14);g.lineTo(cx+f2*.6,by-14-hh);g.lineTo(cx+ww,by-14);g.closePath();g.fill()}
@@ -238,10 +243,10 @@ function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w
 /* objets 16 palissade, 17 rondins, 18 haie, 19 meule de foin, 20 filet de pêche */
 function drawTownObj(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;g.save();g.imageSmoothingEnabled=false;
   if(k===16){const O=WORLD.obj,W=WORLD.W,isP=(a,b)=>O[b*W+a]===16,hz=isP(tx-1,ty)||isP(tx+1,ty);
-    if(hz){for(let i=0;i<4;i++){const px=x+i*8;g.fillStyle='#bd7959';g.fillRect(px+1,y-8,6,30);g.fillStyle='#d3865f';g.fillRect(px+2,y-6,2,26);g.fillStyle=PK.K;g.fillRect(px,y-8,1,30);
-        g.fillStyle='#d3865f';g.beginPath();g.moveTo(px+1,y-8);g.lineTo(px+4,y-15);g.lineTo(px+7,y-8);g.fill()}g.fillStyle='#965340';g.fillRect(x,y+2,32,3);g.fillRect(x,y+14,32,3)}
-    else{g.fillStyle='#bd7959';g.fillRect(x+12,y-6,10,38);g.fillStyle=PK.K;g.fillRect(x+11,y-6,1,38);g.fillRect(x+22,y-6,1,38);for(let yy=y-4;yy<y+32;yy+=8){g.fillStyle='#965340';g.fillRect(x+12,yy,10,1)}}
-    g.restore();return true}
+    const c=stoneCv(hz?'palH':'palV',16,24,q=>{q.fillStyle=PK.K;if(hz){for(let i=0;i<4;i++){const px=i*4;q.fillStyle='#bd7959';q.fillRect(px,4,4,15);q.fillStyle='#d3865f';q.fillRect(px+1,4,1,13);q.fillRect(px,1,4,3);q.fillStyle=PK.K;q.fillRect(px,0,1,19)}
+        q.fillStyle='#965340';q.fillRect(0,9,16,1);q.fillRect(0,15,16,1)}
+      else{q.fillStyle='#bd7959';q.fillRect(6,1,5,23);q.fillStyle=PK.K;q.fillRect(5,1,1,23);q.fillRect(11,1,1,23);q.fillStyle='#965340';for(let yy=2;yy<24;yy+=4)q.fillRect(6,yy,5,1)}});
+    g.drawImage(c,x,y-16,32,48);g.restore();return true}
   const C={17:['t_Camp',0,0,2,1],18:['t_TilesetNature',1,10,1,1],19:['t_Camp',4,3,1,1],20:['v_FishNetFull',0,0,2,2]}[k];if(!C||!SPR.ok(C[0])){g.restore();return false}
   const[src,cx,cy,cw,chh]=C;const im=SPR.im[src];const sw=k===20?im.width:cw*16,shh=k===20?im.height:chh*16;
   if(k!==20){g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+sw,y+29,sw-2,4,0,0,6.28);g.fill()}

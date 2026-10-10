@@ -167,7 +167,7 @@ function renderMenu(){const box=$('#classes');box.textContent='';
 function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
   $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
 function toMenu(){Log.ev('jeu','retour au menu depuis',mode);document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
-function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',myName,hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
+function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',anonName(myName),hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();
@@ -262,7 +262,7 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
 /* ================= Démarrage ================= */
 (async function boot(){
   myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';
-  const c=Store.lsGet('dd_cls');if(CLS[c])selCls=c;
+  const c=Store.lsGet('dd_cls');if(CLS_IDS.includes(c))selCls=c;
   $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();
   await Splash.run([
     ['Les polices de Midheim',1,()=>Loader.fonts()],

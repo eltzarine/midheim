@@ -25,7 +25,7 @@ CHARS = [
     'OldMan', 'OldMan2', 'OldMan3', 'Child', 'Boy', 'Noble', 'Princess', 'Sultan', 'DemonRed', 'Inspector',
 ]
 WEAPONS = ['Sword', 'Axe', 'Hammer', 'Stick', 'Book', 'Sai', 'Ninjaku', 'Katana', 'Club', 'MagicWand']
-TILES = ['TilesetFloor', 'TilesetHouse', 'TilesetNature', 'TilesetFloorDetail', 'TilesetWater', 'TilesetDungeon']
+TILES = ['TilesetFloor', 'TilesetHouse', 'TilesetNature', 'TilesetWater']
 
 
 def main(pack):
@@ -45,7 +45,7 @@ def main(pack):
         cp(os.path.join('Backgrounds', 'Vehicles', v + '.png'), 'v_' + v + '.png')
     cp(os.path.join('Backgrounds', 'Animated', 'MillPropeller', 'MillPropeller_A_64x64.png'), 'a_Mill.png')
     cp(os.path.join('Backgrounds', 'Animated', 'WaterMill', 'Watermill_A_34x36.png'), 'a_Watermill.png')
-    for col in ('Red', 'Blue', 'Yellow'):
+    for col in ('Red', 'Blue'):
         cp(os.path.join('Backgrounds', 'Animated', 'Flag', 'Flag%s16x16.png' % col), 'f_Flag' + col + '.png')
     shutil.copyfile(os.path.join(pack, 'LICENSE.txt'), os.path.join(DEST, 'LICENSE-NinjaAdventure.txt'))
     print(len(os.listdir(DEST)), 'fichiers dans', DEST)

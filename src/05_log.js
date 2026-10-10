@@ -4,6 +4,8 @@
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
 const BUILD='@@BUILD@@';
+/* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
+const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
 const g_=f=>{try{return f()}catch(e){return undefined}};
 const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),t0:Date.now(),lines:[],max:400,dirty:false,upT:null,fb:null,
@@ -33,7 +35,7 @@ const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)
       const head=this.text().split('\n').slice(0,4);const tail=[];let size=head.join('\n').length;
       for(let i=this.lines.length-1;i>=0&&size+this.lines[i].length+1<12000;i--){tail.unshift(this.lines[i]);size+=this.lines[i].length+1}
       const txt=head.concat(tail).join('\n');
-      await this.fb.D.set(this.fb.ref,{j:JSON.stringify({b:BUILD,n:String(g_(()=>myName)||''),m:String(g_(()=>mode)||''),log:txt}),t:this.fb.D.serverTimestamp()});if(!this.purged){this.purged=1;this.purge()}}
+      await this.fb.D.set(this.fb.ref,{j:JSON.stringify({b:BUILD,n:anonName(g_(()=>myName)),m:String(g_(()=>mode)||''),log:txt}),t:this.fb.D.serverTimestamp()});if(!this.purged){this.purged=1;this.purge()}}
     catch(e){this.dirty=true;if(!this.upErr){this.upErr=1;this.lines.push(this.ts()+' WARN [journal] envoi impossible : '+(e&&e.message||e))}}}
 };
 addEventListener('error',e=>Log.err('js',e.error||e.message,e.filename?'@'+String(e.filename).split('/').pop()+':'+e.lineno+':'+e.colno:''));
