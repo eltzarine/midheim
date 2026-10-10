@@ -121,14 +121,14 @@ function buildWorld(){
     else if(v===11){if(h<.12)obj[i]=5;else if(h<.3)deco[i]=4}
     else if(v===9){if(h<.02)deco[i]=5}
     if(obj[i]&&obj[i]!==6)sol[i]=1}
-  // camps d'ennemis
+  // camps d'ennemis : peu nombreux et espacés, pour une rencontre à la fois (2 à 3 ennemis, parfois un chef)
   const camps=[];{const R=mulberry(777);const far=(x,y,r,pts)=>pts.every(p=>(p[0]-x)**2+(p[1]-y)**2>r*r);
     const towns=Object.keys(TOWNS).map(k=>PL[k]).concat([PL.start,PL.pont]);let wild=0;
-    for(let n=0;n<6000&&camps.length<170;n++){const x=ri(R,2,W-3),y=ri(R,2,H-3),i=idx(x,y);const v=t[i];if(!passT(v)||v===7||v===10||sol[i]||clear[i])continue;
-      if(!far(x,y,15,towns)||!far(x,y,20,[PL.start]))continue;if(!camps.every(c=>(c.x-x)**2+(c.y-y)**2>121))continue;
+    for(let n=0;n<6000&&camps.length<70;n++){const x=ri(R,2,W-3),y=ri(R,2,H-3),i=idx(x,y);const v=t[i];if(!passT(v)||v===7||v===10||sol[i]||clear[i])continue;
+      if(!far(x,y,15,towns)||!far(x,y,20,[PL.start]))continue;if(!camps.every(c=>(c.x-x)**2+(c.y-y)**2>CAMP_GAP*CAMP_GAP))continue;
       const rg=regionAt(x,y);if(!rg.mobs.length)continue;if(rg.id==='wild'&&++wild>3)continue;
       const tot=rg.mobs.reduce((a,b)=>a+b[1],0),pick=()=>{let q=R()*tot;for(const[k,w]of rg.mobs){if((q-=w)<0)return k}return rg.mobs[0][0]};
-      const n2=3+Math.floor(R()*3),mobs=[];for(let k=0;k<n2;k++)mobs.push(pick());
+      const n2=2+Math.floor(R()*2),mobs=[];for(let k=0;k<n2;k++)mobs.push(pick());
       camps.push({id:camps.length,x,y,lv:rg.lv,mobs,elite:R()<.14,reg:rg.id})}}
   // coffres dans la nature
   const chests=[];{const R=mulberry(4242);for(let n=0;n<3000&&chests.length<48;n++){const x=ri(R,2,W-3),y=ri(R,2,H-3),i=idx(x,y);const v=t[i];if(!passT(v)||v===7||v===10||sol[i]||occ[i])continue;

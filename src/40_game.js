@@ -55,7 +55,7 @@ function freeSpot(x,y){if(!hits(x,y,11))return{x,y};for(let r=TS;r<6*TS;r+=TS/2)
 
 /* ================= Ennemis ================= */
 function spawnEnemy(type,x,y,elite,minion,bvo,lv){const D=EN[type];lv=lv||G.lv||1;const bv=bvo??0;const hm=(1+.3*(lv-1))*(G.coop?1.45:1)*(elite?2.6:1)*(type==='boss'?(1+.12*lv)*BOSSES[bv].hp:1);
-  const e={id:G.eid++,type,lv,x,y,rx:x,ry:y,hp:D.hp*hm,mhp:D.hp*hm,r:D.r,spd:D.spd*(elite?1.1:1),dmg:D.dmg*(1+.15*(lv-1))*(elite?1.3:1),xp:Math.round(D.xp*(1+.12*(lv-1))*(elite?2.5:1)),
+  const e={id:G.eid++,type,lv,x,y,rx:x,ry:y,hx:x,hy:y,hp:D.hp*hm,mhp:D.hp*hm,r:D.r,spd:D.spd*(elite?1.1:1),dmg:D.dmg*(1+.15*(lv-1))*(elite?1.3:1),xp:Math.round(D.xp*(1+.12*(lv-1))*(elite?2.5:1)),
     act:!!minion,cd:1+Math.random()*1.5,frz:0,tele:0,chg:0,cvx:0,cvy:0,ccd:1.5,flash:0,elite:!!elite,minion:!!minion,kx:0,ky:0,wob:Math.random()*6,hitCd:0,t1:2,t2:3,t3:9,t4:7,burn:0,burnD:0,burnP:0};
   if(type==='boss'){e.bv=bv;if(bv===5){e.act=true;e.t4=4}}if(elite&&type!=='orc')e.r=Math.round(e.r*1.4);
   G.enemies.push(e);return e}
@@ -81,7 +81,8 @@ function hurt(p,dmg,src){const i=G.players.indexOf(p);if(p.down||i<0||pInv(i))re
   p.hp-=dmg;fx(9,p.x,p.y-14,dmg,i);if(p.hp>0&&p.hp<p.mhp*.3&&!p.lowSaid){p.lowSaid=true;sayP(i,'low')}
   if(p.hp<=0){p.hp=0;p.down=true;p.rev=0;p.shield=0;msg(pickL(MJ.down).replace('{n}',p.name)+(G.players.length>1?' Va le relever.':''))}}
 function healP(p,v,show){if(p.down)return;const before=p.hp;p.hp=Math.min(p.mhp,p.hp+v);if(p.hp>p.mhp*.5)p.lowSaid=false;if(show&&p.hp-before>=1)fx(3,p.x,p.y-16,Math.round(p.hp-before))}
-function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0)return;dmg/=Sky.mul();e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
+function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0||e.ret)return;   // qui rentre à son poste esquive
+  dmg/=Sky.mul();e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
 function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);let d=r.d*mult*(p.criT>0?1.25:1);
@@ -217,7 +218,7 @@ function checkQuest(){const q=G.q,pl=G.players.filter(p=>!p.down);if(!pl.length)
 /* camps : les ennemis apparaissent quand on s'approche, disparaissent quand on s'éloigne */
 function updCamps(){const pl=G.players.filter(p=>!p.down);if(!pl.length)return;
   WORLD.camps.forEach((c,i)=>{const s=G.camps[i];const cx=(c.x+.5)*TS,cy=(c.y+.5)*TS;let dm=1e9;for(const p of G.players){const d=Math.hypot(p.x-cx,p.y-cy);if(d<dm)dm=d}
-    if(s.state==='idle'&&dm<19*TS&&dm>7*TS){const lv=Math.max(c.lv,partyLv()-2);for(const t of c.mobs){const q=freeNear(cx,cy,0,2.5*TS);const e=spawnEnemy(t,q.x,q.y,false,false,undefined,lv);e.camp=i}
+    if(s.state==='idle'&&dm<CAMP_WAKE*TS&&dm>7*TS){const lv=Math.max(c.lv,partyLv()-2);for(const t of c.mobs){const q=freeNear(cx,cy,0,2.5*TS);const e=spawnEnemy(t,q.x,q.y,false,false,undefined,lv);e.camp=i}
       if(c.elite){const q=freeNear(cx,cy,0,2*TS);const e=spawnEnemy(c.lv>=6?'orc':c.mobs[0],q.x,q.y,true,false,undefined,lv);e.camp=i}s.state='live'}
     else if(s.state==='live'){const al=G.enemies.some(e=>e.camp===i&&e.hp>0);if(!al){s.state='cleared';s.t=150;fx(42,cx,cy,i)}else if(dm>36*TS){G.enemies=G.enemies.filter(e=>e.camp!==i);s.state='idle'}}
     else if(s.state==='cleared'){s.t-=.5;if(s.t<=0&&dm>30*TS)s.state='idle'}})}
@@ -226,11 +227,15 @@ function updEnemies(dt){
   const alive=G.players.filter(p=>!p.down&&!(p.stealthT>0));
   for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=dt;e.blind-=dt;if(e.mistT>0){e.mistT-=dt;continue}
     if(e.burn>0){e.burn-=dt;e.hp-=e.burnD*dt;e.burnFx=(e.burnFx||0)-dt;if(e.burnFx<=0){e.burnFx=.5;fx(41,e.x,e.y-e.r,Math.round(e.burnD*.5))}if(e.hp<=0){killEnemy(e);continue}}
+    if(e.ret){e.retT+=dt;const hx=e.hx-e.x,hy=e.hy-e.y,hd=Math.hypot(hx,hy);
+      if(hd<TS*.6||e.retT>6){if(e.retT>6){e.x=e.hx;e.y=e.hy}e.ret=false;e.hp=e.mhp;e.burn=0;e.frz=0}
+      else moveBody(e,hx/hd*e.spd*1.15*dt,hy/hd*e.spd*1.15*dt,e.r*.75);continue}
     let tp=null,td=1e9;if(e.taunt>0&&G.players[e.tauntP]&&!G.players[e.tauntP].down){tp=G.players[e.tauntP];td=Math.hypot(tp.x-e.x,tp.y-e.y)}
     else for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
     if(!tp||e.blind>0)continue;
-    if(!e.act){if(td<7*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);for(const o of G.enemies)if(!o.act&&Math.hypot(o.x-e.x,o.y-e.y)<4*TS)o.act=true}else continue}
+    if(!e.act){if(td<7*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);for(const o of G.enemies)if(!o.act&&!o.ret&&o.camp===e.camp&&Math.hypot(o.x-e.x,o.y-e.y)<4*TS)o.act=true}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
+    if(e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
     if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
     if(e.frz>0){e.frz-=dt;continue}
     let vx=0,vy=0,sp=e.spd;const dx=tp.x-e.x,dy=tp.y-e.y;const see=td<10*TS&&los(e.x,e.y,tp.x,tp.y);

@@ -1,17 +1,17 @@
 /* ================= Journal de quêtes : histoire + sous-quêtes ================= */
 // Chaque héros garde sa progression (hero.sq) ; les événements viennent des effets envoyés par l'hôte, donc ça marche à deux.
 const SQ=[
-  {id:'pont',nom:'Les veilleurs du Pont',from:'Le garde du Conseil',desc:'Des créatures rôdent autour de Tarkin et du Pont de Lathandre. Le Conseil demande de l’aide pour sécuriser la route.',type:'kill',reg:'tarkin',n:8,rw:{g:60,xp:80,rel:1},need:0},
+  {id:'pont',nom:'Les veilleurs du Pont',from:'Le garde du Conseil',desc:'Des créatures rôdent autour de Tarkin et du Pont de Lathandre. Le Conseil demande de l’aide pour sécuriser la route.',type:'kill',reg:'tarkin',n:6,rw:{g:60,xp:80,rel:1},need:0},
   {id:'coffres',nom:'Trésors des Premiers Royaumes',from:'Un vieux cartographe de Tarkin',desc:'Des coffres des Premiers Royaumes sont cachés partout dans Midheim. Trouves-en cinq.',type:'chest',n:5,rw:{g:120,rel:1},need:0},
   {id:'camps',nom:'Feux de camp ennemis',from:'Le Conseil',desc:'Des bandes armées campent dans la nature. Disperse trois camps.',type:'camp',n:3,rw:{g:100,xp:160,sh:4,rel:1},need:0},
   {id:'forge',nom:'Le savoir du forgeron',from:'Le forgeron de Tarkin',desc:'Fais améliorer une arme ou une armure jusqu’à +2 dans une forge.',type:'upgrade',n:2,rw:{sh:6,xp:60,rel:1},need:0},
-  {id:'libres',nom:'La paix des Royaumes Libres',from:'Les Modorn de Last Fire',desc:'Samarii et Modorn s’accusent des attaques sur les routes. Chasse les pillards des Royaumes Libres.',type:'kill',reg:'free',n:12,rw:{g:90,xp:140,sh:3,rel:1},need:1},
+  {id:'libres',nom:'La paix des Royaumes Libres',from:'Les Modorn de Last Fire',desc:'Samarii et Modorn s’accusent des attaques sur les routes. Chasse les pillards des Royaumes Libres.',type:'kill',reg:'free',n:8,rw:{g:90,xp:140,sh:3,rel:1},need:1},
   {id:'chefs',nom:'La chasse aux chefs',from:'Les Modorn de Last Fire',desc:'Certains camps sont menés par un chef plus fort. Abats-en deux.',type:'elite',n:2,rw:{g:140,rel:1},need:1},
   {id:'voyage',nom:'La route de Midheim',from:'Virganth',desc:'Découvre huit lieux de Midheim pour pouvoir y voyager grâce au pendentif.',type:'wp',n:8,rw:{g:150,xp:200,rel:1},need:1},
-  {id:'silver',nom:'Les ombres des Silverwoods',from:'Une chasseuse de Last Fire',desc:'Les rejetons pullulent dans les Silverwoods, là où erre Abhorash.',type:'kill',reg:'silver',n:12,rw:{g:120,xp:200,rel:1},need:2},
-  {id:'pics',nom:'Les orcs des Pics Rouges',from:'Grinmir Thunderhammer',desc:'Les orcs qui assiègent Karaz Ankor pillent les Pics Rouges. Grinmir paiera chaque bande dispersée.',type:'kill',reg:'pics',n:15,rw:{g:200,xp:300,sh:6,rel:1},need:3},
-  {id:'larme',nom:'Les adeptes de la Première Larme',from:'Virganth',desc:'Les adeptes d’Amarath cherchent l’antre de Virganth. Repousse-les hors des bois.',type:'kill',reg:'firsttear',n:15,rw:{g:220,xp:340,rel:1},need:4},
-  {id:'oublies',nom:'Le silence des Monts Oubliés',from:'Une ermite des montagnes',desc:'Les marionnettes d’Amarath descendent des Monts Oubliés. Arrête-les avant qu’elles n’atteignent les villages.',type:'kill',reg:'oublies',n:15,rw:{g:260,xp:420,rel:1},need:5},
+  {id:'silver',nom:'Les ombres des Silverwoods',from:'Une chasseuse de Last Fire',desc:'Les rejetons pullulent dans les Silverwoods, là où erre Abhorash.',type:'kill',reg:'silver',n:6,rw:{g:120,xp:200,rel:1},need:2},
+  {id:'pics',nom:'Les orcs des Pics Rouges',from:'Grinmir Thunderhammer',desc:'Les orcs qui assiègent Karaz Ankor pillent les Pics Rouges. Grinmir paiera chaque bande dispersée.',type:'kill',reg:'pics',n:8,rw:{g:200,xp:300,sh:6,rel:1},need:3},
+  {id:'larme',nom:'Les adeptes de la Première Larme',from:'Virganth',desc:'Les adeptes d’Amarath cherchent l’antre de Virganth. Repousse-les hors des bois.',type:'kill',reg:'firsttear',n:10,rw:{g:220,xp:340,rel:1},need:4},
+  {id:'oublies',nom:'Le silence des Monts Oubliés',from:'Une ermite des montagnes',desc:'Les marionnettes d’Amarath descendent des Monts Oubliés. Arrête-les avant qu’elles n’atteignent les villages.',type:'kill',reg:'oublies',n:10,rw:{g:260,xp:420,rel:1},need:5},
   {id:'echos',nom:'Les échos de la prison',from:'Virganth',desc:'Le sceau tient, mais les lieux de l’histoire sont plus dangereux. Termine deux donjons.',type:'dun',n:2,rw:{g:300,rel:1},need:6}];
 const SQ_BY=Object.fromEntries(SQ.map(q=>[q.id,q]));
 function sqActive(q){return hero.q>=q.need&&!(hero.sqd||[]).includes(q.id)}
