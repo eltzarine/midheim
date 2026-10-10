@@ -39,8 +39,29 @@ function buildWorld(){
     for(const[,dx,dy]of cand){const x=cx+dx-(w>>1),y=cy+dy-(h>>1);if(fits(x,y,w,h,true))return put(kind,x,y,w,h,label,act,extra)}
     for(const[,dx,dy]of cand){const x=cx+dx-(w>>1),y=cy+dy-(h>>1);if(fits(x,y,w,h,false))return put(kind,x,y,w,h,label,act,extra)}
     return null}
+  /* Tarkin dessinée à la main (comme la maquette) : forteresse au nord, rue jusqu'à la place, pont à l'ouest,
+     route à l'est, maisons au sud, remparts crénelés avec portes et tours (obj 14 = rempart, 15 = tour de porte) */
+  function planTarkin(){const X0=60,X1=79,Y0=95,Y1=125;const set=(x,y,v)=>{if(!inb(x,y))return;const i=idx(x,y);t[i]=v;sol[i]=T_SOLID[v];blk[i]=T_BLOCK[v];obj[i]=0;deco[i]=0;clear[i]=1};
+    for(let y=Y0;y<=Y1;y++)for(let x=X0;x<=X1;x++)set(x,y,y<99?4:2);
+    const pave=(x0,y0,x1,y1)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,10)};
+    pave(61,112,63,115);pave(63,110,76,117);pave(68,104,71,109);pave(77,114,80,117);pave(69,118,70,125);pave(61,121,78,122);
+    for(let y=116;y<=117;y++)for(let x=81;x<=83;x++)set(x,y,7);
+    const wall=(x,y,k)=>{if(!inb(x,y))return;const i=idx(x,y);obj[i]=k;sol[i]=1;blk[i]=1;occ[i]=1};
+    for(let y=104;y<=Y1;y++){if(y<112||y>115)wall(X0,y,14);if(y<114||y>117)wall(X1,y,14)}
+    for(let x=X0;x<=X1;x++)if(x<69||x>70)wall(x,Y1,14);
+    for(const[x,y]of[[X0,111],[X0,116],[X1,113],[X1,118],[68,Y1],[71,Y1]])wall(x,y,15);
+    const T=TOWNS.tarkin,ex={town:'tarkin',roof:T.roof},spot={keep:[[61,99,18,5]],auberge:[[62,105,4,3]],marchand:[[73,105,3,3]],forge:[[62,118,3,3]],maison:[[65,119,4,2],[71,119,4,2],[75,119,4,2]]};
+    for(const[kind,label,act]of T.b){const s=spot[kind].shift();const b=put(kind,s[0],s[1],s[2],s[3],label,act,ex);
+      if(act&&act.startsWith('house:')){const kind2=act.slice(6);b.hid='tarkin_'+kind2;const na='house:'+kind2+':'+b.hid+':'+Math.round((b.door.x+.5)*TS)+':'+Math.round((b.door.y+.95)*TS);const it=inter.find(o=>o.b===b);b.act=na;if(it)it.act=na}}
+    put('statue',69,113,2,2,'',null,{});medals.push({x:68,y:112});
+    const drop=(x,y,k)=>{const i=idx(x,y);obj[i]=k;sol[i]=1;blk[i]=0;occ[i]=1};
+    for(const[x,y,k]of[[63,111,11],[64,111,11],[65,111,8],[74,111,8],[75,111,8],[76,111,11],[65,113,10],[74,113,10],[65,116,10],[74,116,10],[67,105,10],[72,105,10],
+      [61,123,2],[63,124,1],[66,124,1],[73,124,2],[78,124,2],[61,108,8],[77,108,11]])drop(x,y,k);
+    for(let x=X0;x<=X1;x+=2)drop(x+(x%4?1:0),96,(x%6)?1:2);
+    return true}
+  const medals=[];
   // villes
-  for(const k in TOWNS){const T=TOWNS[k],[cx,cy]=PL[k];const list=[...T.b].sort((a,b)=>(BSIZE[b[0]][0]*BSIZE[b[0]][1])-(BSIZE[a[0]][0]*BSIZE[a[0]][1]));
+  for(const k in TOWNS){if(k==='tarkin'&&planTarkin())continue;const T=TOWNS[k],[cx,cy]=PL[k];const list=[...T.b].sort((a,b)=>(BSIZE[b[0]][0]*BSIZE[b[0]][1])-(BSIZE[a[0]][0]*BSIZE[a[0]][1]));
     for(const[kind,label,act]of list){const b=placeNear(cx,cy,kind,label,act,{town:k,roof:T.roof},kind==='keep'||kind==='palais');if(b&&act&&act.startsWith('house:')){const kind2=act.slice(6);b.hid=k+'_'+kind2;const na='house:'+kind2+':'+b.hid+':'+Math.round((b.door.x+.5)*TS)+':'+Math.round((b.door.y+.95)*TS);const it=inter.find(o=>o.b===b);b.act=na;if(it)it.act=na}}
     if(T.walls){const R=T.walls+2;for(let y=cy-R-1;y<=cy+R+1;y++)for(let x=cx-R-1;x<=cx+R+1;x++){if(!inb(x,y))continue;const d=Math.hypot(x-cx,y-cy);if(Math.abs(d-R)>.55)continue;const i=idx(x,y);
       if(t[i]===7||t[i]===8||occ[i]||!passT(t[i]))continue;let nearRoad=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(inb(x+dx,y+dy)&&t[idx(x+dx,y+dy)]===7)nearRoad=true;if(nearRoad)continue;
@@ -49,7 +70,7 @@ function buildWorld(){
   {const R=mulberry(99);const freeT=(x,y)=>inb(x,y)&&passT(t[idx(x,y)])&&t[idx(x,y)]!==7&&t[idx(x,y)]!==10&&!occ[idx(x,y)]&&!sol[idx(x,y)];
     const nearRoad=(x,y)=>{for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(inb(x+dx,y+dy)&&t[idx(x+dx,y+dy)]===7)return true;return false};
     const drop=(x,y,k)=>{const i=idx(x,y);obj[i]=k;sol[i]=1;blk[i]=0;occ[i]=1};
-    for(const k of Object.keys(TOWNS).concat(['start','pont'])){const[cx,cy]=PL[k];let n=0,lamps=0;
+    for(const k of Object.keys(TOWNS).concat(['start','pont'])){if(k==='tarkin')continue;const[cx,cy]=PL[k];let n=0,lamps=0;
       for(let a=0;a<500&&(n<12||lamps<5);a++){const x=cx+ri(R,-12,12),y=cy+ri(R,-11,11);if(!freeT(x,y))continue;const nb=builds.some(b=>x>=b.x-1&&x<=b.x+b.w&&y>=b.y-1&&y<=b.y+b.h+1&&!(x>=b.door.x-1&&x<=b.door.x+1&&y===b.door.y));
         if(nearRoad(x,y)&&lamps<5&&R()<.5){if(Math.abs(x-cx)+Math.abs(y-cy)>3){drop(x,y,10);lamps++}continue}
         if(n<12&&(nb||R()<.25)&&!nearRoad(x,y)){drop(x,y,[8,9,11,12,13,8,11][Math.floor(R()*7)]);n++}}}}
@@ -107,7 +128,7 @@ function buildWorld(){
         for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(t[j]===0||(occ[j]&&sol[j]))continue;
           const c=cd+(free(j)?1:t[j]===5?4:2);if(c<dist[j]){dist[j]=c;prev[j]=i;q.push([c,j])}}}
       if(hit<0)continue;for(let i=hit;i!==-1;i=prev[i])if(!free(i))open(i);fill(b.door.x,b.door.y)}}
-  WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
+  WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,medals,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
     start:{x:(st[0]+.5)*TS,y:(st[1]+.5)*TS},chunks:new Map()};
   return WORLD}
 /* Points d'apparition sûrs dans le monde */

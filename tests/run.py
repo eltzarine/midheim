@@ -185,7 +185,8 @@ with sync_playwright() as pw:
         go(pg, f"(()=>{{const s=DUNGEONS['{did}'];G.dun=G.dun||{{ret:WORLD.start}};hostEnter('d:{did}:'+(s.floors-1)+':77:'+G.m.lv,null,{{heal:true}})}})()"); pg.wait_for_timeout(400)
         bv = go(pg, "(()=>{const e=G.enemies.find(e=>e.type==='boss');return e?e.bv:-1})()")
         go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(100); pg.screenshot(path=f'{OUT}/b_{did}.png'); go(pg, "paused=false")
-        go(pg, "(()=>{const e=G.enemies.find(e=>e.type==='boss');if(e)killEnemy(e)})()"); pg.wait_for_timeout(200)
+        go(pg, "(()=>{const e=G.enemies.find(e=>e.type==='boss');if(e)killEnemy(e)})()"); pg.wait_for_timeout(900)
+        skip(pg)  # la scène d'arrivée à l'étage du boss bloque l'escalier tant qu'elle joue
         go(pg, "L.x=G.m.stairs.x;L.y=G.m.stairs.y"); pg.wait_for_timeout(1400)
         check(f'{did} : entrée, boss {bv}, sortie et étape {nextq}', ok_in and go(pg, f"G.zd==='w'&&G.q==={nextq}"), go(pg, "G.q"))
         skip(pg)

@@ -29,7 +29,7 @@ const TOWNS={
   vindheim:{nom:'Vindheim',roof:'#5a2a2a',b:[['auberge','Auberge de Vindheim','house:auberge'],['marchand','Marchand de Vindheim','house:marchand'],['maison'],['maison']]},
   eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['auberge','Auberge d’Eastwatch','house:auberge'],['maison'],['maison']]},
 };
-const BSIZE={maison:[3,2],auberge:[4,3],marchand:[3,3],forge:[3,3],keep:[6,5],palais:[7,5],puits:[1,1]};
+const BSIZE={maison:[4,2],statue:[2,2],auberge:[4,3],marchand:[3,3],forge:[4,3],keep:[6,5],palais:[7,5],puits:[1,1]};
 const WAYPOINTS={start:{nom:'Le Pont de Lathandre (ouest)',pt:PL.start},tarkin:{nom:'Tarkin',pt:PL.tarkin},lastfire:{nom:'Last Fire',pt:PL.lastfire},honor:{nom:'Honor',pt:PL.honor},cibellos:{nom:'Cibellos',pt:PL.cibellos},ironhaven:{nom:'Ironhaven',pt:PL.ironhaven},oka:{nom:'Oka',pt:PL.oka},vindheim:{nom:'Vindheim',pt:PL.vindheim},eastwatch:{nom:'Eastwatch',pt:PL.eastwatch},karazankor:{nom:'Karaz Ankor',pt:PL.karazankor},firsttear:{nom:'Woods of the First Tear',pt:PL.firsttear}};
 /* Donjons et monuments où l'on entre */
 const DUNGEONS={

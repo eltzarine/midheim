@@ -102,6 +102,11 @@ function pixGround(g,x0,y0){if(!SPR.ok('t_TilesetFloor')||!SPR.ok('t_InteriorFlo
       const px=(tx-x0)*TS,py=(ty-y0)*TS;g.fillStyle=pat;const r=v===7?17:19+hash2(tx,ty,31)*5;
       g.beginPath();g.arc(px+16+(hash2(tx,ty,32)-.5)*8,py+16+(hash2(tx,ty,33)-.5)*8,r,0,6.28);g.fill();
       if(GROUND_FX[v]){g.fillStyle=GROUND_FX[v];g.fill()}}}
+  // bordure de pierre autour des pavés
+  for(let ty=y0;ty<y0+CHK;ty++)for(let tx=x0;tx<x0+CHK;tx++){if(wT(tx,ty)!==10)continue;const px=(tx-x0)*TS,py=(ty-y0)*TS;g.fillStyle='#5f7160';
+    const o=(dx,dy)=>{const n=wT(tx+dx,ty+dy);return n!==10&&n!==8&&!isWater(n)};if(o(0,-1))g.fillRect(px,py,TS,3);if(o(0,1))g.fillRect(px,py+TS-3,TS,3);if(o(-1,0))g.fillRect(px,py,3,TS);if(o(1,0))g.fillRect(px+TS-3,py,3,TS)}
+  // médaillons de pierre (place de Tarkin)
+  for(const m of WORLD.medals||[]){const px=(m.x-x0)*TS,py=(m.y-y0)*TS;if(px>-4*TS&&px<CHK*TS&&py>-4*TS&&py<CHK*TS)g.drawImage(SPR.im.t_InteriorFloor,15*16,6*16,64,64,px,py,4*TS,4*TS)}
   return true}
 /* décor au sol : fleurs, buissons, brindilles, herbes hautes (TilesetNature) */
 function pixDeco(g,dc,px,py,tx,ty){const N=SPR.im.t_TilesetNature;if(!SPR.ok('t_TilesetNature'))return false;const h=hash2(tx,ty,61);
@@ -109,13 +114,15 @@ function pixDeco(g,dc,px,py,tx,ty){const N=SPR.im.t_TilesetNature;if(!SPR.ok('t_
   g.drawImage(N,cx*16,cy*16,16,16,px,py,TS,TS);return true}
 /* ---- arbres (TilesetNature, 2×2 cases) ---- */
 const TREE_T={1:[[2,0]],3:[[8,0]],2:[[0,0],[16,0],[0,0]],5:[[18,0]]};
-function drawTreePix(k,tx,ty,alpha){const L=TREE_T[k];if(!L||!SPR.ok('t_TilesetNature'))return false;const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS,h=hash2(tx,ty,9);
+function drawTreePix(k,tx,ty,alpha){if(k===14||k===15||k===7){drawWallPix(k,tx,ty);return true}if((k===8||k===10||k===11||k===12)&&drawPropPix(k,tx,ty))return true;const L=TREE_T[k];if(!L||!SPR.ok('t_TilesetNature'))return false;const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS,h=hash2(tx,ty,9);
   const[cx,cy]=L[Math.floor(h*L.length)];g.save();g.imageSmoothingEnabled=false;if(alpha<1)g.globalAlpha=alpha;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+4,y-2,22,6,0,0,6.28);g.fill();
   const sw=Math.round(Math.sin(G.time*1.1+tx*.7+ty)*.6);g.drawImage(SPR.im.t_TilesetNature,cx*16,cy*16,32,32,x-32+sw,y-64,64,64);g.restore();return true}
 /* ---- maisons de ville (TilesetHouse) : [colonne, ligne, largeur, hauteur] en cases de 16 px ---- */
-const HOUSE_T={auberge:[[0,0,4,3]],marchand:[[16,0,3,3]],forge:[[19,0,3,3]],temple:[[25,0,4,3]],maison:[[12,0,4,3],[4,0,4,3],[8,0,4,3],[22,0,3,3]]};
-function drawHousePix(b,T){const L=HOUSE_T[b.kind];if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
+// découpes vérifiées une à une : bâtiments entiers, rien de rogné
+const HOUSE_T={auberge:[[12,0,4,3]],auberge_tarkin:[[25,7,4,5]],marchand:[[16,0,3,3]],forge:[[29,4,4,4]],temple:[[25,14,4,5]],statue:[[3,15,2,2]],
+  maison:[[0,0,4,3],[4,0,4,3],[8,0,4,3],[0,7,3,3],[3,7,3,3]]};
+function drawHousePix(b,T){const L=(b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind];if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
   const[cx,cy,cw,chh]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
   g.drawImage(SPR.im.t_TilesetHouse,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
@@ -158,3 +165,41 @@ function drawKeepPix(b,T){if(b.kind!=='keep'&&b.kind!=='palais')return false;if(
   for(const[tx,ty]of c._torch){const fh=4+Math.floor((T*10+tx)%3)*2;g.fillStyle='#ff9554';g.fillRect(x+tx*2-1,dy+ty*2-fh,4,fh);g.fillStyle='#ffe18d';g.fillRect(x+tx*2,dy+ty*2-fh+2,2,fh-2)}
   g.restore();return true}
 function drawBuildPix(b,T){return drawKeepPix(b,T)||drawHousePix(b,T)}
+/* ---- pierre dessinée dans la palette du pack : remparts, tours de porte, lanternes ---- */
+const PK={K:'#141b1b',S1:'#5f7160',S2:'#8d977f',S3:'#abc2bc',R0:'#965340',R1:'#d14b34',R2:'#e46d3a',LT:'#ffe18d',MO:'#56864c'};
+function pkBricks(g,x0,y0,x1,y1,seed){g.fillStyle=PK.S1;g.fillRect(x0,y0,x1-x0,y1-y0);for(let row=0,y=y0;y<y1;y+=6,row++){const off=(row+seed)%2?5:0;
+    for(let x=x0-off;x<x1;x+=10){const a=Math.max(x0,x+1),b=Math.min(x1,x+10);if(b<=a)continue;g.fillStyle=PK.S2;g.fillRect(a,y+1,b-a,Math.min(5,y1-y-1));g.fillStyle=PK.S3;g.fillRect(a,y+1,b-a,1)}}}
+const _stone=new Map();
+function stoneCv(key,w,h,draw){let c=_stone.get(key);if(c)return c;c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g);_stone.set(key,c);return c}
+function isWallObj(tx,ty){const o=WORLD.obj[ty*WORLD.W+tx];return o===14||o===15||o===7}
+function drawWallPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;g.save();g.imageSmoothingEnabled=false;
+  const hz=isWallObj(tx-1,ty)||isWallObj(tx+1,ty),below=isWallObj(tx,ty+1),above=isWallObj(tx,ty-1);
+  if(k===15){const c=stoneCv('tour',20,44,g2=>{pkBricks(g2,2,16,18,44,1);g2.strokeStyle=PK.K;g2.strokeRect(2.5,16.5,15,27);
+      for(let xx=1;xx<18;xx+=5){g2.fillStyle=PK.S2;g2.fillRect(xx,12,3,4);g2.fillStyle=PK.K;g2.fillRect(xx,11,3,1)}
+      for(let j=0;j<11;j++){const hw=Math.round(9*(j+1)/11);for(let i=-hw;i<=hw;i++){g2.fillStyle=j%4===3?PK.R0:i<-hw/3?PK.R2:i<hw/2?PK.R1:PK.R0;g2.fillRect(10+i,1+j,1,1)}g2.fillStyle=PK.K;g2.fillRect(10-hw-1,1+j,1,1);g2.fillRect(10+hw+1,1+j,1,1)}
+      g2.fillStyle=PK.LT;g2.fillRect(9,26,2,4);g2.fillStyle=PK.K;g2.fillRect(9,34,2,4)});
+    g.fillStyle='rgba(20,12,30,.32)';g.beginPath();g.ellipse(x+16,y+30,18,5,0,0,6.28);g.fill();
+    g.drawImage(c,x+16-20,y+32-88,40,88);
+    if(SPR.ok('f_FlagRed')){const fr=Math.floor(G.time*6+tx)%4;g.fillStyle=PK.K;g.fillRect(x+15,y+32-100,2,14);g.drawImage(SPR.im.f_FlagRed,fr*16,0,16,16,x+17,y+32-100,24,24)}
+    g.restore();return}
+  if(hz){const c=stoneCv('murH',16,26,g2=>{pkBricks(g2,0,10,16,26,0);g2.fillStyle=PK.S2;g2.fillRect(0,6,16,4);g2.fillStyle=PK.K;g2.fillRect(0,10,16,1);g2.fillRect(0,25,16,1);
+      for(const xx of[1,9]){g2.fillStyle=PK.S2;g2.fillRect(xx,1,6,5);g2.fillStyle=PK.S3;g2.fillRect(xx,1,6,1);g2.strokeStyle=PK.K;g2.strokeRect(xx+.5,.5,5,5)}
+      for(let i=0;i<4;i++){g2.fillStyle=PK.MO;g2.fillRect((i*5+3)%16,23+(i%2),1,1)}});
+    g.drawImage(c,x,y+32-52,32,52)}
+  else{const c=stoneCv('murV'+(below?1:0),16,below?16:24,g2=>{const hh=below?16:24;pkBricks(g2,3,0,13,hh,0);g2.fillStyle=PK.S2;g2.fillRect(4,0,8,below?16:12);
+      for(let yy=0;yy<(below?16:12);yy+=2){g2.fillStyle=(yy%4)?PK.S3:PK.S2;g2.fillRect(4,yy,8,1)}
+      g2.fillStyle=PK.K;g2.fillRect(3,0,1,hh);g2.fillRect(12,0,1,hh);for(let yy=1;yy<(below?16:12);yy+=8){g2.fillStyle=PK.S2;g2.fillRect(1,yy,3,5);g2.fillRect(12,yy,3,5);g2.strokeStyle=PK.K;g2.strokeRect(.5,yy+.5,3,4);g2.strokeRect(12.5,yy+.5,3,4)}
+      if(!below){g2.fillStyle=PK.K;g2.fillRect(3,12,10,1);g2.fillRect(3,23,10,1)}});
+    g.drawImage(c,x,y-(above?0:8),32,c.height*2)}
+  g.restore()}
+/* petits objets de ville : tonneaux, caisses, lanternes, rondins, clôture */
+const PROP_T={8:[[16,15,1,1],[17,15,1,1]],11:[[19,14,1,1],[20,15,1,1]],12:[[19,14,1,1],[19,15,1,1]]};
+function drawPropPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;
+  if(k===10){g.save();g.imageSmoothingEnabled=false;const on=G.night||Sky.lamps;g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+16,y+30,7,3,0,0,6.28);g.fill();
+    g.fillStyle=PK.K;g.fillRect(x+14,y-6,4,36);g.fillRect(x+10,y-18,12,14);g.fillStyle=on?PK.LT:'#e8d9a0';g.fillRect(x+12,y-16,8,10);g.fillStyle=PK.K;g.fillRect(x+15,y-16,2,10);
+    if(on){g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(x+16,y-11,1,x+16,y-11,30);gl.addColorStop(0,'rgba(255,200,110,.35)');gl.addColorStop(1,'rgba(255,200,110,0)');g.fillStyle=gl;g.fillRect(x-14,y-41,60,60)}
+    g.restore();return true}
+  const L=PROP_T[k];if(!L||!SPR.ok('t_TilesetHouse'))return false;g.save();g.imageSmoothingEnabled=false;
+  g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+16,y+29,13,4,0,0,6.28);g.fill();
+  L.forEach(([cx,cy],i)=>g.drawImage(SPR.im.t_TilesetHouse,cx*16,cy*16,16,16,x+(L.length>1?i*12-6:0)+2,y+2-(i%2)*4,28,28));g.restore();return true}
+
