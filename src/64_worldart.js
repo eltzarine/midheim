@@ -1,5 +1,5 @@
 /* ================= Monde : sol peint, falaises, objets facettés ================= */
-const TBASE={0:'#3c8a80',1:'#4f9c94',2:'#93ad4c',3:'#d58c4c',4:'#6a913c',5:'#a8613c',6:'#e9eff0',7:'#cf9358',8:'#8a6034',9:'#e6c88a',10:'#bfb19b',11:'#76894a'};
+const TBASE={12:'#c8955a',13:'#9ab24c',0:'#3c8a80',1:'#4f9c94',2:'#93ad4c',3:'#d58c4c',4:'#6a913c',5:'#a8613c',6:'#e9eff0',7:'#cf9358',8:'#8a6034',9:'#e6c88a',10:'#bfb19b',11:'#76894a'};
 function vnoise(x,y,s){const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi;const a=hash2(xi,yi,s),b=hash2(xi+1,yi,s),c=hash2(xi,yi+1,s),d=hash2(xi+1,yi+1,s);const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
 const isWater=v=>v===0||v===1;
 function pebble(g,x,y,r,col){poly(g,[x-r,y,x-r*.4,y-r*.8,x+r*.6,y-r*.6,x+r,y+r*.1,x+r*.2,y+r*.6],shade(col,-.22));poly(g,[x-r,y,x-r*.4,y-r*.8,x+r*.6,y-r*.6,x+r*.1,y-r*.1],shade(col,.12))}
@@ -43,7 +43,7 @@ function renderChunk(cx,cy){const c=document.createElement('canvas');c.width=CHK
     else if(dc===4){for(let k=0;k<5;k++){const x=px+6+k*5;poly(g,[x,py+26,x+1+(hash2(tx,ty,90+k)-.5)*4,py+11,x+2.5,py+26],k%2?'#6f8a3e':'#8aa64a')}}
     else if(dc===5){g.fillStyle='#f3e4cc';g.beginPath();g.arc(px+16,py+18,3,0,6.28);g.fill();g.fillStyle='#d9c4a4';g.beginPath();g.arc(px+17,py+19,1.6,0,6.28);g.fill()}}
   // 3) falaises : la terre surplombe l'eau (faces de roche + écume)
-  for(let ty=y0-1;ty<y0+CHK;ty++)for(let tx=x0-1;tx<=x0+CHK;tx++){const v=wT(tx,ty);if(isWater(v)||v===8)continue;const px=(tx-x0)*TS,py=(ty-y0)*TS;
+  for(let ty=y0-1;ty<y0+CHK;ty++)for(let tx=x0-1;tx<=x0+CHK;tx++){const v=wT(tx,ty);if(isWater(v)||v===8||v===12)continue;const px=(tx-x0)*TS,py=(ty-y0)*TS;
     const low=v===9||v===11;const dn=wT(tx,ty+1);
     if(isWater(dn)){const hgt=low?5:13+hash2(tx,ty,4)*5;const rock=v===6?'#8f9aa6':v===9?'#c9a46a':'#9a5634';
       const pts=[px,py+TS];for(let k=0;k<=4;k++)pts.push(px+k*8,py+TS+hgt+(hash2(tx*5+k,ty,6)-.5)*5);pts.push(px+TS,py+TS);poly(g,pts,shade(rock,-.12));

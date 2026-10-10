@@ -158,6 +158,9 @@ with sync_playwright() as pw:
     go(pg, "(()=>{hero.cls='guerrier';hero.eq={arme:starter('guerrier','arme'),armure:starter('guerrier','armure'),talisman:null};refreshStats();G.players[0].cls='guerrier';G.players[0].st=ST;buildSkillUI()})()")
     # Last Fire, Reinald, Abhorash
     lf = go(pg, "PL.lastfire"); tele(pg, lf[0], lf[1]); pg.wait_for_timeout(900)
+    for _ in range(10):  # la vérification des étapes passe toutes les 0,5 s : on lui laisse le temps
+        if go(pg, "G.q===2"): break
+        pg.wait_for_timeout(300)
     check('Last Fire : étape 2 et scène « Royaumes Libres »', go(pg, "G.q===2") and story_shown(pg,'ch1'))
     skip(pg)
     lf = go(pg, "PL.lastfire"); tele(pg, lf[0] - 20, lf[1] + 12); pg.wait_for_timeout(900)

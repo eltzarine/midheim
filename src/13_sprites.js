@@ -83,20 +83,23 @@ const GROUND_T={2:[[0,12],[0,12],[0,12],[0,12],[0,12],[0,12],[1,12],[2,12],[3,12
   3:[[0,5],[0,5],[0,5],[0,5],[0,5],[0,5],[1,5],[2,5],[3,5],[4,5]],
   9:[[1,1],[1,1],[1,1],[1,1],[1,1],[1,1],[0,4],[1,4]],
   6:[[0,19],[0,19],[0,19],[0,19],[0,19],[0,19],[1,19],[2,19],[3,19],[4,19]],
-  10:'cobble'};
+  10:'cobble',12:'planks',13:'field'};
 const GROUND_FX={11:'rgba(40,110,105,.28)',9:'rgba(255,240,200,.18)',3:'rgba(110,50,30,.14)'};
 const _gpat={};
 function groundTile(g,v,tx,ty,px,py){const L=GROUND_T[v];if(!L)return false;let src,cx,cy;
-  if(L==='cobble'){src=SPR.im.t_InteriorFloor;const C=[[1,13],[1,13],[1,13],[1,13],[5,13],[6,14],[1,14]];[cx,cy]=C[Math.floor(hash2(tx,ty,77)*C.length)]}
+  if(v===12){src=SPR.im.t_TilesetWater;const C=[[1,13],[1,13],[1,13],[5,13],[6,13]];[cx,cy]=C[Math.floor(hash2(tx,ty,77)*C.length)]}
+  else if(v===13){src=SPR.im.t_Field;const row=Math.max(0,((WORLD.fieldv&&WORLD.fieldv[ty*WORLD.W+tx])||1)-1),F=(x,y)=>wT(x,y)===13;
+    const ax=F(tx-1,ty)?(F(tx+1,ty)?1:2):0,ay=F(tx,ty-1)?(F(tx,ty+1)?1:2):0;cx=ax;cy=row*3+ay}
+  else if(L==='cobble'){src=SPR.im.t_InteriorFloor;const C=[[1,13],[1,13],[1,13],[1,13],[5,13],[6,14],[1,14]];[cx,cy]=C[Math.floor(hash2(tx,ty,77)*C.length)]}
   else{src=SPR.im.t_TilesetFloor;[cx,cy]=L[Math.floor(hash2(tx,ty,77)*L.length)]}
   g.drawImage(src,cx*16,cy*16,16,16,px,py,TS,TS);if(GROUND_FX[v]){g.fillStyle=GROUND_FX[v];g.fillRect(px,py,TS,TS)}return true}
 function groundPat(g,v){if(_gpat[v])return _gpat[v];const c=document.createElement('canvas');c.width=c.height=TS*2;const cg=c.getContext('2d');cg.imageSmoothingEnabled=false;
   for(let j=0;j<2;j++)for(let i=0;i<2;i++)groundTile(cg,v,i+v*3,j,i*TS,j*TS);return _gpat[v]=g.createPattern(c,'repeat')}
-function pixGround(g,x0,y0){if(!SPR.ok('t_TilesetFloor')||!SPR.ok('t_InteriorFloor'))return false;g.imageSmoothingEnabled=false;
+function pixGround(g,x0,y0){if(!SPR.ok('t_TilesetFloor')||!SPR.ok('t_InteriorFloor')||!SPR.ok('t_TilesetWater')||!SPR.ok('t_Field'))return false;g.imageSmoothingEnabled=false;
   for(let ty=y0;ty<y0+CHK;ty++)for(let tx=x0;tx<x0+CHK;tx++){const v=wT(tx,ty),px=(tx-x0)*TS,py=(ty-y0)*TS;
     if(!groundTile(g,v,tx,ty,px,py)){const n=vnoise(tx/7,ty/7,4)-.5;g.fillStyle=shade(TBASE[v]||TBASE[2],isWater(v)?n*.12:n*.16);g.fillRect(px,py,TS+.5,TS+.5)}}
   // bords arrondis entre terrains, remplis avec la texture du terrain qui déborde
-  const PRIO=[3,9,2,4,11,6,7];
+  const PRIO=[3,9,2,4,11,6,7];   // planches et champs : bords nets, pas de débordement
   for(const pv of PRIO){if(!GROUND_T[pv])continue;const pat=groundPat(g,pv);for(let ty=y0-1;ty<=y0+CHK;ty++)for(let tx=x0-1;tx<=x0+CHK;tx++){const v=wT(tx,ty);if(v!==pv)continue;let diff=false;
       for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const n=wT(tx+dx,ty+dy);if(n!==v&&!isWater(n)&&n!==8&&n!==10&&n!==5)diff=true}if(!diff)continue;
       const px=(tx-x0)*TS,py=(ty-y0)*TS;g.fillStyle=pat;const r=v===7?17:19+hash2(tx,ty,31)*5;
@@ -114,7 +117,7 @@ function pixDeco(g,dc,px,py,tx,ty){const N=SPR.im.t_TilesetNature;if(!SPR.ok('t_
   g.drawImage(N,cx*16,cy*16,16,16,px,py,TS,TS);return true}
 /* ---- arbres (TilesetNature, 2×2 cases) ---- */
 const TREE_T={1:[[2,0]],3:[[8,0]],2:[[0,0],[16,0],[0,0]],5:[[18,0]]};
-function drawTreePix(k,tx,ty,alpha){if(k===14||k===15||k===7){drawWallPix(k,tx,ty);return true}if((k===8||k===10||k===11||k===12)&&drawPropPix(k,tx,ty))return true;const L=TREE_T[k];if(!L||!SPR.ok('t_TilesetNature'))return false;const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS,h=hash2(tx,ty,9);
+function drawTreePix(k,tx,ty,alpha){if(k>=16&&k<=20&&drawTownObj(k,tx,ty))return true;if(k===14||k===15||k===7){drawWallPix(k,tx,ty);return true}if((k===8||k===10||k===11||k===12)&&drawPropPix(k,tx,ty))return true;const L=TREE_T[k];if(!L||!SPR.ok('t_TilesetNature'))return false;const g=ctx,x=(tx+.5)*TS,y=(ty+1)*TS,h=hash2(tx,ty,9);
   const[cx,cy]=L[Math.floor(h*L.length)];g.save();g.imageSmoothingEnabled=false;if(alpha<1)g.globalAlpha=alpha;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+4,y-2,22,6,0,0,6.28);g.fill();
   const sw=Math.round(Math.sin(G.time*1.1+tx*.7+ty)*.6);g.drawImage(SPR.im.t_TilesetNature,cx*16,cy*16,32,32,x-32+sw,y-64,64,64);g.restore();return true}
@@ -122,10 +125,12 @@ function drawTreePix(k,tx,ty,alpha){if(k===14||k===15||k===7){drawWallPix(k,tx,t
 // découpes vérifiées une à une : bâtiments entiers, rien de rogné
 const HOUSE_T={auberge:[[12,0,4,3]],auberge_tarkin:[[25,7,4,5]],marchand:[[16,0,3,3]],forge:[[29,4,4,4]],temple:[[25,14,4,5]],statue:[[3,15,2,2]],
   maison:[[0,0,4,3],[4,0,4,3],[8,0,4,3],[0,7,3,3],[3,7,3,3]]};
-function drawHousePix(b,T){const L=(b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind];if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
-  const[cx,cy,cw,chh]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;
+const HOUSE_SPR={orange:[0,0,4,3],beige:[4,0,4,3],orange2:[8,0,4,3],rouge:[12,0,4,3],boutique:[16,0,3,3],bois:[25,14,4,5],chaume:[25,7,4,5],four:[29,4,4,4],
+  hutte:[0,7,3,3],paille:[3,7,3,3],igloo:[0,11,3,3],statue:[3,15,2,2],torii:[0,5,3,2],tente:[4,0,3,3,'t_Camp'],tente2:[7,0,3,3,'t_Camp'],tente3:[10,0,3,3,'t_Camp']};
+function drawHousePix(b,T){if(b.kind==='deco'&&drawDecoPix(b,T))return true;const L=b.spr&&HOUSE_SPR[b.spr]?[HOUSE_SPR[b.spr]]:((b.town==='tarkin'&&HOUSE_T[b.kind+'_tarkin'])||HOUSE_T[b.kind]);if(!L||!SPR.ok('t_TilesetHouse'))return false;const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS;
+  const[cx,cy,cw,chh,sk]=L[Math.floor(hash2(b.x,b.y,3)*L.length)];const W=cw*32,H=chh*32,dx=x+w/2-W/2,dy=y+h-H+4;const SRC=SPR.im[sk||'t_TilesetHouse'];if(sk&&!SPR.ok(sk))return false;
   g.save();g.imageSmoothingEnabled=false;g.fillStyle='rgba(20,12,30,.32)';g.fillRect(dx+8,y+h-2,W-4,9);
-  g.drawImage(SPR.im.t_TilesetHouse,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
+  g.drawImage(SRC,cx*16,cy*16,cw*16,chh*16,dx,dy,W,H);
   if(typeof Vitrine!=='undefined'&&Vitrine.lit&&Vitrine.lit(b)){g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(x+w/2,y+h-8,2,x+w/2,y+h-8,40);gl.addColorStop(0,'rgba(255,190,100,.35)');gl.addColorStop(1,'rgba(255,190,100,0)');g.fillStyle=gl;g.fillRect(x+w/2-40,y+h-48,80,60)}
   g.restore();
   if((b.kind==='forge'||(b.kind==='maison'&&hash2(b.x,b.y,5)<.5))&&Math.random()<(b.kind==='forge'?.09:.03)&&parts.length<500)
@@ -203,3 +208,41 @@ function drawPropPix(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+16,y+29,13,4,0,0,6.28);g.fill();
   L.forEach(([cx,cy],i)=>g.drawImage(SPR.im.t_TilesetHouse,cx*16,cy*16,16,16,x+(L.length>1?i*12-6:0)+2,y+2-(i%2)*4,28,28));g.restore();return true}
 
+
+/* ---- décor bâti des villes : feu de camp, phare, tour de guet, moulins, bateaux, grue ---- */
+function drawDecoPix(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,cx=x+w/2,by=y+h,S=b.spr;g.save();g.imageSmoothingEnabled=false;
+  const sh=(rx)=>{g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(cx,by-3,rx,6,0,0,6.28);g.fill()};
+  const glow=(gx,gy,r,a)=>{g.save();g.globalCompositeOperation='lighter';const gl=g.createRadialGradient(gx,gy,2,gx,gy,r);gl.addColorStop(0,'rgba(255,190,100,'+a+')');gl.addColorStop(1,'rgba(255,190,100,0)');g.fillStyle=gl;g.fillRect(gx-r,gy-r,r*2,r*2);g.restore()};
+  if(S==='feu'){for(let i=0;i<10;i++){const a=i/10*6.28,px=cx+Math.cos(a)*26,py=by-14+Math.sin(a)*12;g.fillStyle=PK.S2;g.fillRect(px-7,py-5,14,10);g.strokeStyle=PK.K;g.strokeRect(px-6.5,py-4.5,13,9)}
+    g.fillStyle=PK.R0;g.fillRect(cx-16,by-18,32,6);const f=Math.sin(T*9)*3,f2=Math.cos(T*7)*2;
+    for(const[col,ww,hh]of[[PK.R1,20,46+f],[PK.R2,15,36+f2],[PK.LT,8,22+f]]){g.fillStyle=col;g.beginPath();g.moveTo(cx-ww,by-14);g.lineTo(cx+f2*.6,by-14-hh);g.lineTo(cx+ww,by-14);g.closePath();g.fill()}
+    glow(cx,by-30,110,.32);if(Math.random()<.12&&parts.length<500)parts.push({k:'smoke',x:cx,y:by-60,vx:4,vy:-18,life:2.4,max:2.4,r:7});g.restore();return true}
+  if(S==='phare'||S==='guet'){const hh=S==='phare'?96:120,tw=36,tx=cx-tw/2,top=by-hh;sh(24);pkBricks(g,tx,top+20,tx+tw,by,1);g.strokeStyle=PK.K;g.lineWidth=2;g.strokeRect(tx,top+20,tw,hh-20);
+    for(let xx=tx-2;xx<tx+tw;xx+=9){g.fillStyle=PK.S2;g.fillRect(xx,top+12,6,8);g.strokeRect(xx,top+12,6,8)}
+    for(let j=0;j<16;j++){const hw=Math.round(22*(j+1)/16);g.fillStyle=j%5===4?PK.R0:PK.R1;g.fillRect(cx-hw,top-6+j,hw*2,1)}
+    const on=S==='phare'||G.night||Sky.lamps;g.fillStyle=on?PK.LT:PK.K;g.fillRect(cx-6,top+24,12,12);g.strokeRect(cx-6,top+24,12,12);
+    for(let yy=top+48;yy<by-14;yy+=22){g.fillStyle=PK.K;g.fillRect(cx-2,yy,4,8)}
+    if(on)glow(cx,top+30,S==='phare'?150:90,.4);
+    if(SPR.ok('f_FlagBlue')){const fr=Math.floor(T*6)%4;g.fillStyle=PK.K;g.fillRect(cx-1,top-30,2,24);g.drawImage(SPR.im.f_FlagBlue,fr*16,0,16,16,cx+1,top-30,24,24)}
+    g.restore();return true}
+  if(S==='moulin'){if(!SPR.ok('a_Mill')){g.restore();return false}sh(26);const bw=40,bh=64,bx=cx-bw/2,top=by-bh;
+    g.fillStyle='#eecf9b';g.beginPath();g.moveTo(bx,by);g.lineTo(bx+8,top+14);g.lineTo(bx+bw-8,top+14);g.lineTo(bx+bw,by);g.closePath();g.fill();g.strokeStyle=PK.K;g.lineWidth=2;g.stroke();
+    g.fillStyle=PK.K;g.fillRect(cx-7,by-22,14,22);for(let j=0;j<16;j++){const hw=Math.round(20*(j+1)/16);g.fillStyle=j%5===4?PK.R0:PK.R1;g.fillRect(cx-hw,top-2+j,hw*2,1)}
+    const fr=Math.floor(T*5)%4;g.drawImage(SPR.im.a_Mill,fr*64,0,64,64,cx-64,top-50,128,128);g.restore();return true}
+  if(S==='moulinEau'){if(!SPR.ok('a_Watermill')){g.restore();return false}const fr=Math.floor(T*5)%3;g.drawImage(SPR.im.a_Watermill,fr*34,0,34,36,cx-34,by-72,68,72);g.restore();return true}
+  if(S==='bateau'||S==='barque'){if(!SPR.ok('v_Boat')){g.restore();return false}const bob=Math.round(Math.sin(T*1.6+b.x)*2),fl=hash2(b.x,b.y,5)<.5;
+    g.save();g.translate(cx,by-16+bob);if(fl)g.scale(-1,1);g.drawImage(SPR.im.v_Boat,-80,-32,160,64);
+    if(S==='bateau'&&SPR.ok('v_Sail'))g.drawImage(SPR.im.v_Sail,-14,-110,60,86);g.restore();g.restore();return true}
+  if(S==='grue'){if(!SPR.ok('v_Crane')){g.restore();return false}sh(20);g.drawImage(SPR.im.v_Crane,cx-33,by-72,66,72);g.restore();return true}
+  g.restore();return false}
+/* objets 16 palissade, 17 rondins, 18 haie, 19 meule de foin, 20 filet de pêche */
+function drawTownObj(k,tx,ty){const g=ctx,x=tx*TS,y=ty*TS;g.save();g.imageSmoothingEnabled=false;
+  if(k===16){const O=WORLD.obj,W=WORLD.W,isP=(a,b)=>O[b*W+a]===16,hz=isP(tx-1,ty)||isP(tx+1,ty);
+    if(hz){for(let i=0;i<4;i++){const px=x+i*8;g.fillStyle='#bd7959';g.fillRect(px+1,y-8,6,30);g.fillStyle='#d3865f';g.fillRect(px+2,y-6,2,26);g.fillStyle=PK.K;g.fillRect(px,y-8,1,30);
+        g.fillStyle='#d3865f';g.beginPath();g.moveTo(px+1,y-8);g.lineTo(px+4,y-15);g.lineTo(px+7,y-8);g.fill()}g.fillStyle='#965340';g.fillRect(x,y+2,32,3);g.fillRect(x,y+14,32,3)}
+    else{g.fillStyle='#bd7959';g.fillRect(x+12,y-6,10,38);g.fillStyle=PK.K;g.fillRect(x+11,y-6,1,38);g.fillRect(x+22,y-6,1,38);for(let yy=y-4;yy<y+32;yy+=8){g.fillStyle='#965340';g.fillRect(x+12,yy,10,1)}}
+    g.restore();return true}
+  const C={17:['t_Camp',0,0,2,1],18:['t_TilesetNature',1,10,1,1],19:['t_Camp',4,3,1,1],20:['v_FishNetFull',0,0,2,2]}[k];if(!C||!SPR.ok(C[0])){g.restore();return false}
+  const[src,cx,cy,cw,chh]=C;const im=SPR.im[src];const sw=k===20?im.width:cw*16,shh=k===20?im.height:chh*16;
+  if(k!==20){g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x+sw,y+29,sw-2,4,0,0,6.28);g.fill()}
+  g.drawImage(im,cx*16,cy*16,sw,shh,x,y+32-shh*2,sw*2,shh*2);g.restore();return true}

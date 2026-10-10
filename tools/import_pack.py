@@ -39,6 +39,12 @@ def main(pack):
     for t in TILES:
         cp(os.path.join('Backgrounds', 'Tilesets', t + '.png'), 't_' + t + '.png')
     cp(os.path.join('Backgrounds', 'Tilesets', 'Interior', 'TilesetInteriorFloor.png'), 't_InteriorFloor.png')
+    cp(os.path.join('Backgrounds', 'Tilesets', 'tileset_camp.png'), 't_Camp.png')
+    cp(os.path.join('Backgrounds', 'Tilesets', 'TilesetField.png'), 't_Field.png')
+    for v in ('Boat', 'Sail', 'Crane', 'FishNetFull'):
+        cp(os.path.join('Backgrounds', 'Vehicles', v + '.png'), 'v_' + v + '.png')
+    cp(os.path.join('Backgrounds', 'Animated', 'MillPropeller', 'MillPropeller_A_64x64.png'), 'a_Mill.png')
+    cp(os.path.join('Backgrounds', 'Animated', 'WaterMill', 'Watermill_A_34x36.png'), 'a_Watermill.png')
     for col in ('Red', 'Blue', 'Yellow'):
         cp(os.path.join('Backgrounds', 'Animated', 'Flag', 'Flag%s16x16.png' % col), 'f_Flag' + col + '.png')
     shutil.copyfile(os.path.join(pack, 'LICENSE.txt'), os.path.join(DEST, 'LICENSE-NinjaAdventure.txt'))

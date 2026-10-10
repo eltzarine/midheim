@@ -1,7 +1,7 @@
 /* ================= Construction du monde continu (à partir de la carte) ================= */
 /* Codes de terrain : 0 mer, 1 rivière, 2 herbe, 3 terre sèche, 4 forêt, 5 montagne, 6 neige, 7 route, 8 pont, 9 plage, 10 pavé, 11 marais */
-const T_SOLID=[1,1,0,0,0,1,0,0,0,0,0,0];
-const T_BLOCK=[0,0,0,0,0,1,0,0,0,0,0,0];
+const T_SOLID=[1,1,0,0,0,1,0,0,0,0,0,0,0,0];
+const T_BLOCK=[0,0,0,0,0,1,0,0,0,0,0,0,0,0];
 /* objets : 1 pin, 2 chêne, 3 pin enneigé, 4 rocher, 5 saule, 6 pierre levée, 7 mur */
 let WORLD=null;
 function buildWorld(){
@@ -60,8 +60,29 @@ function buildWorld(){
     for(let x=X0;x<=X1;x+=2)drop(x+(x%4?1:0),96,(x%6)?1:2);
     return true}
   const medals=[];
+  /* autres villes : plans de 31_towns.js, recopiés des maquettes */
+  const fieldv=new Uint8Array(N);
+  function planTown(k){const P=TOWN_PLANS[k];if(!P)return false;const[cx,cy]=PL[k],ox=cx-11,oy=cy-14;
+    const TY={h:2,f:4,p:10,t:7,s:9,n:6,e:0,pl:12,c:13};
+    const set=(x,y,v)=>{x+=ox;y+=oy;if(!inb(x,y))return;const i=idx(x,y);t[i]=v;sol[i]=T_SOLID[v];blk[i]=T_BLOCK[v];obj[i]=0;deco[i]=0;clear[i]=1};
+    for(let y=0;y<28;y++)for(let x=0;x<22;x++)set(x,y,TY[P.base]);
+    for(const[ty,x0,y0,x1,y1]of P.g||[])for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)set(x,y,TY[ty]);
+    for(const[ty,dx,dy,r]of P.disk||[])for(let y=0;y<28;y++)for(let x=0;x<22;x++)if((x-dx)**2+(y-dy)**2<=r*r)set(x,y,TY[ty]);
+    for(const[x0,y0,x1,y1,row]of P.fields||[])for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){set(x,y,13);if(inb(ox+x,oy+y))fieldv[idx(ox+x,oy+y)]=row+1}
+    const solid=(x,y,k)=>{x+=ox;y+=oy;if(!inb(x,y))return;const i=idx(x,y);obj[i]=k;sol[i]=1;blk[i]=1;occ[i]=1};
+    const lines=(L,k)=>{for(const[o,a,b,c]of L||[]){if(o==='H')for(let x=a;x<=b;x++)solid(x,c,k);else for(let y=b;y<=c;y++)solid(a,y,k)}};
+    lines(P.w,14);lines(P.pal,16);for(const[x,y]of P.tw||[])solid(x,y,15);
+    const T=TOWNS[k],spot={};for(const kd in P.b)spot[kd]=P.b[kd].slice();
+    for(const[kind,label,act]of T.b){const s=spot[kind]&&spot[kind].shift();let b;
+      if(s)b=put(kind,ox+s[0],oy+s[1],s[2],s[3],label,act,{town:k,roof:T.roof,spr:s[4]});else b=placeNear(cx,cy,kind,label,act,{town:k,roof:T.roof},kind==='palais');
+      if(b&&act&&act.startsWith('house:')){const kind2=act.slice(6);b.hid=k+'_'+kind2;const na='house:'+kind2+':'+b.hid+':'+Math.round((b.door.x+.5)*TS)+':'+Math.round((b.door.y+.95)*TS);const it=inter.find(o=>o.b===b);b.act=na;if(it)it.act=na}}
+    for(const[spr,x,y,w,h]of P.d||[])put('deco',ox+x,oy+y,w,h,'',null,{spr});
+    const drop=(x,y,k)=>{x+=ox;y+=oy;if(!inb(x,y))return;const i=idx(x,y);obj[i]=k;sol[i]=1;blk[i]=0;occ[i]=1};
+    for(const[c,x,y]of P.o||[])drop(x,y,c);for(const[c,x,y]of P.tr||[])drop(x,y,c);
+    for(const[x,y]of P.m||[])medals.push({x:ox+x,y:oy+y});
+    return true}
   // villes
-  for(const k in TOWNS){if(k==='tarkin'&&planTarkin())continue;const T=TOWNS[k],[cx,cy]=PL[k];const list=[...T.b].sort((a,b)=>(BSIZE[b[0]][0]*BSIZE[b[0]][1])-(BSIZE[a[0]][0]*BSIZE[a[0]][1]));
+  for(const k in TOWNS){if(k==='tarkin'&&planTarkin())continue;if(planTown(k))continue;const T=TOWNS[k],[cx,cy]=PL[k];const list=[...T.b].sort((a,b)=>(BSIZE[b[0]][0]*BSIZE[b[0]][1])-(BSIZE[a[0]][0]*BSIZE[a[0]][1]));
     for(const[kind,label,act]of list){const b=placeNear(cx,cy,kind,label,act,{town:k,roof:T.roof},kind==='keep'||kind==='palais');if(b&&act&&act.startsWith('house:')){const kind2=act.slice(6);b.hid=k+'_'+kind2;const na='house:'+kind2+':'+b.hid+':'+Math.round((b.door.x+.5)*TS)+':'+Math.round((b.door.y+.95)*TS);const it=inter.find(o=>o.b===b);b.act=na;if(it)it.act=na}}
     if(T.walls){const R=T.walls+2;for(let y=cy-R-1;y<=cy+R+1;y++)for(let x=cx-R-1;x<=cx+R+1;x++){if(!inb(x,y))continue;const d=Math.hypot(x-cx,y-cy);if(Math.abs(d-R)>.55)continue;const i=idx(x,y);
       if(t[i]===7||t[i]===8||occ[i]||!passT(t[i]))continue;let nearRoad=false;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)if(inb(x+dx,y+dy)&&t[idx(x+dx,y+dy)]===7)nearRoad=true;if(nearRoad)continue;
@@ -70,7 +91,7 @@ function buildWorld(){
   {const R=mulberry(99);const freeT=(x,y)=>inb(x,y)&&passT(t[idx(x,y)])&&t[idx(x,y)]!==7&&t[idx(x,y)]!==10&&!occ[idx(x,y)]&&!sol[idx(x,y)];
     const nearRoad=(x,y)=>{for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]])if(inb(x+dx,y+dy)&&t[idx(x+dx,y+dy)]===7)return true;return false};
     const drop=(x,y,k)=>{const i=idx(x,y);obj[i]=k;sol[i]=1;blk[i]=0;occ[i]=1};
-    for(const k of Object.keys(TOWNS).concat(['start','pont'])){if(k==='tarkin')continue;const[cx,cy]=PL[k];let n=0,lamps=0;
+    for(const k of Object.keys(TOWNS).concat(['start','pont'])){if(k==='tarkin'||TOWN_PLANS[k])continue;const[cx,cy]=PL[k];let n=0,lamps=0;
       for(let a=0;a<500&&(n<12||lamps<5);a++){const x=cx+ri(R,-12,12),y=cy+ri(R,-11,11);if(!freeT(x,y))continue;const nb=builds.some(b=>x>=b.x-1&&x<=b.x+b.w&&y>=b.y-1&&y<=b.y+b.h+1&&!(x>=b.door.x-1&&x<=b.door.x+1&&y===b.door.y));
         if(nearRoad(x,y)&&lamps<5&&R()<.5){if(Math.abs(x-cx)+Math.abs(y-cy)>3){drop(x,y,10);lamps++}continue}
         if(n<12&&(nb||R()<.25)&&!nearRoad(x,y)){drop(x,y,[8,9,11,12,13,8,11][Math.floor(R()*7)]);n++}}}}
@@ -128,7 +149,7 @@ function buildWorld(){
         for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(t[j]===0||(occ[j]&&sol[j]))continue;
           const c=cd+(free(j)?1:t[j]===5?4:2);if(c<dist[j]){dist[j]=c;prev[j]=i;q.push([c,j])}}}
       if(hit<0)continue;for(let i=hit;i!==-1;i=prev[i])if(!free(i))open(i);fill(b.door.x,b.door.y)}}
-  WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,medals,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
+  WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,medals,fieldv,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
     start:{x:(st[0]+.5)*TS,y:(st[1]+.5)*TS},chunks:new Map()};
   return WORLD}
 /* Points d'apparition sûrs dans le monde */
