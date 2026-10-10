@@ -157,19 +157,20 @@ function renderTalents(){const pts=treePts(hero),kit=heroKit(hero);
     g.onclick=()=>{talSel=key;talConfirm=false;renderTalents()}}});
   const box=$('#talTree');box.textContent='';box.append(sv);
   const d=$('#talDet');d.textContent='';
-  if(!talSel){d.append(el('p','muted',pts&&!hero.tr.length?'Touche le premier cran d’une branche pour choisir ta première compétence.':'Touche un cran pour voir son effet. Carré : compétence ; rond : bonus ; bord doré : ultime.'))}
+  if(!talSel){d.append(el('p','muted',pts&&!hero.tr.length&&talHouse?'Touche le premier cran d’une branche pour choisir ta première compétence.':'Touche un cran pour voir son effet. Carré : compétence ; rond : bonus ; bord doré : ultime.'+(talHouse?'':' Les points se dépensent auprès du maître des talents, dans la maison à l’arbre doré de chaque ville.')))}
   else{const n=treeNode(hero.cls,talSel),why=treeWhy(hero,talSel),own=hero.tr.includes(talSel);
     const kind=n.kind==='b'?'Bonus':n.kind==='u'?'Ultime':n.sk.t==='p'?'Compétence passive':'Compétence';
     d.append(el('b',null,n.nom),el('small','muted',' · '+kind),el('p',null,n.desc+(n.kind==='s'&&n.sk.t==='a'?' ('+n.sk.mp+' mana, '+n.sk.cd+' s)':'')));
     if(own)d.append(el('p','okt','Acquis'));else if(why)d.append(el('p','bad',why));
+    else if(!talHouse)d.append(el('p','muted','À apprendre auprès du maître des talents, dans une ville.'));
     else{const bt=el('button','btn main','Apprendre · 1 point');bt.onclick=()=>{if(treeWhy(hero,talSel))return;hero.tr.push(talSel);refreshStats();buildSkillUI();doSave(true);Snd.play('lvl');
       if(n.kind!=='b')toast((n.kind==='u'?'Ultime':'Compétence')+' apprise : '+n.nom+'.');renderTalents()};d.append(bt)}}
   const rs=$('#talReset');rs.textContent='';
   if(talHouse){const cost=TREE_RESET*hero.lvl;const bt=el('button','btn',talConfirm?'Confirmer : '+cost+' or':'Réinitialiser l’arbre · '+cost+' or');
     bt.onclick=()=>{if(!hero.tr.length){toast('Rien à réinitialiser.');return}if(hero.gold<cost){toast('Pas assez d’or : il en faut '+cost+'.');return}
       if(!talConfirm){talConfirm=true;renderTalents();return}hero.gold-=cost;hero.tr=[];talSel=null;talConfirm=false;refreshStats();buildSkillUI();doSave(true);Snd.play('coin');toast('Arbre remis à zéro. Tous tes points sont à redépenser.');renderTalents()};
-    rs.append(el('p','muted','Maison des talents : tu peux remettre ton arbre à zéro (20 or par niveau).'),bt)}
-  else rs.append(el('p','muted','Pour changer de chemin, va à la maison des talents d’une ville : elle remet ton arbre à zéro contre de l’or.'))}
+    rs.append(el('p','muted','Le maître des talents peut aussi remettre ton arbre à zéro (20 or par niveau).'),bt)}
+  else rs.append(el('p','muted','Pour apprendre un cran ou changer de chemin, va voir le maître des talents dans une ville.'))}
 
 /* ================= Menu ================= */
 const heroes={};

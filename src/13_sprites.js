@@ -70,7 +70,7 @@ function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.typ
   if(elite){const ol=SPR.outline(src,'#f0c95a','c_'+name);SPR.cell(g,ol,col,row,x,fy,PIX)}
   SPR.cell(g,src,col,row,x,fy,PIX);g.restore();return true}
 /* personnages de ville (PNJ nommés et villageois) */
-const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3'};
+const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3',maitre:'Master'};
 const FOLK_SPR=['Villager','Villager2','Villager3','Villager4','Villager5','Woman','OldWoman','OldMan2','Child','Boy','Noble','Princess','Inspector'];
 function drawNPCPix(g,who,x,y,T,col,row){const name=NPC_SPR[who];if(!name||!SPR.ok('c_'+name))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x,y+12,9,3.2,0,0,6.28);g.fill();

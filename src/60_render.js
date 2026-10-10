@@ -62,7 +62,7 @@ let loadT=null;function showLoading(t,sub){const b=$('#loadBox');$('#loadTitle')
 const cv=$('#cv'),ctx=cv.getContext('2d');const lc=document.createElement('canvas'),lx=lc.getContext('2d');
 let dpr=1,vw=0,vh=0,scale=1,camX=0,camY=0,shake=0;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
-  scale=clamp(Math.min(vw/(TS*11),vh/(TS*11)),.6,1.6)}
+  scale=clamp(Math.min(vw/(TS*13),vh/(TS*13)),.6,1.6)}
 addEventListener('resize',resize);
 /* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
    On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
@@ -126,7 +126,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
     g.fillStyle='#e2b54a';g.beginPath();g.ellipse(-26,-16+bob,12,9,-.3,0,6.28);g.fill();g.fillStyle='#f6d77a';g.beginPath();g.moveTo(-30,-22+bob);g.lineTo(-38,-36+bob);g.lineTo(-24,-24+bob);g.fill();
     g.fillStyle='#1a1206';g.beginPath();g.arc(-30,-18+bob,2,0,6.28);g.fill();g.fillStyle='#7ff0e8';g.fillRect(-31,-19+bob,1.2,2);
     g.strokeStyle='#b8862a';g.lineWidth=6;g.beginPath();g.moveTo(34,4);g.quadraticCurveTo(54,14,62,2);g.stroke();g.restore();return}
-  const P={garde:['#1f3358','#c9cbe0','#e9cdb0'],grinmir:['#4a4a56','#b8541e','#e9c4a0'],aubergiste:['#7a4b25','#efe6cf','#e9c4a0'],marchand:['#2f5e3a','#e0b45c','#d8a880'],forgeron:['#3a3028','#5a3e24','#c99a70'],abhorash:['#5a0f16','#8e1a24','#d9d2d8'],buveur:['#7a3b2a','#c9a24a','#e9b8a0'],barde:['#3a4a8a','#e2b65e','#f0d0b0'],conteur:['#4a4a3a','#a89a88','#e0c0a0']}[who]||['#555','#888','#e9c4a0'];
+  const P={maitre:['#5a3e6e','#e0b45c','#e9c4a0'],garde:['#1f3358','#c9cbe0','#e9cdb0'],grinmir:['#4a4a56','#b8541e','#e9c4a0'],aubergiste:['#7a4b25','#efe6cf','#e9c4a0'],marchand:['#2f5e3a','#e0b45c','#d8a880'],forgeron:['#3a3028','#5a3e24','#c99a70'],abhorash:['#5a0f16','#8e1a24','#d9d2d8'],buveur:['#7a3b2a','#c9a24a','#e9b8a0'],barde:['#3a4a8a','#e2b65e','#f0d0b0'],conteur:['#4a4a3a','#a89a88','#e0c0a0']}[who]||['#555','#888','#e9c4a0'];
   const dw=who==='grinmir'||who==='forgeron';const s=dw?.9:1;
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(0,12,11,4,0,0,6.28);g.fill();
   g.fillStyle=P[0];g.beginPath();g.moveTo(-9,-2);g.lineTo(9,-2);g.lineTo(11,12);g.lineTo(-11,12);g.closePath();g.fill();
@@ -144,7 +144,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}

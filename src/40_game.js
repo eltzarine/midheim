@@ -15,7 +15,7 @@ function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,r
 // la description d'une zone peut venir du réseau : on la valide avant de construire quoi que ce soit
 function zoneFromDesc(zd){const a=String(zd||'').slice(0,120).split(':');const num=(v,lo,hi)=>clamp(Math.floor(+v)||0,lo,hi);
   if(a[0]==='d'&&Object.prototype.hasOwnProperty.call(DUNGEONS,a[1])){a[2]=num(a[2],0,DUNGEONS[a[1]].floors-1);a[3]=num(a[3],0,1e9);a[4]=num(a[4],1,99)}
-  else if(a[0]==='h'&&/^(auberge|forge|marchand|maison)$/.test(a[1])&&/^[a-z0-9_]{1,40}$/.test(a[2]||'')){a[3]=num(a[3],0,1e5);a[4]=num(a[4],0,1e5)}
+  else if(a[0]==='h'&&/^(auberge|forge|marchand|maison|talents)$/.test(a[1])&&/^[a-z0-9_]{1,40}$/.test(a[2]||'')){a[3]=num(a[3],0,1e5);a[4]=num(a[4],0,1e5)}
   else a[0]='w';
   if(a[0]==='w'){if(!WORLD)buildWorld();return WORLD}
   if(a[0]==='d'){const m=genDungeon2(a[1],+a[2],+a[3],+a[4]);m.kind='dun';m.did=a[1];m.idx=+a[2];m.lv=+a[4];m.mapCv=renderDun(m);{const s=m.start,tx=Math.floor(s.x/TS),ty=Math.floor(s.y/TS);const dy=m.t[(ty+1)*m.W+tx]===0?TS:0;m.leave={x:s.x,y:s.y+dy};m.inter=[{x:s.x,y:s.y+dy,r:26,kind:'door',act:'leave',label:'Quitter le donjon'}]}return m}
@@ -387,7 +387,7 @@ function onZoneEnter(first){const m=G.m;if(!m)return;G.seen=null;bubbles=[];
   if(m.kind==='world'){L.reg='';if(!first)Snd.play('stairs')}else{showBanner(zoneName(m),m.kind==='dun'?DUNGEONS[m.did].nom:'');if(!first)Snd.play('stairs')}
   if(!first)showLoading(zoneName(m),m.kind==='dun'?DUNGEONS[m.did].nom:m.kind==='house'?'':'Midheim');
   if(mode==='guest'){const p=G.players[1];if(p){L.x=p.x;L.y=p.y}}
-  if(first&&hero&&!hero.tr.length&&treePts(hero)>0)setTimeout(()=>toast('Ouvre les talents pour choisir ta première compétence.'),1800);
+  if(first&&hero&&!hero.tr.length&&treePts(hero)>0)setTimeout(()=>toast('Va voir le maître des talents, dans la maison à l’arbre doré de Tarkin, pour choisir ta première compétence.'),1800);
   savePos();doSave(true);maybeDunScene()}
 function savePos(){if(!G||!G.m)return;let px=null;if(G.m.kind==='world')px={x:L.x,y:L.y};else if(G.m.kind==='house')px=G.m.exitTo;else if(G.dun)px=G.dun.ret;
   if(px)hero.pos=[Math.floor(px.x/TS),Math.floor(px.y/TS)]}
@@ -400,7 +400,7 @@ function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
 function aimPoint(){if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
-  if(!S){toast(slot===3?'Ultime : à apprendre dans l’arbre de talents (cran doré).':'Compétence à apprendre dans l’arbre de talents.','lk'+slot);return}
+  if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
   L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}

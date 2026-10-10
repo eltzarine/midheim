@@ -672,7 +672,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='4c07681e';
+const BUILD='a0b7dc7a';
 /* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
 const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -1066,7 +1066,7 @@ function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.typ
   if(elite){const ol=SPR.outline(src,'#f0c95a','c_'+name);SPR.cell(g,ol,col,row,x,fy,PIX)}
   SPR.cell(g,src,col,row,x,fy,PIX);g.restore();return true}
 /* personnages de ville (PNJ nommés et villageois) */
-const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3'};
+const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3',maitre:'Master'};
 const FOLK_SPR=['Villager','Villager2','Villager3','Villager4','Villager5','Woman','OldWoman','OldMan2','Child','Boy','Noble','Princess','Inspector'];
 function drawNPCPix(g,who,x,y,T,col,row){const name=NPC_SPR[who];if(!name||!SPR.ok('c_'+name))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x,y+12,9,3.2,0,0,6.28);g.fill();
@@ -1590,14 +1590,14 @@ const REGIONS=[
 const regionAt=(tx,ty)=>{let b=REGIONS[0],bd=1e9;for(const r of REGIONS){const d=(r.pt[0]-tx)**2+(r.pt[1]-ty)**2;if(d<bd){bd=d;b=r}}return b};
 /* Villes : bâtiments posés autour du centre lu sur la carte */
 const TOWNS={
-  tarkin:{nom:'Tarkin',walls:9,roof:'#5a3b6e',b:[['keep','La forteresse de l’Everwatch','dun:everwatch'],['auberge','Auberge du Pont','house:auberge'],['marchand','Comptoir du Conseil','house:marchand'],['forge','Forge de Tarkin','house:forge'],['maison','Maison des talents','talents'],['maison'],['maison']]},
-  lastfire:{nom:'Last Fire',roof:'#8e3a2a',b:[['auberge','Auberge de Last Fire','house:auberge'],['marchand','Marchand de Last Fire','house:marchand'],['forge','Forge de Last Fire','house:forge'],['puits'],['maison','Maison des talents','talents'],['maison']]},
-  honor:{nom:'Honor',walls:9,roof:'#2f4f8e',b:[['palais','Palais d’Er Manar','closed:Les gardes impériaux vous refusent l’entrée du palais de l’empereur Er Manar.'],['auberge','Auberge d’Honor','house:auberge'],['marchand','Marché d’Honor','house:marchand'],['forge','Forge d’Honor','house:forge'],['maison','Maison des talents','talents'],['maison'],['maison'],['maison']]},
-  cibellos:{nom:'Cibellos',roof:'#7a3a2a',b:[['forge','Ateliers de Cibellos','house:forge'],['marchand','Marchand de Cibellos','house:marchand'],['auberge','Auberge de Cibellos','house:auberge'],['maison','Maison des talents','talents'],['maison'],['puits']]},
-  ironhaven:{nom:'Ironhaven',roof:'#3a5a6e',b:[['marchand','Comptoir d’Ironhaven','house:marchand'],['auberge','Auberge d’Ironhaven','house:auberge'],['forge','Forge d’Ironhaven','house:forge'],['maison','Maison des talents','talents'],['maison']]},
-  oka:{nom:'Oka',roof:'#6e5a2a',b:[['auberge','Auberge d’Oka','house:auberge'],['marchand','Marchand d’Oka','house:marchand'],['maison','Maison des talents','talents'],['maison']]},
-  vindheim:{nom:'Vindheim',roof:'#5a2a2a',b:[['auberge','Auberge de Vindheim','house:auberge'],['marchand','Marchand de Vindheim','house:marchand'],['maison','Maison des talents','talents'],['maison']]},
-  eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['tour','La tour d’Eastwatch','dun:eastwatch'],['auberge','Auberge d’Eastwatch','house:auberge'],['maison','Maison des talents','talents'],['maison']]},
+  tarkin:{nom:'Tarkin',walls:9,roof:'#5a3b6e',b:[['keep','La forteresse de l’Everwatch','dun:everwatch'],['auberge','Auberge du Pont','house:auberge'],['marchand','Comptoir du Conseil','house:marchand'],['forge','Forge de Tarkin','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison']]},
+  lastfire:{nom:'Last Fire',roof:'#8e3a2a',b:[['auberge','Auberge de Last Fire','house:auberge'],['marchand','Marchand de Last Fire','house:marchand'],['forge','Forge de Last Fire','house:forge'],['puits'],['maison','Maison des talents','house:talents'],['maison']]},
+  honor:{nom:'Honor',walls:9,roof:'#2f4f8e',b:[['palais','Palais d’Er Manar','closed:Les gardes impériaux vous refusent l’entrée du palais de l’empereur Er Manar.'],['auberge','Auberge d’Honor','house:auberge'],['marchand','Marché d’Honor','house:marchand'],['forge','Forge d’Honor','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison'],['maison']]},
+  cibellos:{nom:'Cibellos',roof:'#7a3a2a',b:[['forge','Ateliers de Cibellos','house:forge'],['marchand','Marchand de Cibellos','house:marchand'],['auberge','Auberge de Cibellos','house:auberge'],['maison','Maison des talents','house:talents'],['maison'],['puits']]},
+  ironhaven:{nom:'Ironhaven',roof:'#3a5a6e',b:[['marchand','Comptoir d’Ironhaven','house:marchand'],['auberge','Auberge d’Ironhaven','house:auberge'],['forge','Forge d’Ironhaven','house:forge'],['maison','Maison des talents','house:talents'],['maison']]},
+  oka:{nom:'Oka',roof:'#6e5a2a',b:[['auberge','Auberge d’Oka','house:auberge'],['marchand','Marchand d’Oka','house:marchand'],['maison','Maison des talents','house:talents'],['maison']]},
+  vindheim:{nom:'Vindheim',roof:'#5a2a2a',b:[['auberge','Auberge de Vindheim','house:auberge'],['marchand','Marchand de Vindheim','house:marchand'],['maison','Maison des talents','house:talents'],['maison']]},
+  eastwatch:{nom:'Eastwatch',roof:'#2a4a5a',b:[['tour','La tour d’Eastwatch','dun:eastwatch'],['auberge','Auberge d’Eastwatch','house:auberge'],['maison','Maison des talents','house:talents'],['maison']]},
 };
 const BSIZE={maison:[4,2],statue:[2,2],auberge:[4,3],marchand:[3,3],forge:[4,3],keep:[6,5],palais:[7,5],puits:[1,1],tour:[5,2]};
 const WAYPOINTS={start:{nom:'Le Pont de Lathandre (ouest)',pt:PL.start},tarkin:{nom:'Tarkin',pt:PL.tarkin},lastfire:{nom:'Last Fire',pt:PL.lastfire},honor:{nom:'Honor',pt:PL.honor},cibellos:{nom:'Cibellos',pt:PL.cibellos},ironhaven:{nom:'Ironhaven',pt:PL.ironhaven},oka:{nom:'Oka',pt:PL.oka},vindheim:{nom:'Vindheim',pt:PL.vindheim},eastwatch:{nom:'Eastwatch',pt:PL.eastwatch},karazankor:{nom:'Karaz Ankor',pt:PL.karazankor},firsttear:{nom:'Woods of the First Tear',pt:PL.firsttear}};
@@ -1990,20 +1990,21 @@ function placePx(id){if(id==='everwatch'){const b=WORLD.builds.find(b=>b.act==='
   const map={karazankor:'dun:karazankor',antre:'dun:antre',prison:'dun:prison'};if(map[id]){const b=WORLD.builds.find(b=>b.act===map[id]);return b?{x:(b.door.x+.5)*TS,y:(b.door.y+.5)*TS}:null}
   if(PL[id])return{x:(PL[id][0]+.5)*TS,y:(PL[id][1]+.5)*TS};return null}
 
-/* ================= Intérieurs : maisons (auberge, marchand, forge) ================= */
+/* ================= Intérieurs : maisons (auberge, marchand, forge, talents) ================= */
 function buildHouse(kind,hid,exitTo){const W=11,H=9,t=new Uint8Array(W*H).fill(1);for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)t[y*W+x]=0;t[(H-1)*W+5]=0;
   const furn=[];const solidAt=(x,y)=>{t[y*W+x]=6};
   if(kind==='auberge'){for(const[x,y]of[[2,2],[2,4],[8,2]]){furn.push({k:'lit',x,y});solidAt(x,y)}furn.push({k:'feu',x:5,y:1});furn.push({k:'table',x:7,y:5});solidAt(7,5);furn.push({k:'comptoir',x:4,y:3});solidAt(4,3);solidAt(5,3);solidAt(6,3)}
   if(kind==='marchand'){furn.push({k:'etagere',x:2,y:1});furn.push({k:'etagere',x:7,y:1});furn.push({k:'comptoir',x:4,y:3});solidAt(4,3);solidAt(5,3);solidAt(6,3);furn.push({k:'tonneau',x:2,y:5});solidAt(2,5);furn.push({k:'tonneau',x:8,y:5});solidAt(8,5)}
   if(kind==='forge'){furn.push({k:'four',x:2,y:1});furn.push({k:'enclume',x:5,y:3});solidAt(5,3);furn.push({k:'armes',x:8,y:1});furn.push({k:'tonneau',x:8,y:5});solidAt(8,5)}
-  const npcPos={auberge:[5,2],marchand:[5,2],forge:[6,2]}[kind];
-  const who={auberge:'aubergiste',marchand:'marchand',forge:'forgeron'}[kind];
+  if(kind==='talents'){furn.push({k:'etagere',x:1,y:1});furn.push({k:'etagere',x:8,y:1});furn.push({k:'feu',x:5,y:1});furn.push({k:'table',x:3,y:4});solidAt(3,4);furn.push({k:'table',x:7,y:4});solidAt(7,4)}
+  const npcPos={auberge:[5,2],marchand:[5,2],forge:[6,2],talents:[5,2.6]}[kind];
+  const who={auberge:'aubergiste',marchand:'marchand',forge:'forgeron',talents:'maitre'}[kind];
   const m={kind:'house',hk:kind,hid,W,H,t,pal:4,furn,rooms:[],chests:[],crates:[],plates:[],spikes:[],torches:[{x:2,y:0},{x:8,y:0}],props:[],stairs:null,boss:false,
     start:{x:5.5*TS,y:(H-2+.5)*TS},exitTo,npcs:[{id:'pnj',who,x:(npcPos[0]+.5)*TS,y:(npcPos[1]+.5)*TS}],theme:4};
   // clients de l'auberge : ils lancent une blague ou un conseil quand on passe à côté
   if(kind==='auberge')for(const[id,w,x,y]of[['c1','buveur',6,5],['c2','barde',8,6.2],['c3','conteur',2.6,6]])m.npcs.push({id,who:w,x:(x+.5)*TS,y:(y+.5)*TS,patron:1});
   const town=hid.split('_')[0];
-  m.inter=[{x:m.npcs[0].x,y:m.npcs[0].y+TS*1.2,r:44,kind:'talk',act:'shop:'+kind,label:({auberge:'Parler à l’aubergiste',marchand:'Voir le marchand',forge:'Voir le forgeron'})[kind],town},
+  m.inter=[{x:m.npcs[0].x,y:m.npcs[0].y+TS*1.2,r:44,kind:'talk',act:kind==='talents'?'talents':'shop:'+kind,label:({auberge:'Parler à l’aubergiste',marchand:'Voir le marchand',forge:'Voir le forgeron',talents:'Parler au maître des talents'})[kind],town},
     {x:5.5*TS,y:(H-1+.2)*TS,r:30,kind:'door',act:'exit',label:'Sortir'}];
   return m}
 /* ---- 31_towns.js ---- */
@@ -2404,7 +2405,7 @@ function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,r
 // la description d'une zone peut venir du réseau : on la valide avant de construire quoi que ce soit
 function zoneFromDesc(zd){const a=String(zd||'').slice(0,120).split(':');const num=(v,lo,hi)=>clamp(Math.floor(+v)||0,lo,hi);
   if(a[0]==='d'&&Object.prototype.hasOwnProperty.call(DUNGEONS,a[1])){a[2]=num(a[2],0,DUNGEONS[a[1]].floors-1);a[3]=num(a[3],0,1e9);a[4]=num(a[4],1,99)}
-  else if(a[0]==='h'&&/^(auberge|forge|marchand|maison)$/.test(a[1])&&/^[a-z0-9_]{1,40}$/.test(a[2]||'')){a[3]=num(a[3],0,1e5);a[4]=num(a[4],0,1e5)}
+  else if(a[0]==='h'&&/^(auberge|forge|marchand|maison|talents)$/.test(a[1])&&/^[a-z0-9_]{1,40}$/.test(a[2]||'')){a[3]=num(a[3],0,1e5);a[4]=num(a[4],0,1e5)}
   else a[0]='w';
   if(a[0]==='w'){if(!WORLD)buildWorld();return WORLD}
   if(a[0]==='d'){const m=genDungeon2(a[1],+a[2],+a[3],+a[4]);m.kind='dun';m.did=a[1];m.idx=+a[2];m.lv=+a[4];m.mapCv=renderDun(m);{const s=m.start,tx=Math.floor(s.x/TS),ty=Math.floor(s.y/TS);const dy=m.t[(ty+1)*m.W+tx]===0?TS:0;m.leave={x:s.x,y:s.y+dy};m.inter=[{x:s.x,y:s.y+dy,r:26,kind:'door',act:'leave',label:'Quitter le donjon'}]}return m}
@@ -2776,7 +2777,7 @@ function onZoneEnter(first){const m=G.m;if(!m)return;G.seen=null;bubbles=[];
   if(m.kind==='world'){L.reg='';if(!first)Snd.play('stairs')}else{showBanner(zoneName(m),m.kind==='dun'?DUNGEONS[m.did].nom:'');if(!first)Snd.play('stairs')}
   if(!first)showLoading(zoneName(m),m.kind==='dun'?DUNGEONS[m.did].nom:m.kind==='house'?'':'Midheim');
   if(mode==='guest'){const p=G.players[1];if(p){L.x=p.x;L.y=p.y}}
-  if(first&&hero&&!hero.tr.length&&treePts(hero)>0)setTimeout(()=>toast('Ouvre les talents pour choisir ta première compétence.'),1800);
+  if(first&&hero&&!hero.tr.length&&treePts(hero)>0)setTimeout(()=>toast('Va voir le maître des talents, dans la maison à l’arbre doré de Tarkin, pour choisir ta première compétence.'),1800);
   savePos();doSave(true);maybeDunScene()}
 function savePos(){if(!G||!G.m)return;let px=null;if(G.m.kind==='world')px={x:L.x,y:L.y};else if(G.m.kind==='house')px=G.m.exitTo;else if(G.dun)px=G.dun.ret;
   if(px)hero.pos=[Math.floor(px.x/TS),Math.floor(px.y/TS)]}
@@ -2789,7 +2790,7 @@ function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
 function aimPoint(){if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
-  if(!S){toast(slot===3?'Ultime : à apprendre dans l’arbre de talents (cran doré).':'Compétence à apprendre dans l’arbre de talents.','lk'+slot);return}
+  if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
   L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
@@ -3146,7 +3147,7 @@ let loadT=null;function showLoading(t,sub){const b=$('#loadBox');$('#loadTitle')
 const cv=$('#cv'),ctx=cv.getContext('2d');const lc=document.createElement('canvas'),lx=lc.getContext('2d');
 let dpr=1,vw=0,vh=0,scale=1,camX=0,camY=0,shake=0;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
-  scale=clamp(Math.min(vw/(TS*11),vh/(TS*11)),.6,1.6)}
+  scale=clamp(Math.min(vw/(TS*13),vh/(TS*13)),.6,1.6)}
 addEventListener('resize',resize);
 /* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
    On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
@@ -3210,7 +3211,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
     g.fillStyle='#e2b54a';g.beginPath();g.ellipse(-26,-16+bob,12,9,-.3,0,6.28);g.fill();g.fillStyle='#f6d77a';g.beginPath();g.moveTo(-30,-22+bob);g.lineTo(-38,-36+bob);g.lineTo(-24,-24+bob);g.fill();
     g.fillStyle='#1a1206';g.beginPath();g.arc(-30,-18+bob,2,0,6.28);g.fill();g.fillStyle='#7ff0e8';g.fillRect(-31,-19+bob,1.2,2);
     g.strokeStyle='#b8862a';g.lineWidth=6;g.beginPath();g.moveTo(34,4);g.quadraticCurveTo(54,14,62,2);g.stroke();g.restore();return}
-  const P={garde:['#1f3358','#c9cbe0','#e9cdb0'],grinmir:['#4a4a56','#b8541e','#e9c4a0'],aubergiste:['#7a4b25','#efe6cf','#e9c4a0'],marchand:['#2f5e3a','#e0b45c','#d8a880'],forgeron:['#3a3028','#5a3e24','#c99a70'],abhorash:['#5a0f16','#8e1a24','#d9d2d8'],buveur:['#7a3b2a','#c9a24a','#e9b8a0'],barde:['#3a4a8a','#e2b65e','#f0d0b0'],conteur:['#4a4a3a','#a89a88','#e0c0a0']}[who]||['#555','#888','#e9c4a0'];
+  const P={maitre:['#5a3e6e','#e0b45c','#e9c4a0'],garde:['#1f3358','#c9cbe0','#e9cdb0'],grinmir:['#4a4a56','#b8541e','#e9c4a0'],aubergiste:['#7a4b25','#efe6cf','#e9c4a0'],marchand:['#2f5e3a','#e0b45c','#d8a880'],forgeron:['#3a3028','#5a3e24','#c99a70'],abhorash:['#5a0f16','#8e1a24','#d9d2d8'],buveur:['#7a3b2a','#c9a24a','#e9b8a0'],barde:['#3a4a8a','#e2b65e','#f0d0b0'],conteur:['#4a4a3a','#a89a88','#e0c0a0']}[who]||['#555','#888','#e9c4a0'];
   const dw=who==='grinmir'||who==='forgeron';const s=dw?.9:1;
   g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(0,12,11,4,0,0,6.28);g.fill();
   g.fillStyle=P[0];g.beginPath();g.moveTo(-9,-2);g.lineTo(9,-2);g.lineTo(11,12);g.lineTo(-11,12);g.closePath();g.fill();
@@ -3228,7 +3229,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}
@@ -4811,19 +4812,20 @@ function renderTalents(){const pts=treePts(hero),kit=heroKit(hero);
     g.onclick=()=>{talSel=key;talConfirm=false;renderTalents()}}});
   const box=$('#talTree');box.textContent='';box.append(sv);
   const d=$('#talDet');d.textContent='';
-  if(!talSel){d.append(el('p','muted',pts&&!hero.tr.length?'Touche le premier cran d’une branche pour choisir ta première compétence.':'Touche un cran pour voir son effet. Carré : compétence ; rond : bonus ; bord doré : ultime.'))}
+  if(!talSel){d.append(el('p','muted',pts&&!hero.tr.length&&talHouse?'Touche le premier cran d’une branche pour choisir ta première compétence.':'Touche un cran pour voir son effet. Carré : compétence ; rond : bonus ; bord doré : ultime.'+(talHouse?'':' Les points se dépensent auprès du maître des talents, dans la maison à l’arbre doré de chaque ville.')))}
   else{const n=treeNode(hero.cls,talSel),why=treeWhy(hero,talSel),own=hero.tr.includes(talSel);
     const kind=n.kind==='b'?'Bonus':n.kind==='u'?'Ultime':n.sk.t==='p'?'Compétence passive':'Compétence';
     d.append(el('b',null,n.nom),el('small','muted',' · '+kind),el('p',null,n.desc+(n.kind==='s'&&n.sk.t==='a'?' ('+n.sk.mp+' mana, '+n.sk.cd+' s)':'')));
     if(own)d.append(el('p','okt','Acquis'));else if(why)d.append(el('p','bad',why));
+    else if(!talHouse)d.append(el('p','muted','À apprendre auprès du maître des talents, dans une ville.'));
     else{const bt=el('button','btn main','Apprendre · 1 point');bt.onclick=()=>{if(treeWhy(hero,talSel))return;hero.tr.push(talSel);refreshStats();buildSkillUI();doSave(true);Snd.play('lvl');
       if(n.kind!=='b')toast((n.kind==='u'?'Ultime':'Compétence')+' apprise : '+n.nom+'.');renderTalents()};d.append(bt)}}
   const rs=$('#talReset');rs.textContent='';
   if(talHouse){const cost=TREE_RESET*hero.lvl;const bt=el('button','btn',talConfirm?'Confirmer : '+cost+' or':'Réinitialiser l’arbre · '+cost+' or');
     bt.onclick=()=>{if(!hero.tr.length){toast('Rien à réinitialiser.');return}if(hero.gold<cost){toast('Pas assez d’or : il en faut '+cost+'.');return}
       if(!talConfirm){talConfirm=true;renderTalents();return}hero.gold-=cost;hero.tr=[];talSel=null;talConfirm=false;refreshStats();buildSkillUI();doSave(true);Snd.play('coin');toast('Arbre remis à zéro. Tous tes points sont à redépenser.');renderTalents()};
-    rs.append(el('p','muted','Maison des talents : tu peux remettre ton arbre à zéro (20 or par niveau).'),bt)}
-  else rs.append(el('p','muted','Pour changer de chemin, va à la maison des talents d’une ville : elle remet ton arbre à zéro contre de l’or.'))}
+    rs.append(el('p','muted','Le maître des talents peut aussi remettre ton arbre à zéro (20 or par niveau).'),bt)}
+  else rs.append(el('p','muted','Pour apprendre un cran ou changer de chemin, va voir le maître des talents dans une ville.'))}
 
 /* ================= Menu ================= */
 const heroes={};

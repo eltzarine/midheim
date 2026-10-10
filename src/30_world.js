@@ -160,19 +160,20 @@ function placePx(id){if(id==='everwatch'){const b=WORLD.builds.find(b=>b.act==='
   const map={karazankor:'dun:karazankor',antre:'dun:antre',prison:'dun:prison'};if(map[id]){const b=WORLD.builds.find(b=>b.act===map[id]);return b?{x:(b.door.x+.5)*TS,y:(b.door.y+.5)*TS}:null}
   if(PL[id])return{x:(PL[id][0]+.5)*TS,y:(PL[id][1]+.5)*TS};return null}
 
-/* ================= Intérieurs : maisons (auberge, marchand, forge) ================= */
+/* ================= Intérieurs : maisons (auberge, marchand, forge, talents) ================= */
 function buildHouse(kind,hid,exitTo){const W=11,H=9,t=new Uint8Array(W*H).fill(1);for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)t[y*W+x]=0;t[(H-1)*W+5]=0;
   const furn=[];const solidAt=(x,y)=>{t[y*W+x]=6};
   if(kind==='auberge'){for(const[x,y]of[[2,2],[2,4],[8,2]]){furn.push({k:'lit',x,y});solidAt(x,y)}furn.push({k:'feu',x:5,y:1});furn.push({k:'table',x:7,y:5});solidAt(7,5);furn.push({k:'comptoir',x:4,y:3});solidAt(4,3);solidAt(5,3);solidAt(6,3)}
   if(kind==='marchand'){furn.push({k:'etagere',x:2,y:1});furn.push({k:'etagere',x:7,y:1});furn.push({k:'comptoir',x:4,y:3});solidAt(4,3);solidAt(5,3);solidAt(6,3);furn.push({k:'tonneau',x:2,y:5});solidAt(2,5);furn.push({k:'tonneau',x:8,y:5});solidAt(8,5)}
   if(kind==='forge'){furn.push({k:'four',x:2,y:1});furn.push({k:'enclume',x:5,y:3});solidAt(5,3);furn.push({k:'armes',x:8,y:1});furn.push({k:'tonneau',x:8,y:5});solidAt(8,5)}
-  const npcPos={auberge:[5,2],marchand:[5,2],forge:[6,2]}[kind];
-  const who={auberge:'aubergiste',marchand:'marchand',forge:'forgeron'}[kind];
+  if(kind==='talents'){furn.push({k:'etagere',x:1,y:1});furn.push({k:'etagere',x:8,y:1});furn.push({k:'feu',x:5,y:1});furn.push({k:'table',x:3,y:4});solidAt(3,4);furn.push({k:'table',x:7,y:4});solidAt(7,4)}
+  const npcPos={auberge:[5,2],marchand:[5,2],forge:[6,2],talents:[5,2.6]}[kind];
+  const who={auberge:'aubergiste',marchand:'marchand',forge:'forgeron',talents:'maitre'}[kind];
   const m={kind:'house',hk:kind,hid,W,H,t,pal:4,furn,rooms:[],chests:[],crates:[],plates:[],spikes:[],torches:[{x:2,y:0},{x:8,y:0}],props:[],stairs:null,boss:false,
     start:{x:5.5*TS,y:(H-2+.5)*TS},exitTo,npcs:[{id:'pnj',who,x:(npcPos[0]+.5)*TS,y:(npcPos[1]+.5)*TS}],theme:4};
   // clients de l'auberge : ils lancent une blague ou un conseil quand on passe à côté
   if(kind==='auberge')for(const[id,w,x,y]of[['c1','buveur',6,5],['c2','barde',8,6.2],['c3','conteur',2.6,6]])m.npcs.push({id,who:w,x:(x+.5)*TS,y:(y+.5)*TS,patron:1});
   const town=hid.split('_')[0];
-  m.inter=[{x:m.npcs[0].x,y:m.npcs[0].y+TS*1.2,r:44,kind:'talk',act:'shop:'+kind,label:({auberge:'Parler à l’aubergiste',marchand:'Voir le marchand',forge:'Voir le forgeron'})[kind],town},
+  m.inter=[{x:m.npcs[0].x,y:m.npcs[0].y+TS*1.2,r:44,kind:'talk',act:kind==='talents'?'talents':'shop:'+kind,label:({auberge:'Parler à l’aubergiste',marchand:'Voir le marchand',forge:'Voir le forgeron',talents:'Parler au maître des talents'})[kind],town},
     {x:5.5*TS,y:(H-1+.2)*TS,r:30,kind:'door',act:'exit',label:'Sortir'}];
   return m}
