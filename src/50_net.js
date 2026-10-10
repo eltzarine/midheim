@@ -71,7 +71,10 @@ function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie 
 function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0}}
 function guestCheckHost(){const h=peers.find(p=>p.peer===hostPeer);
   if(!h){if(mode==='guest'&&!hostGoneAt){hostGoneAt=performance.now();Log.warn('à deux','hôte absent de la salle')}if(mode==='joining')endGuest('La partie n’existe plus.');return}
-  hostGoneAt=0;const pr=h.presence||{};if((mode==='guest'||mode==='joining')&&!!pr.bg!==hostBg){hostBg=!!pr.bg;Log.ev('à deux',hostBg?'hôte en pause':'hôte de retour');toast(hostBg?'L’hôte est en pause, on l’attend.':'L’hôte est de retour !')}
+  hostGoneAt=0;const pr=h.presence||{};
+  // l'hôte a quitté (page fermée → r:'m', bg remis à 0) : pas de faux « hôte de retour » juste avant la fin
+  if(mode==='guest'&&(pr.r!=='h'||pr.gp!==myPeer)){endGuest('L’hôte a fermé la partie.');return}
+  if((mode==='guest'||mode==='joining')&&!!pr.bg!==hostBg){hostBg=!!pr.bg;Log.ev('à deux',hostBg?'hôte en pause':'hôte de retour');toast(hostBg?'L’hôte est en pause, on l’attend.':'L’hôte est de retour !')}
   if(mode==='joining'){if(pr.r!=='h'){endGuest('La partie n’existe plus.');return}
     if(pr.gp!==guestCheckHost.gp||!!pr.g!==guestCheckHost.g){guestCheckHost.gp=pr.gp;guestCheckHost.g=!!pr.g;Log.ev('à deux','attente hôte : place '+(pr.gp?(pr.gp===myPeer?'à moi':'prise'):'libre')+(pr.g?' · état reçu':' · pas d’état'))}
     if(pr.gp===myPeer&&pr.g)startGuest(pr);else if(pr.gp&&pr.gp!==myPeer)endGuest('La partie est déjà complète.');return}
