@@ -179,11 +179,12 @@ function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;con
   if(pr.st)applyGuestStats(gp,pr.st);gp.lvl=clamp(pr.l|0,1,99);
   if(!inp||!Array.isArray(inp.p))return;if(inp.z!==G.ep)return; // positions d'une autre zone : ignorées
   const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
-  gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=+inp.a||0;gp.iv=inp.iv?1:0;
+  gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
   if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0}
   let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
-  const tp=Array.isArray(inp.tp)?{x:+inp.tp[0]||gp.x,y:+inp.tp[1]||gp.y}:null;
+  const fin=(v,d,hi)=>Number.isFinite(+v)?clamp(+v,0,hi):d;
+  const tp=Array.isArray(inp.tp)?{x:fin(inp.tp[0],gp.x,G.m.W*TS),y:fin(inp.tp[1],gp.y,G.m.H*TS)}:null;
   const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s])hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
   n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
   if(gp.lu<(inp.lu|0)){gp.lu=inp.lu|0;if(!gp.down)gp.hp=gp.mhp}
@@ -223,7 +224,7 @@ function hostUpdate(dt){
   applyGains({xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,ep:G.ep,q:G.q});
   processFx(G.fx);processMsgs(G.msgs)}
 function spikeUp(tx,ty){const sp=G.m.spikes.find(s=>s.x===tx&&s.y===ty);if(!sp)return false;return((G.time+sp.ph*.8)%2.4)<.8}
-function applyGuestStats(p,s){const n=v=>isFinite(+v)?+v:0;const mhp=clamp(Math.round(n(s.mhp)),1,99999);if(mhp!==p.mhp){p.hp=p.hp*mhp/(p.mhp||mhp);p.mhp=mhp}
+function applyGuestStats(p,s){if(!s||typeof s!=='object')return;let key;try{key=JSON.stringify(s)}catch(e){return}if(p.stKey===key&&p.st)return;p.stKey=key;const n=v=>isFinite(+v)?+v:0;const mhp=clamp(Math.round(n(s.mhp)),1,99999);if(mhp!==p.mhp){p.hp=p.hp*mhp/(p.mhp||mhp);p.mhp=mhp}
   const okE=v=>['lath','feu','talos','kel'].includes(v)?v:null;p.lk=clamp(Math.floor(n(s.lk)),0,200000);
   const own=new Set();for(const B of TREE[p.cls]||[])for(let k=1;k<=4;k++)own.add(B[k]);const ks=Array.isArray(s.ks)?s.ks:[];
   const kk=[0,1,2,3].map(j=>{const id=ks[j];const S=typeof id==='string'&&own.has(id)?SK[id]:null;return S&&(j===3?S.t==='u':S.t==='a')?id:''});const pa=typeof s.pa==='string'&&own.has(s.pa)&&SK[s.pa].t==='p'?s.pa:null;
@@ -237,9 +238,11 @@ function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){host
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
   if(act==='exit'){if(m.kind==='house')hostEnter('w',m.exitTo);return}
-  if(act==='leave'){if(m.kind==='dun'){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}
-  if(act==='rest'){G.players.forEach(q=>{if(q.down){q.down=false;q.rev=0}q.hp=q.mhp});msg('Vous vous reposez à l’auberge. Le groupe est en pleine forme.');return}
-  const it=(m.inter||[]).find(o=>o.act===act&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);if(!it)return;
+  const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
+  // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
+  if(act==='leave'){if(m.kind==='dun'&&near('leave')){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}
+  if(act==='rest'){if(m.kind!=='house'||m.hk!=='auberge')return;G.players.forEach(q=>{if(q.down){q.down=false;q.rev=0}q.hp=q.mhp});msg('Vous vous reposez à l’auberge. Le groupe est en pleine forme.');return}
+  const it=near(act);if(!it)return;
   if(act.startsWith('dun:')){const id=act.slice(4),spec=DUNGEONS[id];if(G.q<spec.need){msg(lockText(id),'lk'+id,3);return}
     if(G.players.length>1&&!G.players.every(q=>!q.down&&Math.hypot(q.x-it.x,q.y-it.y)<160)){msg('Attendez-vous devant l’entrée : les deux héros doivent y être.','wait',4);return}
     const lv=Math.max(spec.lv,partyLv()+(G.q>=6?1:0));G.dun={id,ret:{x:it.x,y:it.y+TS*.9}};hostEnter('d:'+id+':0:'+((Math.random()*1e6)|0)+':'+lv,null,{heal:true});if(spec.story&&G.q===spec.need)storyEvent(spec.story);return}

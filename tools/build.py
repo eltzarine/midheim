@@ -9,6 +9,7 @@ Les modules de src/ sont concaténés dans l'ordre de MODULES ; la carte, le mon
 et les voix sont intégrés en base64 pour que le jeu fonctionne hors ligne.
 """
 import base64
+import hashlib
 import json
 import os
 import sys
@@ -26,7 +27,9 @@ MODULES = [
 ]
 
 # Politique de sécurité du site public : tout est dans la page, sauf les polices et la base Firebase.
-CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; "
+# Le script du jeu est autorisé par son empreinte (@@SCRIPT_HASH@@) : un script injecté dans la page ne s'exécute pas.
+# 'unsafe-inline' ne sert qu'aux très vieux navigateurs, qui ignorent les empreintes (les autres l'ignorent quand une empreinte est là).
+CSP = ("default-src 'self'; script-src 'self' @@SCRIPT_HASH@@ 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; "
        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
        "img-src 'self' data: blob:; media-src 'self' data: blob:; "
        "connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app "
@@ -88,14 +91,15 @@ def build(target):
                     .replace('@@LINES@@', json.dumps(lines, ensure_ascii=False)))
         parts.append('/* ---- %s ---- */\n%s' % (m, js.rstrip()))
     js = '\n'.join(parts)
-    import hashlib
     js = js.replace('@@BUILD@@', hashlib.sha256(js.encode()).hexdigest()[:8])
     assert '@@' not in js.replace("'@@'", ''), 'un marqueur @@ n’a pas été remplacé'
     page = read('src', 'page.html').replace('@@MAP@@', b64(os.path.join('assets', 'map.jpg'), 'image/jpeg'))
     icon = read('assets', 'icons', 'icon.svg').replace(' role="img" aria-label="Les Pierres de Midheim"', ' focusable="false"')
     page = page.replace('@@ICON@@', icon)
     assert '@@' not in page, 'un marqueur @@ de la page n’a pas été remplacé'
-    script = '<script>\n"use strict";\n' + js + '\n</script>\n'
+    body = '\n"use strict";\n' + js + '\n'
+    script = '<script>' + body + '</script>\n'
+    script_hash = "'sha256-%s'" % base64.b64encode(hashlib.sha256(body.encode()).digest()).decode()
     if target == 'web':
         # page complète : en-tête (titre, polices, styles) puis le corps du jeu
         k = page.index('</style>') + len('</style>')
@@ -111,7 +115,7 @@ def build(target):
                 '<link rel="icon" href="icons/icon.svg" type="image/svg+xml">\n'
                 '<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">\n'
                 '<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">\n'
-                '%s\n</head>\n<body>\n%s\n%s</body>\n</html>\n') % (CSP, page[:k], page[k:], script)
+                '%s\n</head>\n<body>\n%s\n%s</body>\n</html>\n') % (CSP.replace('@@SCRIPT_HASH@@', script_hash), page[:k], page[k:], script)
         out_dir, name = os.path.join(ROOT, 'docs'), 'index.html'
     else:
         html = page + '\n' + script
@@ -145,7 +149,6 @@ MANIFEST = {
 def pwa(out_dir, html):
     """Appli installable : manifeste, icônes et service worker. La version du service worker
     est l'empreinte de la page : chaque build différent déclenche le bandeau de mise à jour."""
-    import hashlib
     import shutil
     os.makedirs(os.path.join(out_dir, 'icons'), exist_ok=True)
     for n in ICONS:

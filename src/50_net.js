@@ -90,7 +90,7 @@ function onState(s,first){
   const A=(v,n)=>Array.isArray(v)?v.slice(0,n):[],N=v=>{v=+v;return isFinite(v)?v:0};
   s.p=A(s.p,2).map(a=>A(a,11).map(N));s.nm=A(s.nm,2);s.e=A(s.e,60).map(a=>A(a,7).map(N));s.j=A(s.j,60).map(a=>A(a,4).map(N));s.d=A(s.d,40).map(a=>A(a,5).map(N));
   s.zo=A(s.zo,20).map(a=>A(a,4).map(N));s.fi=A(s.fi,20).map(a=>A(a,3).map(N));s.cr=A(s.cr,40).map(a=>A(a,2).map(N));s.x=A(s.x,30).map(a=>A(a,6).map(N));s.m=A(s.m,5).map(a=>A(a,2));
-  s.o=A(s.o,200);s.pl=A(s.pl,20);s.gp=A(s.gp,10).map(N);s.g=A(s.g,2).map(N);s.pt=A(s.pt,2).map(N);s.gm=A(s.gm,2).map(N);s.sh=A(s.sh,2).map(N);
+  s.tq=A(s.tq,40).map(a=>A(a,4).map(N));s.o=A(s.o,200);s.pl=A(s.pl,20);s.gp=A(s.gp,10).map(N);s.g=A(s.g,2).map(N);s.pt=A(s.pt,2).map(N);s.gm=A(s.gm,2).map(N);s.sh=A(s.sh,2).map(N);
   if(s.ep!==G.ep){Log.ev('à deux','changement de zone',s.z,'ep',s.ep);G.ep=s.ep;G.zd=s.z;G.m=zoneFromDesc(s.z);G.emap=new Map();G.opened=new Set();
     if(s.p&&s.p[1]){L.x=s.p[1][0];L.y=s.p[1][1]}else{L.x=G.m.start.x+36;L.y=G.m.start.y}L.dashT=0}
   G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;
@@ -122,7 +122,9 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),
     m:G.msgs.slice(-3),o:[...G.opened].slice(-60),cr:G.crates.map(c=>[c.x,c.y]),pl:G.platesOn,go:G.gateOpen?1:0,k:G.key,gp:(G.gp||[]).map(v=>Math.round(v*20)),wv:G.wave|0,so:G.stairsOpen?1:0,ab:G.abhOn?1:0,
     zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:z.slow?2:0]),tq:G.traps.slice(-12).map(t=>[r(t.x),r(t.y),0]).concat(G.decoys.map(d=>[r(d.x),r(d.y),CLS_IDS.indexOf(d.cls)+1,d.lk|0])),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0};
-  let n=0;while(enc.encode(JSON.stringify(s)).length>3400&&n++<24){if(s.j.length>4)s.j.length=Math.floor(s.j.length*.6);else if(s.x.length>4)s.x.splice(0,4);else if(s.o.length>10)s.o.splice(0,10);else if(s.d.length>8)s.d.length-=6;else if(s.e.length>12)s.e.length-=5;else break}
+  // taille en octets : un caractère vaut au plus 3 octets, inutile d'encoder un état court (cas courant, 15 fois par seconde)
+  const big=()=>{const t=JSON.stringify(s);return t.length*3>3400&&enc.encode(t).length>3400};
+  let n=0;while(big()&&n++<24){if(s.j.length>4)s.j.length=Math.floor(s.j.length*.6);else if(s.x.length>4)s.x.splice(0,4);else if(s.o.length>10)s.o.splice(0,10);else if(s.d.length>8)s.d.length-=6;else if(s.e.length>12)s.e.length-=5;else break}
   return s}
 let netT=0;
 function netTick(dt){if(!room)return;netT-=dt;

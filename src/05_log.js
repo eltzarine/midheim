@@ -44,4 +44,4 @@ for(const k of['error','warn']){const o=console[k];console[k]=function(...a){try
 addEventListener('online',()=>Log.ev('réseau','internet revenu'));addEventListener('offline',()=>Log.warn('réseau','internet coupé'));
 document.addEventListener('visibilitychange',()=>{Log.ev('app',document.visibilityState==='visible'?'au premier plan':'en arrière-plan');if(document.visibilityState==='hidden')Log.upload()});
 addEventListener('pagehide',()=>Log.upload());
-Log.ev('app','démarrage',location.href.split('#')[0]);
+Log.ev('app','démarrage',location.href.split(/[?#]/)[0]); // sans les paramètres (ex. fbclid de Messenger), lisibles par tous dans la base

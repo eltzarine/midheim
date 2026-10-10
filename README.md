@@ -30,7 +30,7 @@ La partie tourne sur le téléphone de celui qui l’a lancée ; la connexion pa
 | `data/world.json` | Terrain du monde (encodé RLE) et lieux |
 | `assets/` | Carte de Midheim et voix enregistrées |
 | `tools/build.py` | Assemble le jeu en un seul fichier HTML autonome |
-| `tests/` | Tests de bout en bout (Playwright), avec un faux salon et un faux Firebase pour jouer à deux hors ligne |
+| `tests/` | Tests unitaires (`unit.test.cjs`, Node sans dépendance) et tests de bout en bout (Playwright), avec un faux salon et un faux Firebase pour jouer à deux hors ligne |
 | `docs/index.html` | Version publiée sur GitHub Pages (générée) |
 
 ## Mises à jour
@@ -59,3 +59,19 @@ python3 tools/build.py artifact && python3 tests/run.py
 - Voix : générées avec ElevenLabs
 - Polices : Uncial Antiqua, Cinzel, Alegreya Sans (Google Fonts)
 - Graphismes pixel art : pack « Ninja Adventure » de pixel-boy (licence CC0, https://pixel-boy.itch.io/ninja-adventure-asset-pack) ; forteresse dessinée dans sa palette
+
+## Développer
+
+```sh
+python3 tools/build.py            # docs/index.html (site publié)
+python3 tools/build.py artifact   # dist/midheim.html et dist/bundle.js (nécessaires aux tests)
+python3 tests/run.py              # tests unitaires puis tests de bout en bout
+node --test tests/unit.test.cjs   # tests unitaires seuls (quelques secondes)
+```
+
+Règles vérifiées par les tests unitaires : pas d’`eval`, de `new Function`, de `debugger` ni de `console.log` dans `src/` ;
+`innerHTML` seulement avec du texte écrit dans le code ou des icônes du jeu (jamais un nom ou un message reçu) ;
+la page publiée n’exécute que son propre script (politique de sécurité avec l’empreinte du script).
+
+Tout ce qui vient de l’autre joueur (présence, état, commandes) est borné et vérifié par celui qui le reçoit :
+l’hôte refuse les compétences hors de l’arbre de la classe, les demandes faites hors de portée et le repos hors d’une auberge.

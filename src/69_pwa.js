@@ -70,7 +70,7 @@ const Iab={
   detect(ua){ua=ua||navigator.userAgent;for(const[re,n]of this.APPS)if(re.test(ua))return n;return null},
   ios(ua){ua=ua||navigator.userAgent;return/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)},
   android(ua){return/Android/.test(ua||navigator.userAgent)},
-  url(){return location.href.split('#')[0]},
+  url(){return location.href.split(/[?#]/)[0]}, // lien propre : sans paramètres de suivi (fbclid…)
   /* adresse qui demande au téléphone d'ouvrir la page dans son navigateur :
      iPhone (iOS 17 et plus) : x-safari-https://… ; Android : intent:// vers le navigateur par défaut */
   openUrl(){const u=this.url();if(this.ios())return'x-safari-'+u;

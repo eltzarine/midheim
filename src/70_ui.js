@@ -117,25 +117,33 @@ function skyLine(){const night=Sky.hour<5.5||Sky.hour>=21;
     +'<span>'+skyIcon(Sky.rain>.5?(Sky.storm>.5?'orage':'pluie'):Sky.fog>.3?'brume':Sky.cloud>.5?'nuages':'soleil')+Sky.weatherName()+'</span>'
     +'<span>'+skyIcon('lune',Sky.moon)+(night?MOON[Sky.moon]:Sky.nextFull())+'</span>'
     +(Sky.isNight()?'<span style="color:#ff9a8a"><b>Nuit : ennemis 4 fois plus forts</b></span>':'<span class="dim">La nuit (21 h 30 – 5 h), les ennemis sont 4 fois plus forts</span>')}
+/* Le HUD est rafraîchi 10 fois par seconde : on n'écrit dans la page que ce qui a changé
+   (chaque écriture inutile oblige le navigateur à recalculer la mise en page sur téléphone). */
+const hq=s=>hq.c[s]||(hq.c[s]=$(s));hq.c={};
+const setTxt=(e,v)=>{v=String(v);if(e&&e._t!==v){e._t=v;e.textContent=v}};
+const setCss=(e,k,v)=>{v=String(v);const m=e&&(e._c||(e._c={}));if(e&&m[k]!==v){m[k]=v;e.style.setProperty(k,v)}};
+const setW=(e,f)=>setCss(e,'width',(clamp(f,0,1)*100).toFixed(1)+'%');
+const setHid=(e,h)=>{h=!!h;if(e&&e.hidden!==h)e.hidden=h};
 function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if(hudT>0)return;hudT=.1;const me=myP();if(!me)return;
-  $('#meName').textContent=myName+' · '+CLS[hero.cls].nom;$('#meLvl').textContent='Niv '+hero.lvl;
-  $('#meHp').style.width=(clamp(me.hp/me.mhp,0,1)*100)+'%';$('#meSh').style.width=(clamp((me.sh||me.shield||0)/me.mhp,0,1)*100)+'%';$('#meMp').style.width=(clamp(L.mp/ST.mmp,0,1)*100)+'%';$('#meXp').style.width=(hero.lvl>=LVL_MAX?100:clamp(hero.xp/xpNeed(hero.lvl),0,1)*100)+'%';
-  const oi=myIdx===0?1:0,o=G.players[oi],ca=$('#cAlly');
-  if(o){$('#alName').textContent=o.name+' · '+CLS[o.cls].nom;$('#alBar').hidden=false;$('#alHp').style.width=(clamp(o.hp/o.mhp,0,1)*100)+'%';$('#alSt').textContent=o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV'}
-  else{$('#alName').textContent='Joueur 2';$('#alBar').hidden=true;$('#alSt').textContent=room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim'}
-  const boss=G.enemies.find(e=>e.type==='boss');$('#bossBox').hidden=!boss;if(boss){$('#bossName').textContent=BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':'');$('#bossHp').style.width=(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)+'%'}
+  setTxt(hq('#meName'),myName+' · '+CLS[hero.cls].nom);setTxt(hq('#meLvl'),'Niv '+hero.lvl);
+  setW(hq('#meHp'),me.hp/me.mhp);setW(hq('#meSh'),(me.sh||me.shield||0)/me.mhp);setW(hq('#meMp'),L.mp/ST.mmp);setW(hq('#meXp'),hero.lvl>=LVL_MAX?1:hero.xp/xpNeed(hero.lvl));
+  const oi=myIdx===0?1:0,o=G.players[oi];
+  if(o){setTxt(hq('#alName'),o.name+' · '+CLS[o.cls].nom);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV')}
+  else{setTxt(hq('#alName'),'Joueur 2');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}
+  const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
   else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
   const tq=m.kind==='world'&&!G.reinOn?trackedText():null;
-  const ot=$('#objTxt');ot.textContent='';ot.append(el('b',null,tq?tq[0]+' · ':m.kind==='world'?'Quête · ':m.kind==='dun'?DUNGEONS[m.did].nom+' · ':''),document.createTextNode(tq?tq[1]:obj));
-  $('#goldTxt').textContent=hero.gold;$('#ptsB').hidden=treePts(hero)<=0;$('#ptsB').textContent=treePts(hero);$('#bagB').hidden=!UI.newItems;
-  {const n=stonesQ(Math.max(G.q,hero.q));const gp=$('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
-  const ks=ST.ks;['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=$('#'+id);b.classList.remove('lock');b.querySelector('.t').textContent=L.cd[i]>0?Math.ceil(L.cd[i]):'';b.style.setProperty('--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1));b.classList.toggle('nomp',L.mp<S.mp)});
-  if(ks[3]){const b=$('#bUlt');b.classList.remove('lock');b.classList.toggle('ready',L.ult>=100);b.querySelector('.t').textContent=L.ult>=100?'':Math.floor(L.ult)+'%';b.style.setProperty('--cd',1-L.ult/100)}
-  ks.forEach((id,i)=>{const S=SK[id],d=$('#sk'+i);if(!S||!d)return;if(S.t==='u'){d.classList.toggle('ready',L.ult>=100);d.style.setProperty('--cd',1-L.ult/100)}else d.style.setProperty('--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1))});
-  {const d=$('#skPot');if(d)d.querySelector('span').textContent='Potion '+hero.pot}
-  $('#potN').textContent=hero.pot;$('#bPot').classList.toggle('empty',hero.pot<=0);
-  const it=findInteract();const lab=interactLabel(it);const ba=$('#bAct');ba.hidden=!it;if(it)ba.textContent=lab.length>24?lab.split(' : ')[0]:lab;const ah=$('#actHint');ah.hidden=!it;if(it)ah.textContent='F · '+lab}
+  const ob=tq?tq[0]+' · ':m.kind==='world'?'Quête · ':m.kind==='dun'?DUNGEONS[m.did].nom+' · ':'',os=tq?tq[1]:obj;
+  const ot=hq('#objTxt');if(ot._t!==ob+'\n'+os){ot._t=ob+'\n'+os;ot.textContent='';ot.append(el('b',null,ob),document.createTextNode(os))}
+  setTxt(hq('#goldTxt'),hero.gold);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
+  {const n=stonesQ(Math.max(G.q,hero.q));const gp=hq('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
+  const ks=ST.ks;['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?Math.ceil(L.cd[i]):'');setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
+  if(ks[3]){const b=hq('#bUlt');b.classList.remove('lock');b.classList.toggle('ready',L.ult>=100);setTxt(b.querySelector('.t'),L.ult>=100?'':Math.floor(L.ult)+'%');setCss(b,'--cd',(1-L.ult/100).toFixed(3))}
+  ks.forEach((id,i)=>{const S=SK[id],d=$('#sk'+i);if(!S||!d)return;if(S.t==='u'){d.classList.toggle('ready',L.ult>=100);setCss(d,'--cd',(1-L.ult/100).toFixed(3))}else setCss(d,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3))});
+  {const d=$('#skPot');if(d)setTxt(d.querySelector('span'),'Potion '+hero.pot)}
+  setTxt(hq('#potN'),hero.pot);hq('#bPot').classList.toggle('empty',hero.pot<=0);
+  const it=findInteract();const lab=interactLabel(it);const ba=hq('#bAct');setHid(ba,!it);if(it)setTxt(ba,lab.length>24?lab.split(' : ')[0]:lab);const ah=hq('#actHint');setHid(ah,!it);if(it)setTxt(ah,'F · '+lab)}
 
 /* ================= Talents et compétences ================= */
 let talSel=null,talHouse=false,talConfirm=false;
@@ -280,7 +288,9 @@ $('#bChron').onclick=()=>{Snd.init();openChron()};$('#chronClose').onclick=()=>{
 $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$('#stSkip').onclick=()=>{storyQ.forEach(k=>{if(!hero.story.includes(k))hero.story.push(k)});storyQ=[];doSave(true);closeStory()};
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});
 addEventListener('keydown',e=>{if($('#storyBox').hidden)return;if(e.code==='Enter'||e.code==='Space'||e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();keys.clear();$('#stNext').click()}},{capture:true});
-const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn.value)||'Héros';Store.lsSet('dd_name',myName);pres({n:myName})});
+const nameIn=$('#name');let nameT=0;nameIn.addEventListener('input',()=>{myName=clean(nameIn.value)||'Héros';Store.lsSet('dd_name',myName);
+  // envoi groupé : le nom part une fois la saisie finie, pas à chaque lettre
+  clearTimeout(nameT);nameT=setTimeout(()=>pres({n:myName}),600)});
 
 /* Pas de zoom du navigateur (double tap, pincement) : on joue, on ne zoome pas. */
 (function noZoom(){let last=0;

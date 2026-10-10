@@ -1,4 +1,4 @@
-import os, json
+import os, json, subprocess
 from playwright.sync_api import sync_playwright
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'tests', 'shots'); os.makedirs(OUT, exist_ok=True)
@@ -35,6 +35,13 @@ def go(p, js): return p.evaluate(js)
 def tele(p, tx, ty):  # téléporte le héros (et l'allié) près d'une case du monde
     go(p, f"(()=>{{const q=worldFree({tx},{ty});L.x=q.x;L.y=q.y;G.players[0].x=q.x;G.players[0].y=q.y}})()")
 def clearUI(p): go(p, "document.querySelector('#toasts').textContent='';document.querySelector('#banner').classList.remove('show');document.querySelector('#loadBox').hidden=true")
+
+# ================= Tests unitaires (Node) : règles, nettoyage des données reçues, sécurité de la page =================
+u = subprocess.run(['node', '--test', os.path.join(ROOT, 'tests', 'unit.test.cjs')], capture_output=True, text=True)
+for line in u.stdout.splitlines():
+    if line.startswith('not ok') or line.strip().startswith(('error:', 'actual:', 'expected:')): print('  ' + line.strip())
+check('Tests unitaires (node --test tests/unit.test.cjs)', u.returncode == 0,
+      ' '.join(l[2:] for l in u.stdout.splitlines() if l.startswith(('# pass', '# fail'))))
 
 with sync_playwright() as pw:
     br = pw.chromium.launch()
