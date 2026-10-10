@@ -59,3 +59,34 @@ const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastChec
     if(this.blocked()){this.nudge();return}
     go()}
 };
+
+/* ================= Navigateur intégré (Messenger, Facebook, Instagram…) =================
+   Un lien ouvert depuis une appli s'affiche dans son navigateur intégré : la sauvegarde y reste
+   enfermée (un héros créé là n'existe pas dans Safari), l'appli ne s'installe pas et le jeu à deux
+   y est moins fiable. On le détecte et on propose d'ouvrir le jeu dans le vrai navigateur. Rien n'est bloqué. */
+const Iab={
+  APPS:[[/MessengerForiOS|MessengerLite|Orca-Android/,'Messenger'],[/FBAN|FBAV|FB_IAB|FBIOS|FB4A/,'Facebook ou Messenger'],[/Instagram/,'Instagram'],
+    [/musical_ly|BytedanceWebview|TikTok/i,'TikTok'],[/Snapchat/,'Snapchat'],[/LinkedInApp/,'LinkedIn'],[/\bLine\//,'LINE'],[/; wv\)/,'une appli']],
+  detect(ua){ua=ua||navigator.userAgent;for(const[re,n]of this.APPS)if(re.test(ua))return n;return null},
+  ios(ua){ua=ua||navigator.userAgent;return/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)},
+  android(ua){return/Android/.test(ua||navigator.userAgent)},
+  url(){return location.href.split('#')[0]},
+  /* adresse qui demande au téléphone d'ouvrir la page dans son navigateur :
+     iPhone (iOS 17 et plus) : x-safari-https://… ; Android : intent:// vers le navigateur par défaut */
+  openUrl(){const u=this.url();if(this.ios())return'x-safari-'+u;
+    if(this.android()){const p=new URL(u);return'intent://'+p.host+p.pathname+p.search+'#Intent;scheme='+p.protocol.replace(':','')+';action=android.intent.action.VIEW;S.browser_fallback_url='+encodeURIComponent(u)+';end'}
+    return u},
+  init(){const app=this.detect();if(!app)return;
+    const box=$('#iabBox');if(!box)return;const nav=this.ios()?'Safari':this.android()?'Chrome':'ton navigateur';
+    Log.ev('navigateur','intégré : '+app);
+    $('#iabApp').textContent=app==='une appli'?'le navigateur intégré d’une appli':'le navigateur de '+app;box.querySelectorAll('.iab-nav').forEach(e=>{e.textContent=nav});box.hidden=false;
+    $('#iabOpen').onclick=()=>{Log.ev('navigateur','ouverture dans '+nav+' demandée');const t0=Date.now();
+      try{location.href=this.openUrl()}catch(e){Log.warn('navigateur','ouverture impossible',e)}
+      /* toujours là après un moment : la bascule n'a pas marché, on met en avant la marche à suivre */
+      setTimeout(()=>{if(document.visibilityState==='visible'&&Date.now()-t0<4000){box.classList.add('fail');Log.warn('navigateur','toujours dans '+app+' après la demande')}},1500)};
+    $('#iabCopy').onclick=async()=>{const u=this.url();let ok=false;
+      try{await navigator.clipboard.writeText(u);ok=true}catch(e){}
+      if(!ok){try{const i=document.createElement('textarea');i.value=u;i.setAttribute('readonly','');i.style.cssText='position:fixed;opacity:0;top:0';document.body.append(i);i.select();i.setSelectionRange(0,u.length);ok=document.execCommand('copy');i.remove()}catch(e){}}
+      Log.ev('navigateur','copie du lien',ok?'réussie':'impossible');
+      toast(ok?'Lien copié : colle-le dans '+nav+'.':'Copie impossible : le lien est '+u)}}
+};

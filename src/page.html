@@ -266,6 +266,9 @@ body.scene #hud,body.scene #touch,body.scene #skillbar,body.scene #mini,body.sce
 @media (orientation:landscape){#menu .mast p{--heroGap:44vh}}
 #menu .panel{background:rgba(38,27,19,.9);border:2px solid #b98544;border-radius:16px;box-shadow:0 5px 0 rgba(20,12,6,.6),0 12px 26px rgba(0,0,0,.35)}
 #menu .lab{color:#f0c95a}
+#menu .panel.iab{border-color:#ffd9a0;box-shadow:0 0 0 3px rgba(234,122,68,.35),0 5px 0 rgba(20,12,6,.6)}
+.iab .iab-help{margin-top:10px;font-size:14px}
+.iab.fail .iab-help{color:#fff6e0;background:rgba(184,72,42,.35);border-radius:10px;padding:8px 10px}
 #menu .cls{background:rgba(38,27,19,.9);border:2px solid #6b4a2c;border-radius:16px;box-shadow:0 4px 0 rgba(20,12,6,.6);justify-items:center;text-align:center}
 #menu .cls[aria-pressed=true]{border-color:var(--c);box-shadow:0 4px 0 rgba(20,12,6,.6),0 0 0 2px var(--c) inset,0 0 20px -4px var(--c)}
 #menu .cls canvas{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#f0b47a,#b86a3a 60%,#6a3a1e);border:3px solid #2a1a14;box-shadow:0 0 0 2px var(--c),0 3px 6px rgba(0,0,0,.5)}
@@ -446,6 +449,16 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 <canvas id="menuBg" aria-hidden="true"></canvas>
 <div id="menu" class="screen">
   <div class="wrap">
+    <section class="panel iab" style="margin-bottom:14px" id="iabBox" role="status" hidden>
+      <p class="lab" style="margin:0 0 6px">Ouvre le jeu dans <span class="iab-nav">Safari</span></p>
+      <p class="muted">Tu es dans <b id="iabApp">le navigateur de Messenger</b>. Ici, ton héros reste enfermé dans cette appli et le jeu à deux marche mal.</p>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn main" id="iabOpen">Ouvrir dans <span class="iab-nav">Safari</span></button>
+        <button class="btn sm" id="iabCopy">Copier le lien</button>
+      </div>
+      <p class="muted iab-help">Sinon : touche <b>•••</b> ou <b>⋯</b> en haut ou en bas de l’écran, puis « Ouvrir dans le navigateur » (ou « Ouvrir dans <span class="iab-nav">Safari</span> »).</p>
+    </section>
+
     <header class="mast">
       <div class="macaron" aria-hidden="true">@@ICON@@</div>
       <h1>Les Pierres <span>de Midheim</span></h1>

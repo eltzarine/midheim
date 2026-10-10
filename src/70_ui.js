@@ -263,7 +263,7 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
 (async function boot(){
   myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';
   const c=Store.lsGet('dd_cls');if(CLS_IDS.includes(c))selCls=c;
-  $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();
+  $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();Iab.init();
   await Splash.run([
     ['Les polices de Midheim',1,()=>Loader.fonts()],
     ['La carte du royaume',1,()=>Loader.images()],
@@ -278,4 +278,7 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
   Splash.hide();
   setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>(hostBg?PAUSE_WAIT:12000))endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
+  /* verrouillage ou passage à une autre appli : sur iPhone, la fermeture de la page n'est pas toujours signalée
+     (appli balayée, onglet tué en arrière-plan) ; on sauvegarde donc dès que le jeu passe en arrière-plan */
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&hero){doSave(true);Log.ev('jeu','sauvegarde (arrière-plan)',mode)}});
 })();

@@ -283,6 +283,9 @@ body.scene #hud,body.scene #touch,body.scene #skillbar,body.scene #mini,body.sce
 @media (orientation:landscape){#menu .mast p{--heroGap:44vh}}
 #menu .panel{background:rgba(38,27,19,.9);border:2px solid #b98544;border-radius:16px;box-shadow:0 5px 0 rgba(20,12,6,.6),0 12px 26px rgba(0,0,0,.35)}
 #menu .lab{color:#f0c95a}
+#menu .panel.iab{border-color:#ffd9a0;box-shadow:0 0 0 3px rgba(234,122,68,.35),0 5px 0 rgba(20,12,6,.6)}
+.iab .iab-help{margin-top:10px;font-size:14px}
+.iab.fail .iab-help{color:#fff6e0;background:rgba(184,72,42,.35);border-radius:10px;padding:8px 10px}
 #menu .cls{background:rgba(38,27,19,.9);border:2px solid #6b4a2c;border-radius:16px;box-shadow:0 4px 0 rgba(20,12,6,.6);justify-items:center;text-align:center}
 #menu .cls[aria-pressed=true]{border-color:var(--c);box-shadow:0 4px 0 rgba(20,12,6,.6),0 0 0 2px var(--c) inset,0 0 20px -4px var(--c)}
 #menu .cls canvas{width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#f0b47a,#b86a3a 60%,#6a3a1e);border:3px solid #2a1a14;box-shadow:0 0 0 2px var(--c),0 3px 6px rgba(0,0,0,.5)}
@@ -466,6 +469,16 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 <canvas id="menuBg" aria-hidden="true"></canvas>
 <div id="menu" class="screen">
   <div class="wrap">
+    <section class="panel iab" style="margin-bottom:14px" id="iabBox" role="status" hidden>
+      <p class="lab" style="margin:0 0 6px">Ouvre le jeu dans <span class="iab-nav">Safari</span></p>
+      <p class="muted">Tu es dans <b id="iabApp">le navigateur de Messenger</b>. Ici, ton héros reste enfermé dans cette appli et le jeu à deux marche mal.</p>
+      <div class="row" style="gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn main" id="iabOpen">Ouvrir dans <span class="iab-nav">Safari</span></button>
+        <button class="btn sm" id="iabCopy">Copier le lien</button>
+      </div>
+      <p class="muted iab-help">Sinon : touche <b>•••</b> ou <b>⋯</b> en haut ou en bas de l’écran, puis « Ouvrir dans le navigateur » (ou « Ouvrir dans <span class="iab-nav">Safari</span> »).</p>
+    </section>
+
     <header class="mast">
       <div class="macaron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" focusable="false"><rect x="10" y="10" width="492" height="492" rx="112" fill="#1d3640" stroke="#b98544" stroke-width="16"/><g transform="translate(256 256) scale(1) translate(-256 -256)"><path fill="#efe6cf" transform="translate(71.61 318.83) scale(0.1407 -0.1407)" d="M1133 762Q1133 841 1126.5 919.5Q1120 998 1104.5 1069.5Q1089 1141 1064.5 1202.5Q1040 1264 1004.0 1309.5Q968 1355 919.5 1381.0Q871 1407 809 1407Q720 1407 649.5 1355.5Q579 1304 529.0 1217.5Q479 1131 452.5 1018.5Q426 906 426 784Q426 649 455.5 539.5Q485 430 530.0 344.0Q575 258 628.0 194.0Q681 130 727.5 88.0Q774 46 807.5 24.0Q841 2 846 0H463Q444 9 410.5 40.0Q377 71 336.5 120.0Q296 169 254.5 234.5Q213 300 179.0 377.5Q145 455 123.5 543.5Q102 632 102 727Q102 785 112.5 863.0Q123 941 151.0 1023.5Q179 1106 227.5 1186.0Q276 1266 351.0 1329.0Q426 1392 531.0 1431.0Q636 1470 778 1470Q872 1470 948.5 1452.5Q1025 1435 1087.0 1404.5Q1149 1374 1197.0 1333.0Q1245 1292 1282 1245Q1319 1292 1370.0 1333.0Q1421 1374 1487.0 1404.5Q1553 1435 1636.5 1452.5Q1720 1470 1823 1470Q1961 1470 2066.5 1439.0Q2172 1408 2249.5 1355.5Q2327 1303 2378.5 1234.5Q2430 1166 2461.5 1091.5Q2493 1017 2506.0 940.5Q2519 864 2519 797Q2519 671 2481.0 567.5Q2443 464 2383.0 381.5Q2323 299 2248.5 235.0Q2174 171 2101.0 124.5Q2028 78 1964.5 47.5Q1901 17 1862 0H1774Q1779 2 1812.0 24.5Q1845 47 1892.0 90.0Q1939 133 1992.0 198.0Q2045 263 2090.0 351.0Q2135 439 2165.0 550.5Q2195 662 2195 799Q2195 940 2162.0 1053.0Q2129 1166 2073.5 1244.5Q2018 1323 1945.0 1365.0Q1872 1407 1792 1407Q1728 1407 1678.0 1381.0Q1628 1355 1590.0 1309.5Q1552 1264 1525.5 1202.5Q1499 1141 1482.0 1069.5Q1465 998 1457.5 919.5Q1450 841 1450 762V0H1133Z"/><rect x="131" y="382" width="40" height="40" transform="rotate(45 151 402)" fill="#cfe2ff"/><rect x="201" y="382" width="40" height="40" transform="rotate(45 221 402)" fill="#ff7a3a"/><rect x="271" y="382" width="40" height="40" transform="rotate(45 291 402)" fill="#f0c95a"/><rect x="341" y="382" width="40" height="40" transform="rotate(45 361 402)" fill="#b98cff"/></g></svg></div>
       <h1>Les Pierres <span>de Midheim</span></h1>
@@ -641,7 +654,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
    lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
    https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='6c550f52';
+const BUILD='e072998c';
 /* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
 const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -4317,6 +4330,37 @@ const Pwa={on:false,waiting:null,reg:null,clicked:false,reloading:false,lastChec
     if(this.blocked()){this.nudge();return}
     go()}
 };
+
+/* ================= Navigateur intégré (Messenger, Facebook, Instagram…) =================
+   Un lien ouvert depuis une appli s'affiche dans son navigateur intégré : la sauvegarde y reste
+   enfermée (un héros créé là n'existe pas dans Safari), l'appli ne s'installe pas et le jeu à deux
+   y est moins fiable. On le détecte et on propose d'ouvrir le jeu dans le vrai navigateur. Rien n'est bloqué. */
+const Iab={
+  APPS:[[/MessengerForiOS|MessengerLite|Orca-Android/,'Messenger'],[/FBAN|FBAV|FB_IAB|FBIOS|FB4A/,'Facebook ou Messenger'],[/Instagram/,'Instagram'],
+    [/musical_ly|BytedanceWebview|TikTok/i,'TikTok'],[/Snapchat/,'Snapchat'],[/LinkedInApp/,'LinkedIn'],[/\bLine\//,'LINE'],[/; wv\)/,'une appli']],
+  detect(ua){ua=ua||navigator.userAgent;for(const[re,n]of this.APPS)if(re.test(ua))return n;return null},
+  ios(ua){ua=ua||navigator.userAgent;return/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)},
+  android(ua){return/Android/.test(ua||navigator.userAgent)},
+  url(){return location.href.split('#')[0]},
+  /* adresse qui demande au téléphone d'ouvrir la page dans son navigateur :
+     iPhone (iOS 17 et plus) : x-safari-https://… ; Android : intent:// vers le navigateur par défaut */
+  openUrl(){const u=this.url();if(this.ios())return'x-safari-'+u;
+    if(this.android()){const p=new URL(u);return'intent://'+p.host+p.pathname+p.search+'#Intent;scheme='+p.protocol.replace(':','')+';action=android.intent.action.VIEW;S.browser_fallback_url='+encodeURIComponent(u)+';end'}
+    return u},
+  init(){const app=this.detect();if(!app)return;
+    const box=$('#iabBox');if(!box)return;const nav=this.ios()?'Safari':this.android()?'Chrome':'ton navigateur';
+    Log.ev('navigateur','intégré : '+app);
+    $('#iabApp').textContent=app==='une appli'?'le navigateur intégré d’une appli':'le navigateur de '+app;box.querySelectorAll('.iab-nav').forEach(e=>{e.textContent=nav});box.hidden=false;
+    $('#iabOpen').onclick=()=>{Log.ev('navigateur','ouverture dans '+nav+' demandée');const t0=Date.now();
+      try{location.href=this.openUrl()}catch(e){Log.warn('navigateur','ouverture impossible',e)}
+      /* toujours là après un moment : la bascule n'a pas marché, on met en avant la marche à suivre */
+      setTimeout(()=>{if(document.visibilityState==='visible'&&Date.now()-t0<4000){box.classList.add('fail');Log.warn('navigateur','toujours dans '+app+' après la demande')}},1500)};
+    $('#iabCopy').onclick=async()=>{const u=this.url();let ok=false;
+      try{await navigator.clipboard.writeText(u);ok=true}catch(e){}
+      if(!ok){try{const i=document.createElement('textarea');i.value=u;i.setAttribute('readonly','');i.style.cssText='position:fixed;opacity:0;top:0';document.body.append(i);i.select();i.setSelectionRange(0,u.length);ok=document.execCommand('copy');i.remove()}catch(e){}}
+      Log.ev('navigateur','copie du lien',ok?'réussie':'impossible');
+      toast(ok?'Lien copié : colle-le dans '+nav+'.':'Copie impossible : le lien est '+u)}}
+};
 /* ---- 70_ui.js ---- */
 /* ================= Portraits supplémentaires ================= */
 function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron'].includes(who)){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
@@ -4583,7 +4627,7 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
 (async function boot(){
   myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';
   const c=Store.lsGet('dd_cls');if(CLS_IDS.includes(c))selCls=c;
-  $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();
+  $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();Iab.init();
   await Splash.run([
     ['Les polices de Midheim',1,()=>Loader.fonts()],
     ['La carte du royaume',1,()=>Loader.images()],
@@ -4598,6 +4642,9 @@ const nameIn=$('#name');nameIn.addEventListener('input',()=>{myName=clean(nameIn
   Splash.hide();
   setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>(hostBg?PAUSE_WAIT:12000))endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
+  /* verrouillage ou passage à une autre appli : sur iPhone, la fermeture de la page n'est pas toujours signalée
+     (appli balayée, onglet tué en arrière-plan) ; on sauvegarde donc dès que le jeu passe en arrière-plan */
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&hero){doSave(true);Log.ev('jeu','sauvegarde (arrière-plan)',mode)}});
 })();
 </script>
 </body>
