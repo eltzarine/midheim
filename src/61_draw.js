@@ -73,6 +73,7 @@ function drawEnemy(e,x,y,T){const fl=e.fl!=null?e.fl:((e.frz>0?1:0)|(e.tele>0?2:
   if(frz){g.fillStyle='rgba(140,200,255,.45)';g.beginPath();g.arc(x,y,e.r+3,0,6.28);g.fill();g.strokeStyle='rgba(230,245,255,.8)';g.lineWidth=1;for(let k=0;k<3;k++){const a=k*2.1+e.id;g.beginPath();g.moveTo(x+Math.cos(a)*4,y+Math.sin(a)*4);g.lineTo(x+Math.cos(a)*(e.r+3),y+Math.sin(a)*(e.r+3));g.stroke()}}
   const hp=e.hpP!=null?e.hpP/100:e.hp/e.mhp;if(hp<1&&e.type!=='boss'){const yb=y-e.r*(big?1.4:1)-12;g.fillStyle='#0a0910';g.fillRect(x-12,yb,24,4);g.fillStyle=elite?'#f0c95a':'#d24a3f';g.fillRect(x-12,yb,24*hp,4)}}
 function drawBoss(g,v,x,y,T,lx,ly,e){const fy=Math.sin(T*2)*2;const yy=y+fy;const aura=(c,r)=>{const au=g.createRadialGradient(x,yy,4,x,yy,r);au.addColorStop(0,c);au.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=au;g.beginPath();g.arc(x,yy,r,0,6.28);g.fill()};
+  if(!(v===5&&e&&((e.fl!=null?e.fl:(e.mistT>0?32:0))&32))&&drawBossPix(g,v,x,y,T,lx,ly,e))return;   // pixel art, sauf Reinald en brume
   const sword=(len,col,hilt)=>{const a=Math.atan2(ly,lx)+(e&&e.chg>0?0:Math.sin(T*3)*.2);g.save();g.translate(x+lx*14,yy+ly*8);g.rotate(a);g.fillStyle=hilt;g.fillRect(-6,-2,8,4);g.fillRect(1,-7,3,14);g.fillStyle=col;g.beginPath();g.moveTo(4,-3);g.lineTo(4+len,-1.5);g.lineTo(8+len,0);g.lineTo(4+len,1.5);g.lineTo(4,3);g.fill();g.restore()};
   if(v===0){ // Sinthara : armure, pierre encastrée qui brille
     aura('rgba(160,200,255,.28)',42);
