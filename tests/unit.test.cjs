@@ -43,7 +43,7 @@ function loadGame() {
   vm.createContext(ctx);
   // les let/const du jeu ne sont visibles que dans le même script : on y ajoute l'accès pour les tests
   vm.runInContext(code + `
-;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,anonName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
+;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,treeNode,treeWhy,heroKit,treePts,TREE,SK,
   applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
@@ -146,11 +146,6 @@ if (!fs.existsSync(BUNDLE)) {
     assert.equal(T.clean('a'.repeat(40)).length, 14);
     assert.equal(T.clean(null), '');
     assert.equal(T.clean({ toString: () => 'Bob' }), 'Bob');
-  });
-
-  test('Journal public : seule l’initiale du prénom', () => {
-    assert.equal(T.anonName('césar'), 'C.');
-    assert.equal(T.anonName(''), '?');
   });
 
   test('Stats de l’invité : compétences d’une autre classe refusées, valeurs bornées', () => {

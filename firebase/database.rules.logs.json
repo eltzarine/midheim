@@ -1,0 +1,16 @@
+{
+  "logs": {
+    ".read": false,
+    "$sid": {
+      ".write": "(newData.exists() && newData.child('t').val() === now && newData.child('j').isString() && newData.child('j').val().length <= 16000) || (!newData.exists() && data.child('t').val() < now - 604800000)",
+      ".validate": "newData.hasChildren(['j', 't'])"
+    }
+  },
+  "logidx": {
+    ".read": true,
+    ".indexOn": [".value"],
+    "$sid": {
+      ".write": "(newData.isNumber() && newData.val() === now && !data.exists()) || (!newData.exists() && data.val() < now - 604800000)"
+    }
+  }
+}
