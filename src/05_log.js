@@ -1,11 +1,11 @@
 /* ================= Journal de bord (débogage) =================
    Garde les derniers événements de la session (erreurs JavaScript, réseau, jeu à deux) et,
-   sur le site public, les envoie dans Firebase : logs/<session>. Les règles de la base interdisent
-   toute lecture de logs/ depuis le jeu ou le web (écriture seule, 16 000 caractères au plus) : on les lit
-   uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
-   (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
-   inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
+   sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
+   lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
+   https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
 const BUILD='@@BUILD@@';
+/* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
+const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
 const g_=f=>{try{return f()}catch(e){return undefined}};
 const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),t0:Date.now(),lines:[],max:400,dirty:false,upT:null,fb:null,
@@ -25,19 +25,17 @@ const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)
   schedule(ms){if(g_(()=>netKind)!=='fb')return;if(this.upT&&ms>=10000)return;clearTimeout(this.upT);this.upT=setTimeout(()=>{this.upT=null;this.upload()},ms)},
   /* Ménage : chaque appareil, une fois par session, efface quelques journaux de plus de 7 jours.
      Firebase n'a pas d'expiration automatique ; ainsi la base ne garde qu'une semaine de journaux. */
-  async purge(){try{const D=this.fb.D,db=this.fb.db,old=Date.now()-7*864e5;
-      const snap=await D.get(D.query(D.ref(db,'logidx'),D.orderByValue(),D.endAt(old),D.limitToFirst(30)));
-      const keys=[];snap.forEach(c=>{keys.push(c.key)});
-      for(const k of keys)if(k!==this.sid){await D.remove(D.ref(db,'logs/'+k));await D.remove(D.ref(db,'logidx/'+k))}
+  async purge(){try{const D=this.fb.D,db=D.getDatabase(),old=Date.now()-7*864e5;
+      const snap=await D.get(D.query(D.ref(db,'logs'),D.orderByChild('t'),D.endAt(old),D.limitToFirst(30)));
+      const keys=[];snap.forEach(c=>{keys.push(c.key)});for(const k of keys)if(k!==this.sid)await D.remove(D.ref(db,'logs/'+k));
       if(keys.length)this.ev('journal',keys.length+' ancien(s) journal(aux) effacé(s)')}catch(e){}},
   async upload(){const SDK=g_(()=>FB_SDK);if(!this.dirty||!SDK||!navigator.onLine)return;this.dirty=false;
     try{if(!this.fb){const A=await import(SDK+'firebase-app.js'),D=await import(SDK+'firebase-database.js');
-        const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG),db=D.getDatabase(app);
-        this.fb={D,db,ref:D.ref(db,'logs/'+this.sid)};await D.set(D.ref(db,'logidx/'+this.sid),D.serverTimestamp())}
+        const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG);this.fb={D,ref:D.ref(D.getDatabase(app),'logs/'+this.sid)}}
       const head=this.text().split('\n').slice(0,4);const tail=[];let size=head.join('\n').length;
       for(let i=this.lines.length-1;i>=0&&size+this.lines[i].length+1<12000;i--){tail.unshift(this.lines[i]);size+=this.lines[i].length+1}
       const txt=head.concat(tail).join('\n');
-      await this.fb.D.set(this.fb.ref,{j:JSON.stringify({b:BUILD,n:String(g_(()=>myName)||''),m:String(g_(()=>mode)||''),log:txt}),t:this.fb.D.serverTimestamp()});if(!this.purged){this.purged=1;this.purge()}}
+      await this.fb.D.set(this.fb.ref,{j:JSON.stringify({b:BUILD,n:anonName(g_(()=>myName)),m:String(g_(()=>mode)||''),log:txt}),t:this.fb.D.serverTimestamp()});if(!this.purged){this.purged=1;this.purge()}}
     catch(e){this.dirty=true;if(!this.upErr){this.upErr=1;this.lines.push(this.ts()+' WARN [journal] envoi impossible : '+(e&&e.message||e))}}}
 };
 addEventListener('error',e=>Log.err('js',e.error||e.message,e.filename?'@'+String(e.filename).split('/').pop()+':'+e.lineno+':'+e.colno:''));
@@ -46,4 +44,4 @@ for(const k of['error','warn']){const o=console[k];console[k]=function(...a){try
 addEventListener('online',()=>Log.ev('réseau','internet revenu'));addEventListener('offline',()=>Log.warn('réseau','internet coupé'));
 document.addEventListener('visibilitychange',()=>{Log.ev('app',document.visibilityState==='visible'?'au premier plan':'en arrière-plan');if(document.visibilityState==='hidden')Log.upload()});
 addEventListener('pagehide',()=>Log.upload());
-Log.ev('app','démarrage',location.href.split('#')[0]); // avec les paramètres (ex. fbclid : arrivé par un lien Messenger)
+Log.ev('app','démarrage',location.href.split(/[?#]/)[0]); // sans les paramètres (ex. fbclid de Messenger), lisibles par tous dans la base
