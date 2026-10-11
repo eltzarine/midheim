@@ -155,8 +155,11 @@ function tbHud(){const box=hq('#tbInfo'),be=hq('#bEnd'),c=G.cb,inn=tbMe(),me=myP
   if(o)setTxt(al,!c.in[oi]?o.name+' : hors combat':o.down?o.name+' : à terre':!hp?'':c.rd[oi]?o.name+' : prêt ✓':o.name+' joue…'+(c.tl?' '+c.tl+' s':''));
   // journal : pendant le tour des ennemis, et encore 4 s au début du tour des héros
   const lgOn=c.lg.length&&(!hp||performance.now()-(L.tbLgT||0)<4000),lgEl=hq('#tbLog');setHid(lgEl,!lgOn);
-  if(lgOn){const txt=c.lg.map(x=>{const t=G.players[x.pi];return x.n+' '+TB_LG[x.k]+(t&&x.k<=3?' '+t.name:'')+(x.d?' : −'+x.d:'')}).join(innerWidth>innerHeight?' · ':'\n');setTxt(lgEl,txt)}
+  if(lgOn)setTxt(lgEl,tbLogLines(c.lg).join(innerWidth>innerHeight?' · ':'\n'))
   setTxt(be,undo?'Annuler la fin du tour':'Fin du tour');be.classList.toggle('glow',hp&&!ap&&!undo);be.classList.toggle('undo',!!undo)}
+/* journal des ennemis, compact : actions identiques regroupées (« Adepte tire sur César : −10 ×4 »), 3 lignes au plus */
+function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x.pi],l=x.n+' '+TB_LG[x.k]+(t&&x.k<=3?' '+t.name:'')+(x.d?' : −'+x.d:'');m.set(l,(m.get(l)||0)+1)}
+  const out=[...m].map(([l,n])=>n>1?l+' ×'+n:l);return out.length>3?out.slice(0,2).concat('+ '+(out.length-2)+' autres actions'):out}
 function tgtHud(){const t=tbTarget(),box=hq('#tgtBox');setHid(box,!t);if(!t)return;
   setTxt(hq('#tgtName'),enemyName(t)+' · Niv '+(t.lv||G.lv||1));const pct=t.hpP!=null?t.hpP/100:t.hp/t.mhp;setW(hq('#tgtHp'),pct);setTxt(hq('#tgtPv'),t.hpP!=null?t.hpP+' %':Math.ceil(t.hp)+' / '+Math.ceil(t.mhp));
   const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):'Aucun effet');
@@ -195,45 +198,103 @@ function drawMoveZone(T){const P=L.tbPoly;if(!P||P.length<3)return;ctx.save();ct
 /* ---------- aperçu d'une action : 1er appui = aperçu en boucle, 2e appui sur le même bouton = on agit ----------
    au combat pendant son tour, et hors combat quand un ennemi est sélectionné */
 function pvOn(){if(!G||!G.m)return false;if(tbMe())return tbHero();return!!tbTarget()}
-function tbPreview(k){if(!pvOn())return false;if(L.pv===k){L.pv=null;return false}L.pv=k;L.pvT0=null;Snd.play('key');return true}
+function tbPreview(k){if(!pvOn())return false;if(L.pv===k){L.pv=null;return false}L.pv=k;L.pvS=null;Snd.play('key');return true}
 const SK_AREA={tourbillon:['me',90],seisme:['me',165],nova:['me',140],cri:['me',260],aube:['me',200],danse:['me',270],colere:['me',300],cercle:['me',115],bouclier:['me',320],banniere:['me',320],fumee:['me',105],embuscade:['me',70],
   flammes:['tg',90],jugement:['tg',100],hiver:['tg',200],meteore:['tg',150],entrave:['tg',120],mur:['tg',100],
   charge:['line',190],hache:['line',400],eventail:['line',280],bond:['tg',80],ricochet:['tg',60],marteau:['tg',40],assassin:['tg',40],pommeau:['tg',40],piege:['tg',30]};
-/* l'aperçu joue l'action jusqu'à l'impact sur l'ennemi, puis 1 s de pause (PV_GAP), et recommence */
+/* L'aperçu rejoue l'action avec ses vrais effets (anneaux, éclats, projectiles, zones, feux, pièges, doubles), sans dégâts ni son :
+   à chaque boucle la suite d'effets est préparée à partir des positions du moment (pvBuild), jouée jusqu'au dernier impact,
+   puis vient 1 s de pause (PV_GAP) avant de recommencer. Les dégâts affichés sont une estimation (dégâts du héros × coefficient). */
 const PV_GAP=1;
-function pvBurst(x,y,q,r,col){if(q<0||q>1)return;ctx.save();ctx.globalAlpha=1-q;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,r*(.4+.8*q),0,6.28);ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,'+(.55*(1-q))+')';ctx.beginPath();ctx.arc(x,y,r*.45*(1-q),0,6.28);ctx.fill();ctx.restore()}
-function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;return}const me=myP();if(!me||me.down)return;
-  const t=tbAimAt(),tx=t?t.rx??t.x:0,ty=t?t.ry??t.y:0,a=t?Math.atan2(ty-L.y,tx-L.x):L.aim,d=t?Math.hypot(tx-L.x,ty-L.y):0;
-  if(L.pvT0==null)L.pvT0=T;let lab='',D,dmg='',hx=tx,hy=ty;
-  /* durée de l'action selon son type */
-  const melee=L.pv==='atk'&&{guerrier:1,voleur:1}[hero.cls],ranged=L.pv==='atk'&&!melee;
-  const i=L.pv==='atk'?-1:L.pv==='ult'?3:+String(L.pv).slice(1),id=i<0?null:ST.ks[i],S=id?SK[id]:null;if(i>=0&&!S){L.pv=null;return}
-  const A=id?SK_AREA[id]:null,kind=i<0?(melee?'melee':'shot'):A?(A[0]==='tg'&&!t?'me':A[0]):'me',R=A?A[1]:40;
-  const trav=x=>clamp(x/560,.2,.8);
-  D=kind==='melee'?.8:kind==='shot'?(t?trav(d):.4)+.3:kind==='line'?trav(R)+.3:kind==='tg'?trav(d)+.4:.5;
-  const u=(T-L.pvT0)%(D+PV_GAP),act=u<D,pz=act?0:u-D;
-  /* héros fantôme : avance au corps à corps, reste sur place sinon */
-  const mv=melee&&t?clamp(d-t.r-22,0,60):18,ap=melee?clamp(u/.35,0,1):1,gm=act?mv*eio(ap):18,gx=L.x+Math.cos(a)*gm,gy=L.y+Math.sin(a)*gm;
-  ctx.save();ctx.globalAlpha=act?.5:.28;drawPlayer(me,gx,gy,true,T);ctx.restore();
-  if(i<0){lab=CLS[hero.cls].atk+(t?' → '+enemyName(t)+' · ~'+Math.round(ST.dmg*(tbMe()?TB_DMG:1))+' dégâts':'');dmg=t?'−'+Math.round(ST.dmg*(tbMe()?TB_DMG:1)):''}
-  else lab=S.nom+(t&&A&&A[0]!=='me'?' → '+enemyName(t):'');
-  ctx.save();
-  if(kind==='melee'){if(act&&u>=.35){ctx.globalAlpha=.8;drawSlash(gx,gy,a,(u-.35)/.45,hero.cls,true);ctx.globalAlpha=1}
-    if(t&&inReach('atk',t))pvBurst(tx,ty,(u-.55)/.4,t.r+14,'#fff3d0');else dmg=''}
-  else if(kind==='shot'){if(t){const tr=trav(d);ctx.strokeStyle='rgba(255,210,160,.5)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(L.x,L.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.setLineDash([]);
-      if(act&&u<tr){const q=u/tr;ctx.fillStyle=hero.cls==='mage'?'#ffb347':'#ffe9a0';ctx.beginPath();ctx.arc(L.x+(tx-L.x)*q,L.y+(ty-L.y)*q,6,0,6.28);ctx.fill()}
-      pvBurst(tx,ty,(u-tr)/.3,t.r+14,hero.cls==='mage'?'#ffb347':'#ffe9a0')}}
-  else{ctx.strokeStyle='rgba(240,201,90,'+(act?.95:.5)+')';ctx.fillStyle='rgba(240,201,90,.12)';ctx.lineWidth=3;
-    if(kind==='line'){const tr=trav(R),ex=L.x+Math.cos(a)*R,ey=L.y+Math.sin(a)*R;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(L.x,L.y);ctx.lineTo(ex,ey);ctx.stroke();ctx.setLineDash([]);
-      if(act&&u<tr){const q=u/tr;ctx.fillStyle='rgba(240,201,90,.9)';ctx.beginPath();ctx.arc(L.x+(ex-L.x)*q,L.y+(ey-L.y)*q,8,0,6.28);ctx.fill()}
-      if(t){hx=tx;hy=ty;pvBurst(tx,ty,(u-tr*Math.min(1,d/R))/.3,t.r+14,'#f0c95a')}}
-    else{const tg=kind==='tg',cx=tg?tx:L.x,cy=tg?ty:L.y,tr=tg?trav(d):0,grow=tg?.4:.5;hx=cx;hy=cy;
-      if(tg&&act&&u<tr){const q=u/tr;ctx.fillStyle='rgba(240,201,90,.9)';ctx.beginPath();ctx.arc(L.x+(cx-L.x)*q,L.y+(cy-L.y)*q,7,0,6.28);ctx.fill()}
-      const g=act?clamp((u-tr)/grow,0,1):1;ctx.setLineDash(act?[]:[8,6]);ctx.beginPath();ctx.arc(cx,cy,Math.max(4,R*eio(g)),0,6.28);if(act&&u>=tr)ctx.fill();ctx.stroke();ctx.setLineDash([]);
-      if(act&&g>=1)pvBurst(cx,cy,(u-tr-grow)/.1,R,'#f0c95a');if(!act&&pz<.3)pvBurst(cx,cy,pz/.3+.6,R,'#f0c95a')}}
-  ctx.restore();
-  /* dégâts qui montent pendant la pause */
-  if(dmg&&!act&&pz<.8){ctx.save();ctx.globalAlpha=1-pz/.8;ctx.font='800 16px "Alegreya Sans",system-ui,sans-serif';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='rgba(40,10,8,.9)';ctx.fillStyle='#ffd27a';
-    const yy=hy-(t?t.r:0)-18-pz*22;ctx.strokeText(dmg,hx,yy);ctx.fillText(dmg,hx,yy);ctx.restore()}
+const pvX=e=>e.rx??e.x,pvY=e=>e.ry??e.y;
+function pvFoes(){return G.enemies.filter(e=>e.hp>0)}
+function pvNear(cx,cy,r){return pvFoes().filter(e=>Math.hypot(pvX(e)-cx,pvY(e)-cy)<r+e.r)}
+function pvFx(k,x,y,v){const sp=Snd.play,sh=shake;Snd.play=()=>{};try{fxShow({k,x,y,v:v||0,o:-1},true)}finally{Snd.play=sp;shake=sh}}
+function pvHit(e,mult,st){const x=pvX(e),y=pvY(e);parts.push({k:'imp',x,y:y+8,life:.25,max:.25,rot:Math.random()*6,big:mult>=2?1:0});
+  if(mult)addText(x,y-(e.r||12),'−'+Math.round(ST.dmg*mult*(tbMe()?TB_DMG:1)),'#ffd27a',1,14);if(st)addText(x,y-(e.r||12)-16,st,'#9fd0ff',1,12)}
+function pvRay(x,y,a,d){let s=0;while(s<d&&!hits(x+Math.cos(a)*(s+6),y+Math.sin(a)*(s+6),10))s+=6;return Math.min(s,d)}
+function pvAlly(){const o=G.players.find((q,j)=>j!==myIdx&&!q.down);return o?{x:o.rx??o.x,y:o.ry??o.y}:{x:L.x,y:L.y}}
+/* prépare une boucle d'aperçu : D = durée jusqu'au dernier impact, ev = effets datés, pos = place du héros fantôme */
+function pvBuild(k,t){const x0=L.x,y0=L.y,a=t?Math.atan2(pvY(t)-y0,pvX(t)-x0):L.aim,ca=Math.cos(a),sa=Math.sin(a),d=t?Math.hypot(pvX(t)-x0,pvY(t)-y0):0;
+  const tp=t?{x:pvX(t),y:pvY(t)}:{x:x0+ca*170,y:y0+sa*170};
+  const S={D:.6,ev:[],zones:[],fires:[],traps:[],decoys:[],projs:[],a,pos:()=>({x:x0+ca*18,y:y0+sa*18,al:.5})},at=(tt,fn)=>S.ev.push([tt,fn]);
+  const dash=(dist,dur)=>{const s=pvRay(x0,y0,a,dist);S.pos=u=>{const q=eio(u/dur);return{x:x0+ca*s*q,y:y0+sa*s*q,al:.5}};return s};
+  const shot=(o)=>{S.projs.push(Object.assign({x:x0+ca*14,y:y0+sa*14,r:7,life:1,hit:new Set()},o))};
+  if(k==='atk'){const melee={guerrier:1,voleur:1}[hero.cls];
+    if(melee){const mv=t?clamp(d-t.r-22,0,60):18;S.pos=u=>{const q=eio(clamp(u/.35,0,1));return{x:x0+ca*mv*q,y:y0+sa*mv*q,al:.5}};S.slash={t0:.35,mv};S.D=.8;
+      if(t&&inReach('atk',t))at(.55,()=>pvHit(t,hero.cls==='voleur'?.75:1))}
+    else{const sp=hero.cls==='mage'?420:380;shot({vx:ca*sp,vy:sa*sp,k:hero.cls==='mage'?1:2,life:1.1,mult:1,splash:hero.cls==='mage'?46:0});S.D=Math.min(1.1,d/sp)+.35}
+    return S}
+  const i=k==='ult'?3:+String(k).slice(1),id=ST.ks[i];
+  switch(id){
+    case'charge':{const s=dash(190,.22);at(0,()=>pvFx(28,x0+ca*s,y0+sa*s,Math.round(a*100)));for(const e of pvFoes()){if(segDist(pvX(e),pvY(e),x0,y0,x0+ca*s,y0+sa*s)<e.r+26)at(.22*Math.min(1,Math.hypot(pvX(e)-x0,pvY(e)-y0)/(s||1)),()=>pvHit(e,1.4,'Étourdi'))}S.D=.6;break}
+    case'tourbillon':at(0,()=>pvFx(10,x0,y0,90));for(const e of pvNear(x0,y0,90))at(.15,()=>pvHit(e,1.6));S.D=.6;break;
+    case'cri':at(0,()=>pvFx(29,x0,y0,260));for(const e of pvNear(x0,y0,260))at(.25,()=>pvHit(e,0,'Provoqué'));S.D=.7;break;
+    case'seisme':at(0,()=>pvFx(30,x0,y0,165));for(const e of pvNear(x0,y0,165))at(.2,()=>pvHit(e,3,'Étourdi'));S.D=.7;break;
+    case'nova':at(0,()=>pvFx(6,x0,y0,140));for(const e of pvNear(x0,y0,140))at(.2,()=>pvHit(e,1.2,'Gelé'));S.D=.6;break;
+    case'transfert':{const s=pvRay(x0,y0,a,180);S.pos=u=>u<.15?{x:x0,y:y0,al:.5}:{x:x0+ca*s,y:y0+sa*s,al:.5};at(0,()=>{parts.push({k:'ring',x:x0,y:y0,r:6,mr:60,life:.4,max:.4,col:'#9fd0ff'});pvFx(6,x0,y0,70)});
+      at(.15,()=>parts.push({k:'ring',x:x0+ca*s,y:y0+sa*s,r:30,mr:4,life:.3,max:.3,col:'#cfe8ff'}));S.D=.5;break}
+    case'flammes':at(0,()=>{pvFx(31,tp.x,tp.y,90);S.fires.push({x:tp.x,y:tp.y,r:90})});for(const e of pvNear(tp.x,tp.y,90))at(.3,()=>pvHit(e,.6,'Brûle'));S.D=.8;break;
+    case'tempete':at(0,()=>pvFx(32,x0,y0,0));for(let n=0;n<7;n++)at(n*.22,()=>{let b=null,bd=330;for(const e of pvFoes()){const dd=Math.hypot(pvX(e)-x0,pvY(e)-y0);if(dd<bd){bd=dd;b=e}}
+      if(b){const aa=Math.atan2(pvY(b)-y0,pvX(b)-x0);S.projs.push({x:x0,y:y0,vx:Math.cos(aa)*460,vy:Math.sin(aa)*460,r:7,k:1,life:1,mult:.6,splash:36,hit:new Set()})}});S.D=1.9;break;
+    case'ombre':{dash(180,.18);at(0,()=>parts.push({k:'ring',x:x0,y:y0,r:6,mr:30,life:.3,max:.3,col:'#86cc70'}));S.D=.4;break}
+    case'eventail':for(let n=-3;n<=3;n++){const b=a+n*.17;shot({x:x0+Math.cos(b)*12,y:y0+Math.sin(b)*12,vx:Math.cos(b)*470,vy:Math.sin(b)*470,r:6,k:5,life:.6,mult:.8})}at(0,()=>pvFx(11,x0,y0,0));S.D=.7;break;
+    case'fumee':at(0,()=>{pvFx(33,x0,y0,105);S.zones.push({x:x0,y:y0,r:105,smoke:1})});for(const e of pvNear(x0,y0,110))at(.2,()=>pvHit(e,0,'Aveuglé'));S.D=.8;break;
+    case'danse':pvFoes().filter(e=>Math.hypot(pvX(e)-x0,pvY(e)-y0)<270).sort((u,v)=>Math.hypot(pvX(u)-x0,pvY(u)-y0)-Math.hypot(pvX(v)-x0,pvY(v)-y0)).slice(0,6)
+      .forEach((e,n)=>at(n*.12,()=>{pvFx(34,pvX(e),pvY(e),Math.round(x0)*10000+Math.round(y0));pvHit(e,1.5)}));S.D=Math.max(.5,S.ev.length*.12+.3);break;
+    case'cercle':at(0,()=>{pvFx(13,x0,y0,115);S.zones.push({x:x0,y:y0,r:115})});S.D=.8;break;
+    case'bouclier':at(0,()=>{for(const q of G.players)if(!q.down&&Math.hypot((q.rx??q.x)-x0,(q.ry??q.y)-y0)<320)pvFx(35,q.rx??q.x,q.ry??q.y,0)});S.D=.6;break;
+    case'jugement':at(0,()=>pvFx(36,tp.x,tp.y,100));for(const e of pvNear(tp.x,tp.y,100))at(.25,()=>pvHit(e,2));S.D=.7;break;
+    case'aube':at(0,()=>{pvFx(37,x0,y0,220);for(const q of G.players)pvFx(14,q.rx??q.x,q.ry??q.y,0)});for(const e of pvNear(x0,y0,200))at(.3,()=>pvHit(e,2));S.D=.9;break;
+    case'bastion':{const q=pvAlly();at(0,()=>{pvFx(35,q.x,q.y,0);pvFx(45,q.x,q.y,604)});S.D=.6;break}
+    case'garde':{const q=pvAlly();at(0,()=>{pvFx(35,q.x,q.y,0);pvFx(45,x0,y0,704)});S.D=.6;break}
+    case'bond':{const dd=Math.min(220,Math.hypot(tp.x-x0,tp.y-y0)),s=pvRay(x0,y0,a,dd),lx=x0+ca*s,ly=y0+sa*s;
+      S.pos=u=>{const q=clamp(u/.25,0,1);return{x:x0+(lx-x0)*q,y:y0+(ly-y0)*q-Math.sin(q*Math.PI)*28,al:.5}};
+      at(.25,()=>pvFx(10,lx,ly,80));for(const e of pvNear(lx,ly,80))at(.3,()=>pvHit(e,1.2,'Étourdi'));S.D=.7;break}
+    case'rage':at(0,()=>pvFx(45,x0,y0,606));S.D=.6;break;
+    case'hache':shot({vx:ca*430,vy:sa*430,r:10,k:5,life:1,mult:1.3,pierce:true,boom:true});S.D=1.05;break;
+    case'hiver':at(0,()=>pvFx(6,tp.x,tp.y,200));for(const e of pvNear(tp.x,tp.y,200))at(.25,()=>pvHit(e,1.5,'Gelé'));S.D=.7;break;
+    case'meteore':at(0,()=>pvFx(45,tp.x,tp.y,1503));at(.7,()=>{pvFx(30,tp.x,tp.y,150);S.fires.push({x:tp.x,y:tp.y,r:70})});for(const e of pvNear(tp.x,tp.y,150))at(.75,()=>pvHit(e,4,'Étourdi'));S.D=1.2;break;
+    case'mur':at(0,()=>{pvFx(31,tp.x,tp.y,90);for(let n=-2;n<=2;n++)S.fires.push({x:tp.x-sa*n*40,y:tp.y+ca*n*40,r:34})});S.D=.8;break;
+    case'entrave':at(0,()=>{pvFx(45,tp.x,tp.y,1201);S.zones.push({x:tp.x,y:tp.y,r:120,slow:1})});for(const e of pvNear(tp.x,tp.y,120))at(.3,()=>pvHit(e,0,'Ralenti'));S.D=.8;break;
+    case'miroir':at(0,()=>{pvFx(32,x0,y0,0);S.decoys.push({x:x0+ca*34,y:y0+sa*34,cls:hero.cls,lk:lookOf(hero.eq)})});S.D=.8;break;
+    case'dispar':at(0,()=>pvFx(11,x0,y0,0));S.pos=()=>({x:x0+ca*18,y:y0+sa*18,al:.18});S.D=.8;break;
+    case'assassin':{const q=pvAlly();let b=null,bd=1e9;for(const e of pvFoes()){if(Math.hypot(pvX(e)-x0,pvY(e)-y0)>360)continue;const dd=Math.hypot(pvX(e)-q.x,pvY(e)-q.y);if(dd<bd){bd=dd;b=e}}
+      if(b){const a2=Math.atan2(pvY(b)-q.y,pvX(b)-q.x),nx=pvX(b)+Math.cos(a2)*26,ny=pvY(b)+Math.sin(a2)*26;S.pos=u=>u<.15?{x:x0,y:y0,al:.5}:{x:nx,y:ny,al:.5};
+        at(.15,()=>{pvFx(34,pvX(b),pvY(b),Math.round(x0)*10000+Math.round(y0));pvHit(b,3,'Étourdi')})}S.D=.6;break}
+    case'ricochet':{const hit=new Set();let px=x0,py=y0,cur=null,bd=1e9;for(const e of pvFoes()){const dd=Math.min(Math.hypot(pvX(e)-tp.x,pvY(e)-tp.y)*1.5,Math.hypot(pvX(e)-x0,pvY(e)-y0)+120);if(dd<bd&&Math.hypot(pvX(e)-x0,pvY(e)-y0)<300){bd=dd;cur=e}}
+      for(let n=0;n<4&&cur;n++){hit.add(cur);const e=cur,ox=px,oy=py;at(n*.15,()=>{pvFx(34,pvX(e),pvY(e),Math.round(ox)*10000+Math.round(oy));pvHit(e,1.1)});px=pvX(cur);py=pvY(cur);let nx=null,nd=180;for(const o of pvFoes()){if(hit.has(o))continue;const dd=Math.hypot(pvX(o)-px,pvY(o)-py);if(dd<nd){nd=dd;nx=o}}cur=nx}
+      S.D=Math.max(.5,S.ev.length*.15+.3);break}
+    case'pommeau':{S.slash={t0:0,mv:18};if(t&&d<=60+t.r)at(.2,()=>{pvFx(38,pvX(t),pvY(t),0);pvHit(t,1.2,'Étourdi')});S.D=.6;break}
+    case'embuscade':at(0,()=>{pvFx(45,x0,y0,700);for(let n=0;n<6;n++){const b=n*1.047,x=x0+Math.cos(b)*70,y=y0+Math.sin(b)*70;if(!hits(x,y,6))S.traps.push({x,y})}});S.D=.7;break;
+    case'piege':{const dd=Math.min(140,Math.hypot(tp.x-x0,tp.y-y0)),x=x0+ca*dd,y=y0+sa*dd;at(0,()=>{pvFx(45,x,y,300);S.traps.push({x,y})});S.D=.7;break}
+    case'main':{const q=pvAlly();at(0,()=>pvFx(14,q.x,q.y,0));S.D=.6;break}
+    case'banniere':at(0,()=>{for(const q of G.players)if(!q.down&&Math.hypot((q.rx??q.x)-x0,(q.ry??q.y)-y0)<320)pvFx(45,q.rx??q.x,q.ry??q.y,404);pvFx(37,x0,y0,160)});S.D=.8;break;
+    case'benir':{const q=pvAlly();at(0,()=>{pvFx(45,q.x,q.y,404);pvFx(14,q.x,q.y,0)});S.D=.6;break}
+    case'colere':pvFoes().filter(e=>Math.hypot(pvX(e)-x0,pvY(e)-y0)<300).sort((u,v)=>Math.hypot(pvX(u)-x0,pvY(u)-y0)-Math.hypot(pvX(v)-x0,pvY(v)-y0)).slice(0,5)
+      .forEach((e,n)=>at(n*.1,()=>{pvFx(36,pvX(e),pvY(e),40);pvHit(e,2.5)}));S.D=Math.max(.5,S.ev.length*.1+.4);break;
+    case'marteau':{let b=null,bd=1e9;for(const e of pvFoes()){if(Math.hypot(pvX(e)-x0,pvY(e)-y0)>260)continue;const dd=Math.hypot(pvX(e)-tp.x,pvY(e)-tp.y);if(dd<bd){bd=dd;b=e}}
+      if(b)at(0,()=>{pvFx(36,pvX(b),pvY(b),40);pvHit(b,1.6,'Étourdi')});S.D=.6;break}
+    default:at(0,()=>pvFx(11,x0,y0,0));S.D=.6}
+  return S}
+/* projectiles de l'aperçu : ils avancent, touchent (éclat + dégâts estimés), reviennent pour la hache */
+function pvProjs(S,dt){for(const p of S.projs){if(p.life<=0)continue;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
+    if(p.boom&&!p.back&&p.life<.5){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy}
+    if(shotBlock(Math.floor(p.x/TS),Math.floor(p.y/TS))){if(p.boom&&!p.back){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy;continue}p.life=0;if(p.splash)pvFx(5,p.x,p.y,p.splash);continue}
+    for(const e of pvFoes()){if(p.hit.has(e))continue;if(Math.hypot(pvX(e)-p.x,pvY(e)-p.y)<e.r+p.r){p.hit.add(e);pvHit(e,p.mult||0);if(p.splash){pvFx(5,p.x,p.y,p.splash);for(const o of pvNear(p.x,p.y,p.splash))if(o!==e)pvHit(o,.6)}if(!p.pierce){p.life=0;break}}}}
+  S.projs=S.projs.filter(p=>p.life>0)}
+function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=myP();if(!me||me.down)return;
+  const t=tbAimAt();let S=L.pvS;
+  if(!S||L.pvK!==L.pv||T-L.pvC0>=S.D+PV_GAP){if(L.pv!=='atk'&&!SK[ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)]]){L.pv=null;return}S=L.pvS=pvBuild(L.pv,t);L.pvK=L.pv;L.pvC0=T;L.pvLT=T;S.done=0}
+  const u=T-L.pvC0,act=u<S.D,dt=clamp(T-(L.pvLT||T),0,.05);L.pvLT=T;
+  S.ev.sort((x,y)=>x[0]-y[0]);while(S.done<S.ev.length&&S.ev[S.done][0]<=u){S.ev[S.done][1]();S.done++}
+  pvProjs(S,dt);
+  const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1));
+  ctx.save();ctx.globalAlpha=fade;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true);ctx.restore();
+  ctx.save();ctx.globalAlpha=fade;for(const p of S.projs)drawProj2(p);ctx.restore();
+  const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18,al:.28};
+  ctx.save();ctx.globalAlpha=g.al;drawPlayer(me,g.x,g.y,true,T);ctx.restore();
+  if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.save();ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true);ctx.restore()}
+  let lab;if(L.pv==='atk'){const dm=Math.round(ST.dmg*(tbMe()?TB_DMG:1));lab=CLS[hero.cls].atk+(t?' → '+enemyName(t)+' · ~'+dm+' dégâts':'')}
+  else{const id=ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)],A=SK_AREA[id];lab=SK[id].nom+(t&&A&&A[0]!=='me'?' → '+enemyName(t):'')}
   ctx.textAlign='center';ctx.textBaseline='middle';pill(lab,L.x,L.y-58,'#ffe9a0','rgba(90,26,20,.92)')}

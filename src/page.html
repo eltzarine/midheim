@@ -387,7 +387,9 @@ body.touch .tb.nomp,body.touch .tb.empty{opacity:.28}
 
 /* ---- combat au tour par tour ---- */
 .tbinfo{grid-column:1/-1;justify-self:stretch;background:rgba(19,37,44,.94);border:2px solid var(--brass);border-radius:10px;padding:4px 10px 6px;display:grid;gap:4px;pointer-events:none}
-.tbinfo.foe{border-color:var(--blood);background:rgba(40,14,12,.94)}
+.tbinfo.foe{border-color:transparent;background:none;padding-top:0;gap:1px;text-shadow:0 1px 2px #000,0 0 3px #000}
+.tbinfo.foe .tbp{display:none}
+.tbinfo.foe .tblog{border-top:0;padding-top:0;color:#ffe0d8;font-weight:700}
 .tbinfo .tbh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .tbinfo .tbh b{font-family:var(--f-title);font-weight:400;font-size:16px;color:var(--gold)}
 .tbinfo.foe .tbh b{color:#ff9a8a}

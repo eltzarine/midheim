@@ -44,7 +44,7 @@ function loadGame() {
   // les let/const du jeu ne sont visibles que dans le même script : on y ajoute l'accès pour les tests
   vm.runInContext(code + `
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
-  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,
+  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
@@ -234,6 +234,20 @@ if (!fs.existsSync(BUNDLE)) {
       for (const m of s.matchAll(/(?:innerHTML|outerHTML)\s*=\s*([^;]{0,60})/g)) assert.ok(ok.test(m[1]), f + ' : innerHTML=' + m[1]);
       assert.ok(!/insertAdjacentHTML/.test(s), f + ' : insertAdjacentHTML');
     }
+  });
+
+  /* ---------- Combat ---------- */
+  test('Journal des ennemis : actions identiques regroupées, 3 lignes au plus', () => {
+    const old = T.getG(); T.setG({ players: [{ name: 'César' }] });
+    try {
+      const x = (n, k, d) => ({ n, k, pi: 0, d });
+      const four = [x('Adepte', 2, 10), x('Adepte', 2, 10), x('Adepte', 2, 10), x('Adepte', 2, 10)];
+      const a = T.tbLogLines(four);
+      assert.equal(a.length, 1); assert.ok(a[0].endsWith(' ×4'), a[0]);
+      const b = T.tbLogLines([x('Orc', 0, 15), x('Adepte', 2, 8), x('Orc', 0, 19), x('Marionnette', 0, 5)]);
+      assert.equal(b.length, 3); assert.equal(b[2], '+ 2 autres actions');
+      assert.equal(T.tbLogLines([]).length, 0);
+    } finally { T.setG(old); }
   });
 
   /* ---------- Page publiée ---------- */
