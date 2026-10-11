@@ -158,7 +158,7 @@ with sync_playwright() as pw:
               for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}tbUpdate(0)}})()""")
             n = go(pg, "hero.tr.length")
             for sl in range(4):
-                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ap=[9,9];G.cb.rd=[false,false]}}L.tbSpent=0;L.tbEnd=false;if(G.cb)L.tbKey=G.cb.r+'h';L.pv=tbHero()?({sl}===3?'ult':'s{sl}'):null;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : assez de points pour chaque compétence
+                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ap=[9,9];G.cb.rd=[false,false]}}L.tbSpent=0;L.tbEnd=false;if(G.cb)L.tbKey=G.cb.r+'h';L.pv=pvOn()?({sl}===3?'ult':'s{sl}'):null;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : assez de points pour chaque compétence
             pg.wait_for_timeout(300)
             ok = go(pg, "ST.ks.every((id,i)=>!id||L.sk[i]>=1)&&!!ST.ks[3]&&!!ST.pa&&ST.ks.filter(Boolean).length===3")
             check(f'{cls} branche {b + 1} : 10 crans, passif, 2 compétences et ultime lancés', ok and n == 10, go(pg, "[hero.tr.join(' '),ST.ks.join(','),ST.pa,L.sk.join(',')].join(' | ')"))
@@ -383,6 +383,11 @@ with sync_playwright() as pw:
     sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
     pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
     check('Tour par tour : toucher un ennemi le choisit pour cible (fiche affichée)', go(pg, "L.tbT===G.enemies[0].id") and pg.is_visible('#tgtBox'))
+    hb0 = pg.locator('#hbar .hb[data-k=atk]'); hx0 = go(pg, "G.enemies[0].hp")
+    hb0.dispatch_event('pointerdown'); pg.wait_for_timeout(500); hb0.dispatch_event('pointerup'); pg.wait_for_timeout(100)
+    check('Hors combat, ennemi sélectionné : 1er appui = aperçu, sans frapper', go(pg, "L.pv==='atk'&&!G.cb") and go(pg, "G.enemies[0].hp") == hx0 and pg.is_visible('#pvHint'))
+    pg.wait_for_timeout(900); pg.screenshot(path=f'{OUT}/f4_apercu_hors_combat.png')
+    go(pg, "L.pv=null")
     go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-30;L.y=e.y})()")  # on entre dans sa zone : les ennemis jouent, puis c'est à nous
     for _ in range(30):
         if go(pg, "G.cb&&G.cb.ph==='h'&&G.cb.ap[0]===2"): break

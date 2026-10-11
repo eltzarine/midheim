@@ -118,7 +118,7 @@ function buildBar(){const bar=$('#hbar');if(!bar)return;bar.textContent='';const
     const up=()=>{b.classList.remove('on');if(k==='atk')touch.atk=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)}}
 /* état de chaque bouton : coût, recharge (en tours au combat), portée sur la cible */
 function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;
-  {const h=hq('#pvHint'),on=!!(L.pv&&tbHero());setHid(h,!on);if(on){const i=L.pv==='atk'?-1:L.pv==='ult'?3:+L.pv.slice(1),nm=i<0?CLS[hero.cls].atk:(SK[ST.ks[i]]||{}).court||'';setTxt(h,'Aperçu : touche encore « '+nm+' » pour agir · touche ailleurs pour annuler')}}const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
+  {const h=hq('#pvHint'),on=!!(L.pv&&pvOn());setHid(h,!on);if(on){const i=L.pv==='atk'?-1:L.pv==='ult'?3:+L.pv.slice(1),nm=i<0?CLS[hero.cls].atk:(SK[ST.ks[i]]||{}).court||'';setTxt(h,'Aperçu : touche encore « '+nm+' » pour agir · touche ailleurs pour annuler')}}const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
   for(const b of bar.children){const k=b.dataset.k;let sub='',hot=false,far=false,off=false,cd=0,cdn='';
     if(k==='atk'){const r=t?inReach('atk',t):false;sub=inTb?'1 action':'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
     else if(k==='pot'){sub='× '+hero.pot;off=hero.pot<=0||inTb&&!tbCanPot()}

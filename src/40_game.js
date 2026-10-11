@@ -477,6 +477,9 @@ function updateLocal(dt){
   // au combat, une attaque par appui (1 point d'action) ; hors combat, on frappe tant qu'on appuie
   const held=mouse.down||keys.has('KeyJ')||touch.atk,press=held&&!L.atkHeld||atkQ;L.atkHeld=held;atkQ=false;
   let atk=tbMe()?press:held||press;
+  // hors combat, ennemi sélectionné : 1er appui = aperçu, 2e appui = on frappe (tant qu'on garde l'appui de l'aperçu, rien ne part)
+  if(!held)L.pvHold=false;
+  if(!tbMe()&&atk){if(L.pvHold)atk=false;else if(press&&L.pv!=='atk'&&tbTarget()&&tbPreview('atk')){L.pvHold=true;atk=false}else if(press&&L.pv==='atk')L.pv=null}
   if(atk&&tbMe()){const t=tbAimAt();if(!tbCanAct()){if(!tbFoe())toast(tbWhy(),'tb');atk=false}
     else if(!t||!inReach('atk',t)){toast(t?'Trop loin : rapproche-toi de '+enemyName(t)+'.':'Aucun ennemi à portée.','tbfar');atk=false}
     else if(tbPreview('atk'))atk=false}   // 1er appui : aperçu ; 2e appui : on frappe
