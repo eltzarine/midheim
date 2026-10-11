@@ -216,6 +216,7 @@ function render(dt){
     if(m.marks)m.marks.forEach((mk,i)=>{const mx=(mk.x+.5)*TS,my=(mk.y+.5)*TS;if(vis(mx,my))Z.push([my+10,()=>drawMark(mk,i,T)])})}
   Z.sort((a,b)=>a[0]-b[0]);for(const z of Z)z[1]();
   for(const p of G.projs){if(!vis(p.x,p.y))continue;drawProj2(p)}
+  drawPreview(T);
   for(const q of parts){const al=clamp(q.life/q.max,0,1);
     if(q.k==='sp'){ctx.globalAlpha=al;ctx.fillStyle=q.col;ctx.fillRect(q.x-1.5,q.y-1.5,3,3)}
     else if(q.k==='ember'){ctx.globalAlpha=al;ctx.fillStyle='#ffb347';ctx.fillRect(q.x-1,q.y-1,2,2)}
@@ -290,9 +291,7 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
     ctx.restore()}
   const t=tbTarget();if(t){const tx=t.rx??t.x,ty=t.ry??t.y,pu=1+.08*Math.sin(T*6);ctx.strokeStyle='#f0c95a';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(tx,ty+t.r*.6,(t.r+9)*pu,(t.r+9)*.45*pu,0,0,6.28);ctx.stroke();
     ctx.fillStyle='#f0c95a';ctx.beginPath();ctx.moveTo(tx,ty-t.r-10);ctx.lineTo(tx-6,ty-t.r-20);ctx.lineTo(tx+6,ty-t.r-20);ctx.closePath();ctx.fill()}
-  if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){ctx.save();ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();
-    if(L.tbMv>2){ctx.fillStyle='rgba(142,197,232,.1)';ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.beginPath();ctx.arc(L.x,L.y,L.tbMv,0,6.28);ctx.fill();ctx.stroke()}
-    ctx.restore()}}}
+  if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){drawMoveZone(T);ctx.save();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();ctx.restore()}}}
 /* au-dessus des ennemis : ce qu'ils viennent de faire (tour des ennemis, puis 4 s), sinon leurs états */
 const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume'];
 function pill(t,x,y,col,bg){ctx.font='700 11px "Alegreya Sans",system-ui,sans-serif';const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-8,w,16,8);else ctx.rect(x-w/2,y-8,w,16);ctx.fill();ctx.stroke();ctx.fillStyle=col;ctx.fillText(t,x,y+.5)}

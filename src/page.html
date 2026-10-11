@@ -429,6 +429,11 @@ body:not(.touch) #hbar{bottom:12px}
 .hb.lock{opacity:.4}.hb.on{transform:scale(.94);filter:brightness(1.3)}
 .hb.ult.ready{border-color:var(--gold);box-shadow:0 0 12px rgba(240,201,90,.75)}
 #bAtk,#bS1,#bS2,#bS3,#bUlt,#bPot,#skillbar{display:none!important}
+.hb.pv{border-color:var(--gold);background:color-mix(in srgb,var(--c,#4b6a70) 60%,#141014);box-shadow:0 0 14px rgba(240,201,90,.9);animation:tbglow 1.1s ease-in-out infinite}.hb.pv small{color:#fff6e8}
+#pvHint{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(var(--mb,0px) + 130px + env(safe-area-inset-bottom,0px));width:max-content;max-width:calc(100% - 24px);padding:5px 12px;border-radius:12px;background:rgba(19,37,44,.95);border:2px solid var(--gold);font-size:12.5px;font-weight:700;text-align:center;pointer-events:none;z-index:5}
+#pvHint[hidden]{display:none}
+body:not(.touch) #pvHint{bottom:136px}
+@media (orientation:landscape) and (max-height:540px){#pvHint{bottom:calc(var(--mb,0px) + 66px);max-width:calc(100% - 420px)}}
 #bAct{left:calc(12px + env(safe-area-inset-left,0px));right:auto!important;bottom:calc(76px + env(safe-area-inset-bottom,0px))!important}
 #bEnd{right:calc(10px + env(safe-area-inset-right,0px))!important;bottom:calc(var(--mb,0px) + 76px + env(safe-area-inset-bottom,0px))!important}
 body:not(.touch) #bEnd{bottom:84px!important}
@@ -660,6 +665,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     <div id="skillbar"></div>
     <nav id="mbar" aria-label="Menus"></nav>
     <div id="hbar" role="toolbar" aria-label="Attaque, compétences et potion"></div>
+    <div id="pvHint" hidden></div>
     <div id="touch">
       <div id="joyZone"></div>
       <div id="joy" hidden><div id="knob"></div></div>

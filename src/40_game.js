@@ -425,8 +425,10 @@ function aimPoint(){const t=!touch.aimOn&&tbAimAt();if(t)return{x:t.rx??t.x,y:t.
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
   if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
   const cost=tbCost(id);if(!tbCanAct(cost)){toast(tbWhy(cost),'tb');return}
-  if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
-  else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
+  if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}}
+  else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}}
+  if(tbPreview(slot===3?'ult':'s'+slot))return;   // au combat : 1er appui = aperçu, 2e appui = on lance
+  if(S.t==='u')L.ult=0;else{L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
   {const t=tbAimAt();if(t)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // compétence lancée vers la cible
   tbUse('ac',cost);L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
 function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!touch.aimOn?L.face:L.aim;
@@ -456,11 +458,12 @@ function updateLocal(dt){
   if(touch.jx||touch.jy){mx=touch.jx;my=touch.jy}
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
   const down=!me||me.down;if(down){mx=my=0}
-  // au combat : on ne bouge que pendant son tour, et de tbMv pixels au plus
-  if(tbMe()&&(G.cb.ph!=='h'||L.tbEnd||L.tbMv<=.5)){if(ml>.2&&G.cb.ph==='h'&&!L.tbEnd&&!down)toast('Plus de déplacement ce tour. Agis ou touche « Fin du tour ».','tbmv');mx=my=0;ml=0}
+  // au combat : on ne bouge que pendant son tour, librement dans la zone du tour
+  if(tbMe())tbReanchor();
+  if(tbMe()&&(G.cb.ph!=='h'||L.tbEnd||!L.tbF||L.tbReA)){mx=my=0;ml=0}
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
   if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}
-  else if(ml>0){let sp=ST.spd*dt;if(tbMe())sp=Math.min(sp,L.tbMv);const ox=L.x,oy=L.y;moveBody(L,mx*sp,my*sp,10);if(tbMe())L.tbMv=Math.max(0,L.tbMv-Math.hypot(L.x-ox,L.y-oy))}
+  else if(ml>0){if(tbMe()){tbMove(mx*ST.spd*dt,my*ST.spd*dt);if(L.tbMv<2)toast('Bord de ta zone de déplacement.','tbmv')}else moveBody(L,mx*ST.spd*dt,my*ST.spd*dt,10)}
   const useMouse=!touch.on&&performance.now()-mouse.t<2500;
   if(touch.aimOn)L.aim=touch.aimAng;
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
@@ -475,7 +478,8 @@ function updateLocal(dt){
   const held=mouse.down||keys.has('KeyJ')||touch.atk,press=held&&!L.atkHeld||atkQ;L.atkHeld=held;atkQ=false;
   let atk=tbMe()?press:held||press;
   if(atk&&tbMe()){const t=tbAimAt();if(!tbCanAct()){if(!tbFoe())toast(tbWhy(),'tb');atk=false}
-    else if(!t||!inReach('atk',t)){toast(t?'Trop loin : rapproche-toi de '+enemyName(t)+'.':'Aucun ennemi à portée.','tbfar');atk=false}}
+    else if(!t||!inReach('atk',t)){toast(t?'Trop loin : rapproche-toi de '+enemyName(t)+'.':'Aucun ennemi à portée.','tbfar');atk=false}
+    else if(tbPreview('atk'))atk=false}   // 1er appui : aperçu ; 2e appui : on frappe
   if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)&&tbCanAct()){tbUse('ac',1);L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
     L.swing=SWD;L.swingA=L.aim;Snd.play(hero.cls==='mage'||hero.cls==='soigneur'?'fire':'swing');if(mode!=='guest')hostAttack(0,L.aim,buffed)}
   for(let s=0;s<4;s++)if(skQ[s]){skQ[s]=false;trySkill(s)}

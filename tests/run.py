@@ -158,7 +158,7 @@ with sync_playwright() as pw:
               for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}tbUpdate(0)}})()""")
             n = go(pg, "hero.tr.length")
             for sl in range(4):
-                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ap=[9,9];G.cb.rd=[false,false]}}L.tbSpent=0;L.tbEnd=false;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : assez de points pour chaque compétence
+                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ap=[9,9];G.cb.rd=[false,false]}}L.tbSpent=0;L.tbEnd=false;if(G.cb)L.tbKey=G.cb.r+'h';L.pv=tbHero()?({sl}===3?'ult':'s{sl}'):null;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : assez de points pour chaque compétence
             pg.wait_for_timeout(300)
             ok = go(pg, "ST.ks.every((id,i)=>!id||L.sk[i]>=1)&&!!ST.ks[3]&&!!ST.pa&&ST.ks.filter(Boolean).length===3")
             check(f'{cls} branche {b + 1} : 10 crans, passif, 2 compétences et ultime lancés', ok and n == 10, go(pg, "[hero.tr.join(' '),ST.ks.join(','),ST.pa,L.sk.join(',')].join(' | ')"))
@@ -369,6 +369,8 @@ with sync_playwright() as pw:
     check('Tour par tour : 2 points d’action, une attaque par appui', go(pg, "L.ac") - ac0 <= 2 and go(pg, "!G.cb||G.cb.ap[0]<2"), [go(pg, "L.ac") - ac0, go(pg, "G.cb&&G.cb.ap[0]")])
     x0 = go(pg, "L.x"); go(pg, "touch.jx=-1"); pg.wait_for_timeout(3000); go(pg, "touch.jx=0")
     mv = (x0 - go(pg, "L.x")) / 32; left = go(pg, "L.tbMv") / 32
+    go(pg, "touch.jx=1"); pg.wait_for_timeout(700); go(pg, "touch.jx=0")
+    check('Tour par tour : revenir vers le départ rend du déplacement', go(pg, "L.tbMv") / 32 > left + .5, [round(left, 2), round(go(pg, "L.tbMv") / 32, 2)])
     check('Tour par tour : déplacement limité à 5 cases', 0 < mv <= 5.1 and mv + left <= 5.15, [round(mv, 2), round(left, 2)])
     pg.screenshot(path=f'{OUT}/f1_tour_heros.png')
     pg.click('#bEnd'); pg.wait_for_timeout(250)
@@ -392,9 +394,12 @@ with sync_playwright() as pw:
     pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
     check('Tour par tour : la cible à portée allume l’attaque dans la barre', go(pg, "document.querySelector('#hbar .hb[data-k=atk]').classList.contains('hot')"))
     pg.screenshot(path=f'{OUT}/f2_cible.png')
+    hb.dispatch_event('pointerdown'); pg.wait_for_timeout(300); hb.dispatch_event('pointerup')
+    check('Tour par tour : 1er appui = aperçu de l’attaque, sans frapper', go(pg, "L.pv==='atk'&&G.cb.ap[0]===2") and pg.is_visible('#pvHint'))
+    pg.screenshot(path=f'{OUT}/f3_apercu.png')
     hb.dispatch_event('pointerdown'); pg.wait_for_timeout(600); hb.dispatch_event('pointerup')
     h1 = go(pg, "G.enemies[0]?G.enemies[0].hp:0")
-    check('Tour par tour : l’attaque de la barre frappe la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===1"), [h0, h1])
+    check('Tour par tour : 2e appui = l’attaque part et vise la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===1"), [h0, h1])
     go(pg, "G.enemies.forEach(e=>killEnemy(e))"); pg.wait_for_timeout(400)
     check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo'))
     check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])
@@ -417,7 +422,7 @@ with sync_playwright() as pw:
     for _ in range(25):  # au tour par tour, le frère attend le tour des héros pour agir
         if go(B, "!tbMe()||tbHero()"): break
         B.wait_for_timeout(200)
-    go(B, "skQ[1]=true"); B.wait_for_timeout(600)
+    go(B, "skQ[1]=true"); B.wait_for_timeout(300); go(B, "skQ[1]=true"); B.wait_for_timeout(600)  # au combat : aperçu puis validation
     check('À deux : compétence du frère exécutée par l’hôte', go(A, "G.players[1].sk[1]") >= 1)
     go(A, "addDrop(6,G.players[1].x+4,G.players[1].y,999,1,2)"); A.wait_for_timeout(1500)
     for _ in range(12):
@@ -484,7 +489,7 @@ with sync_playwright() as pw:
     go(B, "(()=>{L.x+=60})()"); B.wait_for_timeout(700)
     check('Site : l’hôte voit bouger le frère', abs(go(A, "G.players[1].x") - go(B, "L.x")) < 30)
     mp = go(A, "window.__maxPres||0"); check('Site : messages Firebase légers', 0 < mp <= 6000, mp)
-    C = ctx.new_page(); C.errs = []; C.goto(URL); C.wait_for_timeout(1000)
+    C = ctx.new_page(); C.errs = []; C.goto(URL); C.wait_for_selector('#hosts button', timeout=20000); C.wait_for_timeout(300)  # chargement parfois lent quand la machine est chargée
     check('Site : partie complète pour un 3e joueur', C.is_disabled('#hosts button') and 'Complète' in C.inner_text('#hosts'))
     B.close(); A.wait_for_timeout(800)
     for _ in range(40):

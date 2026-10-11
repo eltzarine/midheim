@@ -117,7 +117,8 @@ function buildBar(){const bar=$('#hbar');if(!bar)return;bar.textContent='';const
       if(k==='atk'){if(tbMe())atkQ=true;else touch.atk=true}else if(k==='pot')potQ=true;else skQ[k==='ult'?3:+k.slice(1)]=true});
     const up=()=>{b.classList.remove('on');if(k==='atk')touch.atk=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)}}
 /* état de chaque bouton : coût, recharge (en tours au combat), portée sur la cible */
-function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
+function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;
+  {const h=hq('#pvHint'),on=!!(L.pv&&tbHero());setHid(h,!on);if(on){const i=L.pv==='atk'?-1:L.pv==='ult'?3:+L.pv.slice(1),nm=i<0?CLS[hero.cls].atk:(SK[ST.ks[i]]||{}).court||'';setTxt(h,'Aperçu : touche encore « '+nm+' » pour agir · touche ailleurs pour annuler')}}const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
   for(const b of bar.children){const k=b.dataset.k;let sub='',hot=false,far=false,off=false,cd=0,cdn='';
     if(k==='atk'){const r=t?inReach('atk',t):false;sub=inTb?'1 action':'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
     else if(k==='pot'){sub='× '+hero.pot;off=hero.pot<=0||inTb&&!tbCanPot()}
@@ -127,6 +128,7 @@ function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;con
       else if(L.mp<S.mp){sub='mana';off=true}
       else{sub=S.mp+' mana';off=inTb&&!tbCanAct(1)}
       if(!cdn&&(S.t!=='u'||L.ult>=100)){const r=inReach(id,t);if(r===false){far=true;sub='trop loin'}else if(r===true)hot=true}}
+    const pv=L.pv===k;if(pv)sub='Valider';b.classList.toggle('pv',pv);
     b.classList.toggle('hot',hot&&!off);b.classList.toggle('far',far);b.classList.toggle('off',off);setTxt(b.querySelector('small'),sub);setTxt(b.querySelector('.cdn'),cdn);setCss(b,'--cd',cd.toFixed(3))}}
 /* pastille heure + météo sous la mini-carte */
 function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out=G&&G.m&&G.m.kind==='world';t.hidden=!out;if(!out)return;

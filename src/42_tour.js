@@ -111,15 +111,15 @@ function tbAP(){if(!tbMe())return 9;return Math.max(0,Math.min(G.cb.ap[myIdx],TB
 function tbCanAct(cost){if(!tbMe())return true;return G.cb.ph==='h'&&!L.tbEnd&&tbAP()>=(cost||1)}
 function tbCanPot(){if(!tbMe())return true;return G.cb.ph==='h'&&!G.cb.po[myIdx]&&!L.tbPot&&!L.tbEnd}
 function tbUse(kind,cost){if(!tbMe())return;if(kind==='po'){L.tbPot=true;if(mode!=='guest')G.cb.po[myIdx]=true;return}
-  cost=cost||1;if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-cost);else L.tbSpent=(L.tbSpent||0)+cost}
+  cost=cost||1;tbCommit();L.pv=null;if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-cost);else L.tbSpent=(L.tbSpent||0)+cost}
 function tbWhy(cost){return!tbMe()?'':G.cb.ph!=='h'?'Attends : c’est le tour des ennemis.':L.tbEnd?'Tu as fini ton tour.':(cost||1)>1&&tbAP()>0?'Il faut '+cost+' points d’action.':'Plus de points d’action ce tour. Déplace-toi ou touche « Fin du tour ».'}
 function tbMoveMax(){return TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}
 function tbActed(){return!!(tbMe()&&tbAP()<TB_PA)}
-function endTurn(){if(!tbHero()||L.tbEnd)return;const me=myP();if(!me||me.down)return;L.tbEnd=true;L.et=G.cb.r;if(mode!=='guest')G.cb.rd[myIdx]=true;Snd.play('key')}
+function endTurn(){if(!tbHero()||L.tbEnd)return;const me=myP();if(!me||me.down)return;L.tbEnd=true;L.pv=null;L.et=G.cb.r;if(mode!=='guest')G.cb.rd[myIdx]=true;Snd.play('key')}
 /* à deux : tant que l'autre joue, on peut revenir sur sa fin de tour ; sans action faite, on repart de sa place de départ */
 function tbOtherPlaying(){const c=G.cb,o=myIdx===0?1:0;return!!(c&&G.players[o]&&c.in[o]&&!c.rd[o]&&!G.players[o].down)}
 function cancelEnd(){if(!tbHero()||!L.tbEnd||!tbOtherPlaying())return;L.tbEnd=false;L.et=0;if(mode!=='guest')G.cb.rd[myIdx]=false;
-  if(!tbActed()){L.x=L.tbOx;L.y=L.tbOy;L.tbMv=tbMoveMax()}Snd.play('key')}
+  if(!tbActed()){L.x=L.tbOx;L.y=L.tbOy;tbAnchor(tbMoveMax())}Snd.play('key')}
 /* cible : l'ennemi touché à l'écran ; sans cible, le plus proche */
 function tbTarget(){if(!L.tbT)return null;const e=G.enemies.find(e=>e.id===L.tbT&&e.hp>0);if(!e)L.tbT=0;return e||null}
 function tbAimAt(){const t=tbTarget();if(t)return t;const n=nearestEnemy(330);return n?n.e:null}
@@ -130,14 +130,14 @@ const SK_RANGE={charge:190,tourbillon:90,seisme:165,cri:260,bond:220,hache:400,p
 function inReach(id,e){if(!e)return false;const d=Math.hypot((e.rx??e.x)-L.x,(e.ry??e.y)-L.y);if(id==='atk')return d<=tbReach(e)&&los(L.x,L.y,e.rx??e.x,e.ry??e.y);const r=SK_RANGE[id];return r==null?null:d<=r+e.r}
 function enemyAt(sx,sy){if(!G||!G.m)return null;const w=screenToWorld(sx,sy);let b=null,bd=1e9;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot((e.rx??e.x)-w.x,(e.ry??e.y)-w.y);if(d<e.r+20&&d<bd){bd=d;b=e}}return b}
 /* toucher un ennemi le choisit pour cible (sans frapper) ; toucher à nouveau la même cible la libère */
-function tapEnemy(sx,sy,clear){if(!inGame()||paused||Scene.on)return false;const e=enemyAt(sx,sy);if(!e){if(clear&&L.tbT){L.tbT=0;return true}return false}
+function tapEnemy(sx,sy,clear){if(!inGame()||paused||Scene.on)return false;const e=enemyAt(sx,sy);if(!e){if(clear&&L.pv){L.pv=null;return true}if(clear&&L.tbT){L.tbT=0;return true}return false}
   L.tbT=L.tbT===e.id?0:e.id;Snd.play('key');return true}
 /* appelé à chaque image : entrée ou sortie du combat, nouveau tour, nouvelle phase */
 function tbLocal(){const c=G.cb,inn=tbMe(),key=inn?c.r+c.ph:'';if(key===L.tbKey)return;const was=L.tbKey;L.tbKey=key;
   if(!inn){L.tbR=0;L.tbEnd=false;L.tbSpent=0;if(was){toast(c?'Tu quittes le combat.':'Fin du combat.');Snd.play('lvl')}return}
   if(L.tbR&&c.r>L.tbR)tickLocal(TB_ROUND*Math.min(3,c.r-L.tbR),true);L.tbR=c.r;
-  if(c.ph==='h'){L.tbMv=tbMoveMax();L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;L.tbLgT=performance.now();Snd.play('gate')}
-  else{L.tbMv=0;Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}
+  if(c.ph==='h'){tbAnchor(tbMoveMax());L.tbReA=false;L.pv=null;L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;L.tbLgT=performance.now();Snd.play('gate')}
+  else{L.tbMv=0;L.tbF=null;L.pv=null;Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}
   tbPulse()}
 function tbPulse(){const b=$('#tbInfo');if(!b)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse')}
 /* bandeau du tour, fiche de la cible, journal des ennemis */
@@ -162,3 +162,52 @@ function tgtHud(){const t=tbTarget(),box=hq('#tgtBox');setHid(box,!t);if(!t)retu
   const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):'Aucun effet');
   setTxt(hq('#tgtInt'),tbMe()?'Prochain tour : '+enemyIntent(t):(t.act?'En alerte':'Au repos'));
   const out=!inReach('atk',t);setTxt(hq('#tgtRg'),out?'Trop loin pour '+CLS[hero.cls].atk.toLowerCase():'À portée');hq('#tgtRg').classList.toggle('far',out)}
+
+/* ---------- déplacement libre dans la zone du tour ----------
+   Le tour donne un budget de déplacement compté depuis une place d'ancrage (le départ du tour) : on peut aller et revenir
+   librement tant que la distance À PIED depuis l'ancre (obstacles contournés) reste dans le budget. Une action fixe la position :
+   le budget restant repart de là (nouvelle ancre). La zone atteignable est calculée par cases (Dijkstra) et dessinée telle quelle. */
+function tbAnchor(budget){L.tbAx=L.x;L.tbAy=L.y;L.tbBud=Math.max(0,budget);L.tbF=tbField(L.x,L.y,L.tbBud);L.tbMv=L.tbBud;L.tbPoly=tbPoly()}
+/* contour de la zone : un cercle autour de l'ancre, creusé là où les obstacles allongent le chemin */
+function tbPoly(){const pts=[],B=L.tbBud;if(B<4)return pts;for(let k=0;k<72;k++){const a=k/72*6.283,cx=Math.cos(a),cy=Math.sin(a);let r=0;
+    for(let s=6;s<=B;s+=6){if(tbDist(L.tbAx+cx*s,L.tbAy+cy*s)>B)break;r=s}pts.push([L.tbAx+cx*r,L.tbAy+cy*r])}return pts}
+function tbField(ax,ay,bud){const R=Math.ceil(bud/TS)+2,cx=Math.floor(ax/TS),cy=Math.floor(ay/TS),w=2*R+1,x0=cx-R,y0=cy-R,d=new Float32Array(w*w).fill(1e9),done=new Uint8Array(w*w);
+  const at=(x,y)=>(y-y0)*w+(x-x0),inside=(x,y)=>x>=x0&&y>=y0&&x<x0+w&&y<y0+w;
+  if(!solid(cx,cy))d[at(cx,cy)]=Math.hypot(ax-(cx+.5)*TS,ay-(cy+.5)*TS);
+  for(;;){let b=-1,bv=1e9;for(let i=0;i<d.length;i++)if(!done[i]&&d[i]<bv){bv=d[i];b=i}if(b<0||bv>bud+TS)break;done[b]=1;const bx=x0+b%w,by=y0+((b/w)|0);
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=bx+dx,ny=by+dy;if(!inside(nx,ny)||solid(nx,ny))continue;if(dx&&dy&&(solid(bx+dx,by)||solid(bx,by+dy)))continue;
+      const v=bv+(dx&&dy?TS*1.414:TS),j=at(nx,ny);if(v<d[j])d[j]=v}}
+  return{x0,y0,w,d}}
+/* distance à pied depuis l'ancre jusqu'à un point */
+function tbDist(x,y){const F=L.tbF;if(!F)return 0;const tx=Math.floor(x/TS),ty=Math.floor(y/TS);let m=1e9;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=tx+dx-F.x0,Y=ty+dy-F.y0;if(X<0||Y<0||X>=F.w||Y>=F.w)continue;const v=F.d[Y*F.w+X];if(v>=1e9)continue;
+    const c=v+Math.hypot(x-(tx+dx+.5)*TS,y-(ty+dy+.5)*TS);if(c<m)m=c}
+  if(los(L.tbAx,L.tbAy,x,y))m=Math.min(m,Math.hypot(x-L.tbAx,y-L.tbAy));return m}
+/* déplacement au combat : chaque axe n'avance que s'il reste dans la zone */
+function tbMove(dx,dy){const ox=L.x;moveBody(L,dx,0,10);if(tbDist(L.x,L.y)>L.tbBud)L.x=ox;const oy=L.y;moveBody(L,0,dy,10);if(tbDist(L.x,L.y)>L.tbBud)L.y=oy;L.tbMv=Math.max(0,L.tbBud-tbDist(L.x,L.y))}
+/* une action fixe la position : la nouvelle ancre est prise une fois le bond ou la charge terminés */
+function tbCommit(){if(!tbMe())return;L.tbRem=Math.max(0,L.tbBud-tbDist(L.x,L.y));L.tbReA=true}
+function tbReanchor(){if(L.tbReA&&L.dashT<=0){L.tbReA=false;tbAnchor(L.tbRem)}}
+/* zone atteignable : cases à portée, avec leur bord */
+function drawMoveZone(T){const P=L.tbPoly;if(!P||P.length<3)return;ctx.save();ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();
+  ctx.fillStyle='rgba(142,197,232,.12)';ctx.fill();ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.stroke();ctx.restore()}
+
+/* ---------- aperçu d'une action (au combat) : 1er appui = aperçu en boucle, 2e appui sur le même bouton = on agit ---------- */
+function tbPreview(k){if(!tbHero())return false;if(L.pv===k){L.pv=null;return false}L.pv=k;L.pvT=0;Snd.play('key');return true}
+const SK_AREA={tourbillon:['me',90],seisme:['me',165],nova:['me',140],cri:['me',260],aube:['me',200],danse:['me',270],colere:['me',300],cercle:['me',115],bouclier:['me',320],banniere:['me',320],fumee:['me',105],embuscade:['me',70],
+  flammes:['tg',90],jugement:['tg',100],hiver:['tg',200],meteore:['tg',150],entrave:['tg',120],mur:['tg',100],
+  charge:['line',190],hache:['line',400],eventail:['line',280],bond:['tg',80],ricochet:['tg',60],marteau:['tg',40],assassin:['tg',40],pommeau:['tg',40],piege:['tg',30]};
+function drawPreview(T){if(!L.pv||!tbHero()){L.pv=null;return}const me=myP();if(!me||me.down)return;
+  const t=tbAimAt(),a=t?Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x):L.aim,ph=(T*1.4)%1;let lab='';
+  ctx.save();ctx.globalAlpha=.5;const gx=L.x+Math.cos(a)*18,gy=L.y+Math.sin(a)*18;drawPlayer(me,gx,gy,true,T);ctx.restore();
+  if(L.pv==='atk'){const ranged=!{guerrier:1,voleur:1}[hero.cls];
+    if(ranged&&t){const tx=t.rx??t.x,ty=t.ry??t.y;ctx.save();ctx.strokeStyle='rgba(255,210,160,.6)';ctx.setLineDash([6,6]);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(L.x,L.y);ctx.lineTo(tx,ty);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle=hero.cls==='mage'?'#ffb347':'#ffe9a0';ctx.beginPath();ctx.arc(L.x+(tx-L.x)*ph,L.y+(ty-L.y)*ph,6,0,6.28);ctx.fill();ctx.restore()}
+    else{ctx.save();ctx.globalAlpha=.75;drawSlash(gx,gy,a,ph,hero.cls,true);ctx.restore()}
+    lab=CLS[hero.cls].atk+(t?' → '+enemyName(t)+' · ~'+Math.round(ST.dmg*TB_DMG)+' dégâts':'')}
+  else{const i=L.pv==='ult'?3:+String(L.pv).slice(1),id=ST.ks[i],S=SK[id];if(!S){L.pv=null;return}const A=SK_AREA[id];lab=S.nom+(t&&A&&A[0]!=='me'?' → '+enemyName(t):'');
+    ctx.save();ctx.strokeStyle='rgba(240,201,90,.95)';ctx.fillStyle='rgba(240,201,90,'+(.1+.1*Math.sin(T*6))+')';ctx.lineWidth=3;
+    if(A&&A[0]==='line'){const L2=A[1]*(.3+.7*ph);ctx.beginPath();ctx.moveTo(L.x,L.y);ctx.lineTo(L.x+Math.cos(a)*A[1],L.y+Math.sin(a)*A[1]);ctx.setLineDash([8,6]);ctx.stroke();ctx.setLineDash([]);ctx.beginPath();ctx.arc(L.x+Math.cos(a)*L2,L.y+Math.sin(a)*L2,8,0,6.28);ctx.fill();ctx.stroke()}
+    else{const c=A&&A[0]==='tg'&&t?{x:t.rx??t.x,y:t.ry??t.y}:{x:L.x,y:L.y},r=A?A[1]:40;ctx.beginPath();ctx.arc(c.x,c.y,r*(.85+.15*ph),0,6.28);ctx.fill();ctx.stroke()}
+    ctx.restore()}
+  ctx.textAlign='center';ctx.textBaseline='middle';pill(lab,L.x,L.y-58,'#ffe9a0','rgba(90,26,20,.92)')}
