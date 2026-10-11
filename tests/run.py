@@ -428,6 +428,12 @@ with sync_playwright() as pw:
         if C.query_selector('#hosts button') and C.is_enabled('#hosts button'): break
         C.wait_for_timeout(250)
     check('Site : la place libérée réapparaît pour un autre joueur', C.is_enabled('#hosts button'), C.inner_text('#hosts'))
+    # journal de débogage : prénom complet, index de dates, ménage des journaux de plus de 7 jours
+    go(A, "(()=>{const s=window.__fbStore;s.set('logidx/svieux',Date.now()-8*864e5);s.set('logs/svieux',{j:'{}',t:Date.now()-8*864e5});Log.ev('test','journal');Log.dirty=true;Log.purged=0;Log.upload()})()"); A.wait_for_timeout(1500)
+    lg = go(A, "(()=>{const s=window.__fbStore,v=s.get('logs/'+Log.sid);return v?JSON.parse(v.j):null})()")
+    check('Journal : envoyé avec le prénom complet', lg and lg.get('n') == 'César' and 'César' in lg.get('log', ''), lg and lg.get('n'))
+    check('Journal : index de date inscrit', isinstance(go(A, "window.__fbStore.get('logidx/'+Log.sid)"), (int, float)))
+    check('Journal : vieux journaux (> 7 jours) effacés', not go(A, "window.__fbStore.has('logs/svieux')||window.__fbStore.has('logidx/svieux')"))
     check('Aucune erreur JavaScript (site, à deux)', not A.errs and not B.errs and not C.errs, (A.errs + B.errs + C.errs)[:4])
     br.close()
 print(f"\n{sum(1 for r in res if r[1])}/{len(res)} tests réussis")

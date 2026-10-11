@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Jz5oACLHWS/zPDWNwkLinOjMbIZZE7vi+yGuEWOgRUo=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ukzn5li4QAHVqt6GJi2ZFAroTS+kb97DqGctTuTn21I=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -669,12 +669,14 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 /* ---- 05_log.js ---- */
 /* ================= Journal de bord (débogage) =================
    Garde les derniers événements de la session (erreurs JavaScript, réseau, jeu à deux) et,
-   sur le site public, les envoie dans Firebase : logs/<session> (règle à part dans la base,
-   lisible par tous, écriture limitée à 16 000 caractères, effacé au bout de 7 jours). Rien n'est affiché aux joueurs ; on les lit côté serveur :
-   https://midheim-1a4c1-default-rtdb.europe-west1.firebasedatabase.app/logs.json */
-const BUILD='94017a81';
-/* le journal est lisible par tous dans la base : on n'y met que l'initiale des prénoms */
-const anonName=n=>{n=String(n||'').trim();return n?n[0].toUpperCase()+'.':'?'};
+   sur le site public, les envoie dans Firebase : logs/<session>. Les règles de la base interdisent
+   toute lecture de logs/ depuis le jeu ou le web (écriture seule, 16 000 caractères au plus) : on les lit
+   uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
+   (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
+   inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
+const BUILD='25a52b8b';
+/* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
+const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
 const g_=f=>{try{return f()}catch(e){return undefined}};
 const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),t0:Date.now(),lines:[],max:400,dirty:false,upT:null,fb:null,
@@ -694,17 +696,20 @@ const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)
   schedule(ms){if(g_(()=>netKind)!=='fb')return;if(this.upT&&ms>=10000)return;clearTimeout(this.upT);this.upT=setTimeout(()=>{this.upT=null;this.upload()},ms)},
   /* Ménage : chaque appareil, une fois par session, efface quelques journaux de plus de 7 jours.
      Firebase n'a pas d'expiration automatique ; ainsi la base ne garde qu'une semaine de journaux. */
-  async purge(){try{const D=this.fb.D,db=D.getDatabase(),old=Date.now()-7*864e5;
-      const snap=await D.get(D.query(D.ref(db,'logs'),D.orderByChild('t'),D.endAt(old),D.limitToFirst(30)));
-      const keys=[];snap.forEach(c=>{keys.push(c.key)});for(const k of keys)if(k!==this.sid)await D.remove(D.ref(db,'logs/'+k));
+  async purge(){try{const D=this.fb.D,db=this.fb.db,old=Date.now()-7*864e5;
+      const snap=await D.get(D.query(D.ref(db,'logidx'),D.orderByValue(),D.endAt(old),D.limitToFirst(30)));
+      const keys=[];snap.forEach(c=>{keys.push(c.key)});
+      for(const k of keys)if(k!==this.sid){await D.remove(D.ref(db,'logs/'+k));await D.remove(D.ref(db,'logidx/'+k))}
       if(keys.length)this.ev('journal',keys.length+' ancien(s) journal(aux) effacé(s)')}catch(e){}},
   async upload(){const SDK=g_(()=>FB_SDK);if(!this.dirty||!SDK||!navigator.onLine)return;this.dirty=false;
     try{if(!this.fb){const A=await import(SDK+'firebase-app.js'),D=await import(SDK+'firebase-database.js');
-        const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG);this.fb={D,ref:D.ref(D.getDatabase(app),'logs/'+this.sid)}}
+        const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG),db=D.getDatabase(app);
+        this.fb={D,db,ref:D.ref(db,'logs/'+this.sid)};
+        D.set(D.ref(db,'logidx/'+this.sid),D.serverTimestamp()).catch(e=>this.lines.push(this.ts()+' WARN [journal] index refusé : '+(e&&e.message||e)))}
       const head=this.text().split('\n').slice(0,4);const tail=[];let size=head.join('\n').length;
       for(let i=this.lines.length-1;i>=0&&size+this.lines[i].length+1<12000;i--){tail.unshift(this.lines[i]);size+=this.lines[i].length+1}
       const txt=head.concat(tail).join('\n');
-      await this.fb.D.set(this.fb.ref,{j:JSON.stringify({b:BUILD,n:anonName(g_(()=>myName)),m:String(g_(()=>mode)||''),log:txt}),t:this.fb.D.serverTimestamp()});if(!this.purged){this.purged=1;this.purge()}}
+      await this.fb.D.set(this.fb.ref,{j:JSON.stringify({b:BUILD,n:logName(g_(()=>myName)),m:String(g_(()=>mode)||''),log:txt}),t:this.fb.D.serverTimestamp()});if(!this.purged){this.purged=1;this.purge()}}
     catch(e){this.dirty=true;if(!this.upErr){this.upErr=1;this.lines.push(this.ts()+' WARN [journal] envoi impossible : '+(e&&e.message||e))}}}
 };
 addEventListener('error',e=>Log.err('js',e.error||e.message,e.filename?'@'+String(e.filename).split('/').pop()+':'+e.lineno+':'+e.colno:''));
@@ -713,7 +718,7 @@ for(const k of['error','warn']){const o=console[k];console[k]=function(...a){try
 addEventListener('online',()=>Log.ev('réseau','internet revenu'));addEventListener('offline',()=>Log.warn('réseau','internet coupé'));
 document.addEventListener('visibilitychange',()=>{Log.ev('app',document.visibilityState==='visible'?'au premier plan':'en arrière-plan');if(document.visibilityState==='hidden')Log.upload()});
 addEventListener('pagehide',()=>Log.upload());
-Log.ev('app','démarrage',location.href.split(/[?#]/)[0]); // sans les paramètres (ex. fbclid de Messenger), lisibles par tous dans la base
+Log.ev('app','démarrage',location.href.split('#')[0]); // avec les paramètres (ex. fbclid : arrivé par un lien Messenger)
 /* ---- 10_data.js ---- */
 'use strict';
 /* ================= Outils ================= */
@@ -2993,7 +2998,7 @@ async function fbRoom(code){
     close(){live=false;pcb.length=0;ccb.length=0;D.remove(mine).catch(()=>{});D.onDisconnect(mine).cancel()}}}
 function pres(o){if(!room)return;room.presence(o).catch(e=>{if(!pres.err||performance.now()-pres.err>5000){pres.err=performance.now();Log.warn('net','envoi de présence refusé',e)}})}
 /* résumé des joueurs présents, seulement quand il change */
-function logPeers(){const sum=peers.map(p=>{const r=p.presence||{};return(p.sameTab?'moi':p.peer.slice(-4))+':'+(r.r||'?')+(r.n?'/'+anonName(r.n):'')+(r.h?'→'+String(r.h).slice(-4):'')+(r.gp?'⇐'+String(r.gp).slice(-4):'')+(r.g?'+état':'')}).join(' ');
+function logPeers(){const sum=peers.map(p=>{const r=p.presence||{};return(p.sameTab?'moi':p.peer.slice(-4))+':'+(r.r||'?')+(r.n?'/'+logName(r.n):'')+(r.h?'→'+String(r.h).slice(-4):'')+(r.gp?'⇐'+String(r.gp).slice(-4):'')+(r.g?'+état':'')}).join(' ');
   if(sum!==logPeers.last){logPeers.last=sum;Log.ev('salle',peers.length+' présent(s) · '+sum)}}
 function setNet(on){if(netOn!==(!!on&&!!room))Log.ev('net',(!!on&&!!room)?'connecté':'non connecté',netKind||'');Log.schedule(2000);netOn=!!on&&!!room;const el=$('#net');el.classList.toggle('on',netOn);
   el.querySelector('span').textContent=room?(on?'Jeu à deux connecté':'Connexion…'):netKind==='fb'?'Jeu à deux hors ligne':'Jeu à deux indisponible ici';renderLobby()}
@@ -3016,9 +3021,9 @@ function hostCheckGuest(){
 function acceptGuest(c){const pr=c.presence;const st=pr.st||{};const p=mkPlayer(clean(pr.n)||'Joueur 2',pr.c,{dmg:10,crit:.05,arm:0});p.mhp=100;applyGuestStats(p,st);p.hp=p.mhp;p.lvl=clamp(pr.l|0,1,99);
   const me=G.players[0];const q=freeSpot(me.x+36,me.y);p.x=p.rx=q.x;p.y=p.ry=q.y;
   G.players[1]=p;for(const k in G.gain)G.gain[k][1]=0;G.guestPeer=c.peer;G.guestPres=pr;G.guestSeen=performance.now();G.coop=true;mode='host';paused=false;netT=0;
-  pres({gp:c.peer});Log.ev('à deux','invité accepté',anonName(p.name),CLS[p.cls].nom,'niv '+p.lvl,'peer '+c.peer.slice(-4));msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
-function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p?anonName(p.name):'?');if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';netT=0;pres({gp:null,g:null})}
-function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',anonName(name),'peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
+  pres({gp:c.peer});Log.ev('à deux','invité accepté',logName(p.name),CLS[p.cls].nom,'niv '+p.lvl,'peer '+c.peer.slice(-4));msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
+function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p?logName(p.name):'?');if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';netT=0;pres({gp:null,g:null})}
+function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',logName(name),'peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
   $('#menu').hidden=true;$('#game').hidden=false;$('#joining').hidden=false;
   pres({r:'g',h:peer,n:myName,c:selCls,l:hero.lvl,st:guestStats(),i:null,g:null,gp:null})}
 function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0,ks:ST.ks,pa:ST.pa}}
@@ -4864,7 +4869,7 @@ function renderMenu(){const box=$('#classes');box.textContent='';
 function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
   $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
 function toMenu(){Log.ev('jeu','retour au menu depuis',mode);document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
-function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',anonName(myName),hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
+function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logName(myName),hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();

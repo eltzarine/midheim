@@ -40,7 +40,7 @@ async function fbRoom(code){
     close(){live=false;pcb.length=0;ccb.length=0;D.remove(mine).catch(()=>{});D.onDisconnect(mine).cancel()}}}
 function pres(o){if(!room)return;room.presence(o).catch(e=>{if(!pres.err||performance.now()-pres.err>5000){pres.err=performance.now();Log.warn('net','envoi de présence refusé',e)}})}
 /* résumé des joueurs présents, seulement quand il change */
-function logPeers(){const sum=peers.map(p=>{const r=p.presence||{};return(p.sameTab?'moi':p.peer.slice(-4))+':'+(r.r||'?')+(r.n?'/'+anonName(r.n):'')+(r.h?'→'+String(r.h).slice(-4):'')+(r.gp?'⇐'+String(r.gp).slice(-4):'')+(r.g?'+état':'')}).join(' ');
+function logPeers(){const sum=peers.map(p=>{const r=p.presence||{};return(p.sameTab?'moi':p.peer.slice(-4))+':'+(r.r||'?')+(r.n?'/'+logName(r.n):'')+(r.h?'→'+String(r.h).slice(-4):'')+(r.gp?'⇐'+String(r.gp).slice(-4):'')+(r.g?'+état':'')}).join(' ');
   if(sum!==logPeers.last){logPeers.last=sum;Log.ev('salle',peers.length+' présent(s) · '+sum)}}
 function setNet(on){if(netOn!==(!!on&&!!room))Log.ev('net',(!!on&&!!room)?'connecté':'non connecté',netKind||'');Log.schedule(2000);netOn=!!on&&!!room;const el=$('#net');el.classList.toggle('on',netOn);
   el.querySelector('span').textContent=room?(on?'Jeu à deux connecté':'Connexion…'):netKind==='fb'?'Jeu à deux hors ligne':'Jeu à deux indisponible ici';renderLobby()}
@@ -63,9 +63,9 @@ function hostCheckGuest(){
 function acceptGuest(c){const pr=c.presence;const st=pr.st||{};const p=mkPlayer(clean(pr.n)||'Joueur 2',pr.c,{dmg:10,crit:.05,arm:0});p.mhp=100;applyGuestStats(p,st);p.hp=p.mhp;p.lvl=clamp(pr.l|0,1,99);
   const me=G.players[0];const q=freeSpot(me.x+36,me.y);p.x=p.rx=q.x;p.y=p.ry=q.y;
   G.players[1]=p;for(const k in G.gain)G.gain[k][1]=0;G.guestPeer=c.peer;G.guestPres=pr;G.guestSeen=performance.now();G.coop=true;mode='host';paused=false;netT=0;
-  pres({gp:c.peer});Log.ev('à deux','invité accepté',anonName(p.name),CLS[p.cls].nom,'niv '+p.lvl,'peer '+c.peer.slice(-4));msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
-function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p?anonName(p.name):'?');if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';netT=0;pres({gp:null,g:null})}
-function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',anonName(name),'peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
+  pres({gp:c.peer});Log.ev('à deux','invité accepté',logName(p.name),CLS[p.cls].nom,'niv '+p.lvl,'peer '+c.peer.slice(-4));msg(p.name+' ('+CLS[p.cls].nom+') rejoint l’aventure !');Snd.play('key')}
+function dropGuest(){const p=G.players[1];Log.warn('à deux','invité retiré',p?logName(p.name):'?');if(p)msg(p.name+' a quitté la partie.');G.players.length=1;G.guestPeer=null;G.guestPres=null;G.coop=false;if(mode==='host')mode='solo';netT=0;pres({gp:null,g:null})}
+function joinHost(peer,name){hostBg=false;Log.ev('à deux','rejoindre la partie de',logName(name),'peer '+String(peer).slice(-4),'moi '+String(myPeer).slice(-4));Snd.init();hostPeer=peer;mode='joining';joinT=performance.now();$('#joinTxt').textContent='On rejoint la partie de '+(name||'l’hôte')+'…';
   $('#menu').hidden=true;$('#game').hidden=false;$('#joining').hidden=false;
   pres({r:'g',h:peer,n:myName,c:selCls,l:hero.lvl,st:guestStats(),i:null,g:null,gp:null})}
 function guestStats(){return{lk:lookOf(hero.eq),mhp:ST.mhp,dmg:+ST.dmg.toFixed(2),crit:+ST.crit.toFixed(3),arm:+ST.arm.toFixed(3),vol:+ST.vol.toFixed(3),reg:+(+ST.reg).toFixed(1),we:ST.we,ae:ST.ae,pb:ST.pb||0,ks:ST.ks,pa:ST.pa}}
