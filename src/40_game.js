@@ -7,7 +7,7 @@ const Gn={};
 let parts=[],lastFx=-1,lastMsg=-1,saveT=0;
 function newWorld(){return{zd:'',ep:0,time:0,m:null,lv:1,enemies:[],projs:[],drops:[],fx:[],fxId:0,msgs:[],msgId:0,opened:new Set(),wOpened:new Set(),crates:[],platesOn:[],gateOpen:false,key:0,stairsOpen:false,stairsT:0,zones:[],fires:[],traps:[],decoys:[],later:[],xpTot:0,players:[],defT:0,dc:0,eid:1,dropId:1,flow:null,flowT:0,
   gain:{g:[0,0],pt:[0,0],gm:[0,0],sh:[0,0]},guestPeer:null,guestPres:null,coop:false,cool:{},emap:new Map(),q:0,fl:new Set(),night:0,dun:null,camps:[],campT:0,qT:0,reinOn:false,abhOn:false}}
-function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0}}
+function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0,tbKey:'',tbR:0,tbMv:0,tbAct:false,tbPot:false,tbEnd:false,et:0}}
 function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,rx:0,ry:0,down:false,rev:0,drT:0,mv:[0,0],aim:0,iv:0,ivT:0,spCd:0,ac:null,sk:null,pc:null,lu:null,it:null,
   shield:0,shieldT:0,tauntT:0,criT:0,stealthT:0,stormT:0,stormCd:0,kelCd:0,guardT:0,guardBy:-1,rageT:0,banT:0,blessT:0}}
 
@@ -44,7 +44,7 @@ const partyLv=()=>Math.max(1,Math.round(G.players.reduce((a,p)=>a+(p.lvl||1),0)/
 
 /* ================= Hôte : changer de zone ================= */
 function hostEnter(zd,pos,opt){opt=opt||{};G.zd=zd;G.m=zoneFromDesc(zd);G.ep++;
-  G.enemies=[];G.projs=[];G.drops=[];G.zones=[];G.fires=[];G.traps=[];G.decoys=[];G.later=[];G.opened=G.m.kind==='world'?G.wOpened:new Set();G.gateOpen=false;G.key=0;G.stairsOpen=false;G.stairsT=0;G.defT=0;G.flow=null;G.reinOn=false;G.abhOn=false;
+  G.enemies=[];G.projs=[];G.drops=[];G.zones=[];G.fires=[];G.traps=[];G.decoys=[];G.later=[];G.opened=G.m.kind==='world'?G.wOpened:new Set();G.gateOpen=false;G.key=0;G.stairsOpen=false;G.stairsT=0;G.defT=0;G.flow=null;G.reinOn=false;G.abhOn=false;G.cb=null;G.tbBy=null;
   G.crates=(G.m.crates||[]).map(c=>({x:c.x,y:c.y,ox:c.x,oy:c.y,rx:c.x,ry:c.y,pushT:0,stuckT:0}));G.platesOn=(G.m.plates||[]).map(()=>0);
   goalInit();if(G.m.kind==='dun'){G.lv=G.m.lv;for(const s of G.m.spawns)spawnEnemy(s.type,s.x,s.y,s.elite,false,s.bv,G.m.lv)}
   if(G.m.kind==='world'){G.camps.forEach(c=>{if(c.state==='live')c.state='idle'});if(G.night&&!G.fl.has('rein'))G.night=0}
@@ -89,7 +89,7 @@ function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0||e.ret)return;   // qu
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
 function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);const held=e.frz>0;let d=r.d*mult*(p.criT>0?1.25:1)*(p.rageT>0?1.5:1)*(p.banT>0?1.3:1)*(p.blessT>0?1.25:1)*(held&&st.pa==='fracas'?2:1)*(held&&st.pa==='oppor'?1.3:1);
-  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;hitEnemy(e,d,r.crit,o.kx,o.ky);
+  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(G.cb)d*=TB_DMG;else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);
   if(!o.noEnch&&e.hp>0){if(st.pa==='froid')e.slowT=1.5;else if(st.pa==='embras'||st.pa==='saignee'){e.burn=3;e.burnD=Math.max(e.burnD||0,st.dmg*(st.pa==='saignee'?.3:.25));e.burnP=pi}else if(st.pa==='chatiment')e.markT=4}
   if(!o.noEnch){if(st.we==='lath'&&Math.random()<.12)healP(p,p.mhp*.04,true);if(st.we==='feu'){e.burn=3;e.burnD=st.dmg*.35;e.burnP=pi}
     if(st.we==='talos'&&Math.random()<.15){let n=0;for(const o2 of G.enemies){if(o2===e||o2.hp<=0||n>=2)continue;if(Math.hypot(o2.x-e.x,o2.y-e.y)<140){n++;fx(40,e.x,e.y,Math.round(o2.x)*10000+Math.round(o2.y));hitEnemy(o2,d*.5,false)}}}}
@@ -178,41 +178,42 @@ function explode(pr){for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.
 function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;const pr=G.guestPres,inp=pr.i;
   if(pr.st)applyGuestStats(gp,pr.st);gp.lvl=clamp(pr.l|0,1,99);
   if(!inp||!Array.isArray(inp.p))return;if(inp.z!==G.ep)return; // positions d'une autre zone : ignorées
-  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
+  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!tbFoe()){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
   gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
   if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0}
-  let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
+  let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;if(tbGate(1,'ac'))hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
   const fin=(v,d,hi)=>Number.isFinite(+v)?clamp(+v,0,hi):d;
   const tp=Array.isArray(inp.tp)?{x:fin(inp.tp[0],gp.x,G.m.W*TS),y:fin(inp.tp[1],gp.y,G.m.H*TS)}:null;
-  const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s])hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
-  n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
+  const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s]&&tbGate(1,'ac'))hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
+  n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;if(tbGate(1,'po'))usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
+  if(G.cb&&G.cb.ph==='h'&&(inp.et|0)===G.cb.r)G.cb.rd[1]=true;
   if(gp.lu<(inp.lu|0)){gp.lu=inp.lu|0;if(!gp.down)gp.hp=gp.mhp}
   if(gp.it<(inp.it|0)){gp.it=inp.it|0;if(typeof inp.ia==='string')hostRequest(inp.ia.slice(0,80),1)}}
 function hostUpdate(dt){
   G.time+=dt;updateLocal(dt);
   const me=G.players[0];me.x=L.x;me.y=L.y;me.mv=L.mv;me.aim=L.aim;me.lvl=hero.lvl;me.lk=lookOf(hero.eq);
-  applyGuestInput();
-  for(const p of G.players){p.drT-=dt;p.spCd-=dt;p.ivT-=dt;p.tauntT-=dt;p.criT-=dt;p.stealthT-=dt;p.kelCd-=dt;p.guardT-=dt;p.rageT-=dt;p.banT-=dt;p.blessT-=dt;
-    if(!p.down&&p.st&&p.st.pa==='aura')for(const q of G.players){if(!q.down&&Math.hypot(q.x-p.x,q.y-p.y)<160)healP(q,q.mhp*.015*dt,false)}if(p.shieldT>0){p.shieldT-=dt;if(p.shieldT<=0)p.shield=0}
-    if(!p.down&&p.st&&p.st.reg>0)healP(p,p.st.reg*dt,false);
+  applyGuestInput();tbUpdate(dt);
+  // au tour par tour, les durées d'effet avancent à la fin de chaque tour (tbRoundEnd), pas en continu
+  const sdt=G.cb?0:dt;
+  for(const p of G.players){p.spCd-=dt;p.ivT-=dt;pStatus(p,sdt);
     const mvv=p.mv||[0,0];p.idleT=(Math.abs(mvv[0])+Math.abs(mvv[1])>.1||p.down)?0:(p.idleT||0)+dt;if(p.idleT>12){p.idleT=-20;sayP(G.players.indexOf(p),'idle')}
-    if(p.stormT>0&&!p.down){p.stormT-=dt;p.stormCd-=dt;if(p.stormCd<=0){let b=null,bd=330;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
+    if(p.stormT>0&&!p.down&&!tbFoe()){p.stormT-=dt;p.stormCd-=dt;if(p.stormCd<=0){let b=null,bd=330;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
       if(b){const a=Math.atan2(b.y-p.y,b.x-p.x);G.projs.push({x:p.x,y:p.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:7,from:'p',k:1,life:1,pi:G.players.indexOf(p),splash:36})}p.stormCd=.22}}}
   // relever
-  for(const p of G.players){if(!p.down)continue;let rate=0;for(const q of G.players){if(q===p||q.down)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<48)rate=Math.max(rate,q.cls==='soigneur'?3:1)}
+  if(!G.cb)for(const p of G.players){if(!p.down)continue;let rate=0;for(const q of G.players){if(q===p||q.down)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<48)rate=Math.max(rate,q.cls==='soigneur'?3:1)}
     for(const z of G.zones)if(!z.smoke&&!z.slow&&Math.hypot(z.x-p.x,z.y-p.y)<z.r)rate=Math.max(rate,1.5);
     if(rate>0){p.rev+=dt*rate/2.5;if(p.rev>=1){p.down=false;p.hp=p.mhp*.4;p.rev=0;p.lowSaid=false;msg(p.name+' est relevé !');sayP(G.players.indexOf(p),'rev');fx(14,p.x,p.y,0,G.players.indexOf(p))}}else p.rev=Math.max(0,p.rev-dt*.2)}
-  if(G.m.kind==='dun'){for(const p of G.players){if(p.down)continue;const tx=Math.floor(p.x/TS),ty=Math.floor(p.y/TS);if(tileAt(tx,ty)===5&&spikeUp(tx,ty)&&p.spCd<=0){hurt(p,Math.max(6,p.mhp*.1));p.spCd=.8}}}
+  if(G.m.kind==='dun'&&!G.cb){for(const p of G.players){if(p.down)continue;const tx=Math.floor(p.x/TS),ty=Math.floor(p.y/TS);if(tileAt(tx,ty)===5&&spikeUp(tx,ty)&&p.spCd<=0){hurt(p,Math.max(6,p.mhp*.1));p.spCd=.8}}}
   G.flowT-=dt;if(G.flowT<=0){buildFlow();G.flowT=G.m.kind==='world'?.5:.35}
   updEnemies(dt);updProjs(dt);updDrops(dt);updChests();if(G.m.kind==='dun'){updCrates(dt);goalUpdate(dt)}
-  for(const z of G.zones){z.t-=dt;z.tick-=dt;if(!z.smoke&&!z.slow)for(const p of G.players){if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r){healP(p,p.mhp*.09*dt,false);if(z.tick<=0)fx(3,p.x,p.y-16,Math.round(p.mhp*.045))}}if(z.tick<=0)z.tick=.5}
+  for(const z of G.zones){z.t-=sdt;z.tick-=dt;if(!z.smoke&&!z.slow&&!G.cb)for(const p of G.players){if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r){healP(p,p.mhp*.09*dt,false);if(z.tick<=0)fx(3,p.x,p.y-16,Math.round(p.mhp*.045))}}if(z.tick<=0)z.tick=.5}
   G.zones=G.zones.filter(z=>z.t>0);
-  for(const f of G.fires){f.t-=dt;f.tick-=dt;if(f.tick<=0){f.tick=.5;for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6,{noEnch:true})}}
+  for(const f of G.fires){f.t-=sdt;f.tick-=dt;if(f.tick<=0&&!G.cb){f.tick=.5;for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6,{noEnch:true})}}
   G.fires=G.fires.filter(f=>f.t>0);
-  for(const t of G.traps){t.t-=dt;for(const e of G.enemies){if(e.hp<=0||e.ret||Math.hypot(e.x-t.x,e.y-t.y)>t.r+e.r)continue;e.frz=Math.max(e.frz,e.type==='boss'?1:3);if(G.players[t.pi])pDmg(t.pi,e,1.5,{noEnch:true});fx(30,t.x,t.y,40,t.pi);t.t=0;break}}
+  for(const t of G.traps){t.t-=sdt;for(const e of G.enemies){if(e.hp<=0||e.ret||Math.hypot(e.x-t.x,e.y-t.y)>t.r+e.r)continue;e.frz=Math.max(e.frz,e.type==='boss'?1:3);if(G.players[t.pi])pDmg(t.pi,e,1.5,{noEnch:true});fx(30,t.x,t.y,40,t.pi);t.t=0;break}}
   G.traps=G.traps.filter(t=>t.t>0);
-  for(const d of G.decoys)d.t-=dt;G.decoys=G.decoys.filter(d=>d.t>0);
+  for(const d of G.decoys)d.t-=sdt;G.decoys=G.decoys.filter(d=>d.t>0);
   for(const l of G.later){l.t-=dt;if(l.t<=0)l.fn()}G.later=G.later.filter(l=>l.t>0);
   const alive=G.players.filter(p=>!p.down);
   if(G.m.kind==='dun'){const sx=G.m.stairs.x,sy=G.m.stairs.y;
@@ -223,6 +224,10 @@ function hostUpdate(dt){
   if(G.players.length&&G.players.every(p=>p.down)){G.defT+=dt;if(G.defT>2.5){G.dc++;defeat()}}else G.defT=0;
   applyGains({xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,ep:G.ep,q:G.q});
   processFx(G.fx);processMsgs(G.msgs)}
+/* durées d'effet d'un héros, régénération et aura : s secondes (chaque image hors combat, un tour entier au combat) */
+function pStatus(p,s){if(!s)return;p.drT-=s;p.tauntT-=s;p.criT-=s;p.stealthT-=s;p.kelCd-=s;p.guardT-=s;p.rageT-=s;p.banT-=s;p.blessT-=s;
+  if(!p.down&&p.st&&p.st.pa==='aura')for(const q of G.players){if(!q.down&&Math.hypot(q.x-p.x,q.y-p.y)<160)healP(q,q.mhp*.015*s,false)}if(p.shieldT>0){p.shieldT-=s;if(p.shieldT<=0)p.shield=0}
+  if(!p.down&&p.st&&p.st.reg>0)healP(p,p.st.reg*s,false)}
 function spikeUp(tx,ty){const sp=G.m.spikes.find(s=>s.x===tx&&s.y===ty);if(!sp)return false;return((G.time+sp.ph*.8)%2.4)<.8}
 function applyGuestStats(p,s){if(!s||typeof s!=='object')return;let key;try{key=JSON.stringify(s)}catch(e){return}if(p.stKey===key&&p.st)return;p.stKey=key;const n=v=>isFinite(+v)?+v:0;const mhp=clamp(Math.round(n(s.mhp)),1,99999);if(mhp!==p.mhp){p.hp=p.hp*mhp/(p.mhp||mhp);p.mhp=mhp}
   const okE=v=>['lath','feu','talos','kel'].includes(v)?v:null;p.lk=clamp(Math.floor(n(s.lk)),0,200000);
@@ -237,6 +242,7 @@ function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){host
   if(spec.done===G.q)setQ(G.q+1,({everwatch:'stone0',karazankor:'stone2',antre:'stone3',prison:'epilogue'})[did]);else msg(spec.nom+' : vous en ressortez plus riches.')}
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
+  if(act==='revive'){tbRevive(pi);return}
   if(act==='exit'){if(m.kind==='house')hostEnter('w',m.exitTo);return}
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
@@ -268,10 +274,17 @@ function updCamps(){const pl=G.players.filter(p=>!p.down);if(!pl.length)return;
 
 /* réaction en chaîne : chaque ennemi alerté réveille ceux dont la zone touche la sienne */
 function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='boss'&&Math.hypot(o.x-s.x,o.y-s.y)<2*AGGRO*TS&&los(s.x,s.y,o.x,o.y)){o.act=true;q.push(o)}}}
+/* Ennemis. Hors combat, ils repèrent les héros et les poursuivent, sans attaquer.
+   Au tour par tour (G.cb) : figés pendant le tour des héros (seul le recul des coups les déplace) ;
+   pendant leur tour, chacun bouge et attaque une fois (e.tbA), un ennemi étourdi passe son tour (e.tbSkip). */
 function updEnemies(dt){
+  const ph=G.cb?G.cb.ph:'';
+  if(ph==='h'){for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}}
+    G.enemies=G.enemies.filter(e=>e.hp>0);return}
+  const sdt=ph?0:dt,turn=ph==='e';
   const alive=G.players.filter(p=>!p.down&&!(p.stealthT>0));
-  for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=dt;e.blind-=dt;e.slowT-=dt;e.markT-=dt;if(e.mistT>0){e.mistT-=dt;continue}
-    if(e.burn>0){e.burn-=dt;e.hp-=e.burnD*dt;e.burnFx=(e.burnFx||0)-dt;if(e.burnFx<=0){e.burnFx=.5;fx(41,e.x,e.y-e.r,Math.round(e.burnD*.5))}if(e.hp<=0){killEnemy(e);continue}}
+  for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=sdt;e.blind-=sdt;e.slowT-=sdt;e.markT-=sdt;if(e.mistT>0){e.mistT-=dt;continue}
+    if(e.burn>0&&!ph){e.burn-=dt;e.hp-=e.burnD*dt;e.burnFx=(e.burnFx||0)-dt;if(e.burnFx<=0){e.burnFx=.5;fx(41,e.x,e.y-e.r,Math.round(e.burnD*.5))}if(e.hp<=0){killEnemy(e);continue}}
     if(e.ret){e.retT+=dt;const hx=e.hx-e.x,hy=e.hy-e.y,hd=Math.hypot(hx,hy);
       if(hd<TS*.6||e.retT>6){if(e.retT>6){e.x=e.hx;e.y=e.hy}e.ret=false;e.hp=e.mhp;e.burn=0;e.frz=0}
       else moveBody(e,hx/hd*e.spd*1.15*dt,hy/hd*e.spd*1.15*dt,e.r*.75);continue}
@@ -279,31 +292,36 @@ function updEnemies(dt){
     else{for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
       for(const d of G.decoys){const dd=Math.hypot(d.x-e.x,d.y-e.y);if(dd<7*TS&&dd<td+3*TS){td=dd;tp=d}}}
     if(!tp||e.blind>0)continue;
-    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
+    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;e.tbA=false;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
-    if(e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
+    if(!ph&&e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
     if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
-    if(e.frz>0){e.frz-=dt;continue}
+    if(e.frz>0){if(!ph)e.frz-=dt;continue}
+    if(turn&&e.tbSkip)continue;
+    const can=turn&&!e.tbA;   // une attaque par ennemi et par tour, jamais hors combat
     let vx=0,vy=0,sp=e.spd;const dx=tp.x-e.x,dy=tp.y-e.y;const see=td<10*TS&&los(e.x,e.y,tp.x,tp.y);
     for(const z of G.zones)if((z.smoke||z.slow)&&Math.hypot(z.x-e.x,z.y-e.y)<z.r)sp*=z.slow?.35:.4;if(e.slowT>0)sp*=.6;
     const toward=()=>{if(tp.decoy||(td<1.6*TS&&see)){vx=dx/td;vy=dy/td}else{const f=flowDir(e,false);if(f){vx=f.x;vy=f.y}else if(see){vx=dx/td;vy=dy/td}}};
+    // une fois son coup porté, un ennemi au contact ne pousse plus le héros
+    const stay=turn&&e.tbA&&td<e.r+16;
     switch(e.type){
       case'mimic':toward();e.wob+=dt*9;sp*=.6+.6*Math.max(0,Math.sin(e.wob));break;
       case'slime':toward();e.wob+=dt*5;sp*=.7+.45*Math.max(0,Math.sin(e.wob));break;
       case'bat':toward();e.wob+=dt*7;vx+=Math.cos(e.wob*1.3)*.7;vy+=Math.sin(e.wob)*.7;break;
       case'archer':e.cd-=dt;e.wob+=dt*.7;if(td<3.5*TS){const f=flowDir(e,true);if(f){vx=f.x;vy=f.y}}else if(td>6.5*TS||!see)toward();else{const s=Math.sin(e.wob)>0?1:-1;vx=-dy/td*s*.6;vy=dx/td*s*.6}
-        if(e.cd<=0&&see&&td<9*TS){shootE(e.x,e.y,Math.atan2(dy,dx),260,e.dmg,3);e.cd=(1.7+Math.random()*.6)*(e.lv>5?.85:1)}break;
-      case'orc':e.ccd-=dt;
+        if(e.cd<=0&&see&&td<9*TS&&can){shootE(e.x,e.y,Math.atan2(dy,dx),260,e.dmg,3);e.cd=(1.7+Math.random()*.6)*(e.lv>5?.85:1);e.tbA=true}break;
+      case'orc':if(turn)e.ccd-=dt;
         if(e.chg>0){e.chg-=dt;vx=e.cvx;vy=e.cvy;sp=300}
         else if(e.tele>0){e.tele-=dt;sp=0;if(e.tele<=0){e.chg=.55;e.cvx=dx/td;e.cvy=dy/td}}
-        else{toward();if(td<4.2*TS&&see&&e.ccd<=0){e.tele=.6;e.ccd=3.2}}break;
-      case'boss':{bossAI(e,dt,tp,td,see);const B=BOSSES[e.bv??0];
+        else{toward();if(td<4.2*TS&&see&&e.ccd<=0&&can&&!e.tbC){e.tele=.6;e.ccd=3.2;e.tbC=true}}break;
+      case'boss':{if(turn)bossAI(e,dt,tp,td,see);const B=BOSSES[e.bv??0];
         if(e.chg>0){e.chg-=dt;vx=e.cvx;vy=e.cvy;sp=330}
         else if(e.tele>0){e.tele-=dt;sp=0;if(e.tele<=0){e.chg=.6;e.cvx=dx/td;e.cvy=dy/td}}
-        else{if(td>(B.charge?1.2:4)*TS)toward();if(B.charge){e.ccd-=dt;if(e.ccd<=0&&see&&td<7*TS){e.tele=.55;e.ccd=e.hp<e.mhp/2?2.4:3.4}}}
+        else{if(td>(B.charge?1.2:4)*TS)toward();if(B.charge&&turn){e.ccd-=dt;if(e.ccd<=0&&see&&td<7*TS&&can&&!e.tbC){e.tele=.55;e.ccd=e.hp<e.mhp/2?2.4:3.4;e.tbC=true}}}
         break}}
+    if(stay&&e.chg<=0){vx=vy=0}
     const len=Math.hypot(vx,vy);if(len>0){const bl=moveBody(e,vx/len*sp*dt,vy/len*sp*dt,e.r*.75);if(bl&&e.chg>0)e.chg=0}
-    for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){hurt(p,e.dmg*(e.chg>0?1.6:1),e);e.hitCd=.8}}}
+    if(can)for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){hurt(p,e.dmg*(e.chg>0?1.6:1),e);e.hitCd=.8;e.tbA=true;e.chg=0;break}}}
   const A=G.enemies.filter(e=>e.hp>0&&e.act);
   for(let i=0;i<A.length;i++)for(let j=i+1;j<A.length;j++){const a=A[i],b=A[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d>0&&d<m){const p=(m-d)/2/d;if(a.type!=='boss')moveBody(a,-dx*p,-dy*p,a.r*.75);if(b.type!=='boss')moveBody(b,dx*p,dy*p,b.r*.75)}}
   G.enemies=G.enemies.filter(e=>e.hp>0)}
@@ -404,9 +422,10 @@ function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0
 function aimPoint(){if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
   if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
+  if(!tbCanAct()){toast(tbWhy(),'tb');return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
-  L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
+  tbUse('ac');L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
 function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!touch.aimOn?L.face:L.aim;
   switch(id){
     case'charge':L.dashT=.22;L.dvx=Math.cos(L.aim)*850;L.dvy=Math.sin(L.aim)*850;L.ivT=.3;Snd.play('dash');break;
@@ -428,15 +447,17 @@ function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!tou
     default:Snd.play('fire')}}
 function updateLocal(dt){
   const me=myP();const C=CLS[hero.cls];
-  L.cdA-=dt;for(let s=0;s<4;s++)L.cd[s]-=dt;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*dt);L.buffT-=dt;L.ivT-=dt;L.swing-=dt;L.stealthT-=dt;L.rageT-=dt;
-  if(ST.ks[3])L.ult=Math.min(100,L.ult+dt*1.1);
+  tbLocal();L.cdA-=dt;L.ivT-=dt;L.swing-=dt;tickLocal(G.cb?0:dt,false);
   let mx=0,my=0;
   if(keys.has('KeyA')||keys.has('ArrowLeft'))mx-=1;if(keys.has('KeyD')||keys.has('ArrowRight'))mx+=1;if(keys.has('KeyW')||keys.has('ArrowUp'))my-=1;if(keys.has('KeyS')||keys.has('ArrowDown'))my+=1;
   if(touch.jx||touch.jy){mx=touch.jx;my=touch.jy}
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
   const down=!me||me.down;if(down){mx=my=0}
+  // au combat : on ne bouge que pendant son tour, et de tbMv pixels au plus
+  if(G.cb&&(G.cb.ph!=='h'||L.tbEnd||L.tbMv<=.5)){if(ml>.2&&G.cb.ph==='h'&&!L.tbEnd&&!down)toast('Plus de déplacement ce tour. Agis ou touche « Fin du tour ».','tbmv');mx=my=0;ml=0}
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
-  if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}else if(ml>0)moveBody(L,mx*ST.spd*dt,my*ST.spd*dt,10);
+  if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}
+  else if(ml>0){let sp=ST.spd*dt;if(G.cb)sp=Math.min(sp,L.tbMv);const ox=L.x,oy=L.y;moveBody(L,mx*sp,my*sp,10);if(G.cb)L.tbMv=Math.max(0,L.tbMv-Math.hypot(L.x-ox,L.y-oy))}
   const useMouse=!touch.on&&performance.now()-mouse.t<2500;
   if(touch.aimOn)L.aim=touch.aimAng;
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
@@ -447,19 +468,26 @@ function updateLocal(dt){
     const rg=townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
   if(down){skQ=[false,false,false,false];potQ=false;actQ=false;return}
   const atk=mouse.down||keys.has('KeyJ')||touch.atk;
-  if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)){L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
+  if(atk&&G.cb&&!tbCanAct()&&!tbFoe())toast(tbWhy(),'tb');
+  if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)&&tbCanAct()){tbUse('ac');L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
     L.swing=SWD;L.swingA=L.aim;Snd.play(hero.cls==='mage'||hero.cls==='soigneur'?'fire':'swing');if(mode!=='guest')hostAttack(0,L.aim,buffed)}
   for(let s=0;s<4;s++)if(skQ[s]){skQ[s]=false;trySkill(s)}
   if(touch.relAim){touch.relAim=false;touch.aimOn=false}
-  if(potQ){potQ=false;if(hero.pot>0&&me&&me.hp<me.mhp){hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
+  if(potQ){potQ=false;if(G.cb&&!tbCanPot())toast(tbFoe()?'Attends ton tour.':'Une potion par tour.','tb');else if(hero.pot>0&&me&&me.hp<me.mhp){tbUse('po');hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
   if(actQ){actQ=false;const it=findInteract();if(it)doInteract(it)}}
+/* recharges, mana, ultime et effets du héros local : s secondes (chaque image hors combat, un tour entier au combat) */
+function tickLocal(s,round){for(let k=0;k<4;k++)L.cd[k]-=s;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*s);L.buffT-=s;L.stealthT-=s;L.rageT-=s;
+  if(ST.ks[3])L.ult=Math.min(100,L.ult+s*1.1+(round?TB_ULT:0))}
 function townAt(tx,ty){for(const k in TOWNS){const p=PL[k];if((p[0]-tx)**2+(p[1]-ty)**2<100)return{id:'t_'+k,nom:TOWNS[k].nom,lv:0}}return null}
-function findInteract(){const m=G.m;if(!m||!m.inter)return null;let best=null,bd=1e9;for(const it of m.inter){const d=Math.hypot(it.x-L.x,it.y-L.y);if(d<it.r&&d<bd){bd=d;best=it}}return best}
+function findInteract(){const m=G.m;if(!m)return null;
+  if(tbHero()&&tbCanAct()){const me=myP(),q=G.players.find((o,j)=>j!==myIdx&&o.down&&Math.hypot((o.rx??o.x)-L.x,(o.ry??o.y)-L.y)<60);if(me&&!me.down&&q)return{x:q.x,y:q.y,r:60,act:'revive',label:'Relever '+q.name}}
+  if(G.cb||!m.inter)return null;let best=null,bd=1e9;for(const it of m.inter){const d=Math.hypot(it.x-L.x,it.y-L.y);if(d<it.r&&d<bd){bd=d;best=it}}return best}
 function interactLabel(it){if(!it)return'';const a=it.act;
   if(a.startsWith('dun:')){const s=DUNGEONS[a.slice(4)];return(G.q<s.need?'Examiner : ':'Entrer : ')+s.nom}
   if(a.startsWith('house:'))return'Entrer : '+it.label;if(a==='exit')return'Sortir';if(a==='leave')return'Quitter le donjon';if(a.startsWith('shop:'))return it.label;
   if(a==='arena')return G.q>=3?'Défier Abhorash':'Examiner les pierres';if(a.startsWith('talk:')||a.startsWith('closed:'))return'Parler : '+it.label;return it.label}
 function doInteract(it){const a=it.act;
+  if(a==='revive'){requestAct('revive');tbUse('ac');return}
   if(a.startsWith('talk:')){talkTo(a.slice(5));return}
   if(a.startsWith('closed:')){showDialog('garde',it.label,a.slice(7));return}
   if(a.startsWith('shop:')){openTrade(a.slice(5),it.town);return}

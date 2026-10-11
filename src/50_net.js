@@ -93,7 +93,7 @@ function onState(s,first){
   s.tq=A(s.tq,40).map(a=>A(a,4).map(N));s.o=A(s.o,200);s.pl=A(s.pl,20);s.gp=A(s.gp,10).map(N);s.g=A(s.g,2).map(N);s.pt=A(s.pt,2).map(N);s.gm=A(s.gm,2).map(N);s.sh=A(s.sh,2).map(N);
   if(s.ep!==G.ep){Log.ev('à deux','changement de zone',s.z,'ep',s.ep);G.ep=s.ep;G.zd=s.z;G.m=zoneFromDesc(s.z);G.emap=new Map();G.opened=new Set();
     if(s.p&&s.p[1]){L.x=s.p[1][0];L.y=s.p[1][1]}else{L.x=G.m.start.x+36;L.y=G.m.start.y}L.dashT=0}
-  G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;
+  G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;G.cb=tbUnpack(s.cb);
   const nm=s.nm||[];
   G.players=(s.p||[]).map((a,i)=>{const old=G.players[i]||{};return{name:clean(nm[i])||('Joueur '+(i+1)),cls:CLS_IDS[a[6]]||'guerrier',x:a[0],y:a[1],rx:old.rx!=null?old.rx:a[0],ry:old.ry!=null?old.ry:a[1],hp:a[2],mhp:a[3]||1,down:!!a[4],rev:(a[5]||0)/40,drT:a[7]&1?1:0,shield:a[7]&2?1:0,stealthT:a[7]&4?1:0,aim:(a[8]||0)/10,sh:a[9]||0,lk:a[10]|0}});
   const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);em.set(a[0],o)}
@@ -121,7 +121,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
     d:G.drops.filter(d=>near(d.x,d.y)).slice(0,26).map(d=>[d.id,d.k,r(d.x),r(d.y),d.r]),
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),
     m:G.msgs.slice(-3),o:[...G.opened].slice(-60),cr:G.crates.map(c=>[c.x,c.y]),pl:G.platesOn,go:G.gateOpen?1:0,k:G.key,gp:(G.gp||[]).map(v=>Math.round(v*20)),wv:G.wave|0,so:G.stairsOpen?1:0,ab:G.abhOn?1:0,
-    zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:z.slow?2:0]),tq:G.traps.slice(-12).map(t=>[r(t.x),r(t.y),0]).concat(G.decoys.map(d=>[r(d.x),r(d.y),CLS_IDS.indexOf(d.cls)+1,d.lk|0])),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0};
+    zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:z.slow?2:0]),tq:G.traps.slice(-12).map(t=>[r(t.x),r(t.y),0]).concat(G.decoys.map(d=>[r(d.x),r(d.y),CLS_IDS.indexOf(d.cls)+1,d.lk|0])),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0,cb:tbPack()};
   // taille en octets : un caractère vaut au plus 3 octets, inutile d'encoder un état court (cas courant, 15 fois par seconde)
   const big=()=>{const t=JSON.stringify(s);return t.length*3>3400&&enc.encode(t).length>3400};
   let n=0;while(big()&&n++<24){if(s.j.length>4)s.j.length=Math.floor(s.j.length*.6);else if(s.x.length>4)s.x.splice(0,4);else if(s.o.length>10)s.o.splice(0,10);else if(s.d.length>8)s.d.length-=6;else if(s.e.length>12)s.e.length-=5;else break}
@@ -133,4 +133,4 @@ function netTick(dt){if(!room)return;netT-=dt;
   if(mode==='host'&&netT<=0){netT=.066;pres({g:serialize(),l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='solo'&&netT<=0){netT=3;pres({l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='guest'&&netT<=0){netT=.05;const r=Math.round;const tp=L.tp||aimPoint();
-    pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0}})}}
+    pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0,et:L.et|0}})}}
