@@ -108,7 +108,9 @@ input[type=text]{background:var(--deep);border:2px solid var(--edge);border-radi
 #mini.sq{border-radius:6px}
 /* contrôles tactiles */
 #touch{position:absolute;inset:0 0 var(--mb,0px) 0;pointer-events:none}
-#joyZone{position:absolute;left:0;bottom:0;width:50%;height:60%;pointer-events:auto;touch-action:none}
+/* joystick : il apparaît là où le doigt se pose, partout sur l'écran sauf sur l'interface (posée au-dessus) */
+#joyZone{position:absolute;inset:0 0 var(--mb,0px) 0;pointer-events:auto;touch-action:none}
+body:not(.touch) #joyZone{display:none}
 #joy{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.025);border:1.5px solid rgba(239,230,207,.1);pointer-events:none;animation:joyIn .12s ease-out}
 #joy[hidden]{display:none}
 #knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(226,182,94,.12);border:1.5px solid rgba(226,182,94,.32)}
@@ -159,7 +161,6 @@ body:not(.touch) #touch{display:none}
   #mini{top:auto;bottom:10px;right:auto;left:calc(10px + env(safe-area-inset-left,0px))}
   #bAtk{width:76px;height:76px;right:14px;bottom:12px}#bS1{width:52px;height:52px;right:100px;bottom:18px}#bS2{width:52px;height:52px;right:96px;bottom:96px}#bS3{width:52px;height:52px;right:26px;bottom:98px}
   #bUlt{width:54px;height:54px;right:24px;bottom:160px}#bPot{width:42px;height:42px;right:166px;bottom:14px}#bAct{bottom:224px;height:36px}
-  #joyZone{height:75%;width:45%}
 }
 /* fenêtres */
 .over{position:absolute;inset:0;background:rgba(7,16,20,.8);display:grid;place-items:center;padding:14px;pointer-events:auto;overflow:auto}
@@ -628,6 +629,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 
 <div id="game" hidden>
   <canvas id="cv"></canvas>
+  <div id="joyZone"></div>
   <div id="hud">
     <div class="top">
       <div class="card me" id="cMe">
@@ -669,7 +671,6 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     <div id="hbar" role="toolbar" aria-label="Attaque, compétences et potion"></div>
     <div id="pvHint" hidden></div>
     <div id="touch">
-      <div id="joyZone"></div>
       <div id="joy" hidden><div id="knob"></div></div>
       <div class="tb" id="bAct" hidden>Entrer</div>
       <div class="tb" id="bUlt"><span class="ic"></span><span class="t"></span><span class="k">Ultime</span></div>

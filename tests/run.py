@@ -356,6 +356,8 @@ with sync_playwright() as pw:
     ctx, pg = page(br, tag='tour'); pg.goto(URL); pg.wait_for_timeout(700); pg.click('#bSolo'); pg.wait_for_timeout(900)
     go(pg, "(()=>{if(G.m.kind!=='world')hostEnter('w',WORLD.start);QDone.q.length=0;QDone.close();G.enemies=[];G.cb=null;G.night=0;G.reinOn=false;hero.lvl=3;refreshStats();G.players[0].hp=G.players[0].mhp})()"); pg.wait_for_timeout(400)
     go(pg, "(()=>{for(let k=0;k<3;k++){const q=freeNear(L.x+6*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.hx=q.x;e.hy=q.y}})()"); pg.wait_for_timeout(300)
+    jz = go(pg, "(()=>{const z=$('#joyZone'),o={pointerId:7,bubbles:true,pointerType:'touch'},x=vw*.8,y=vh*.45;z.dispatchEvent(new PointerEvent('pointerdown',Object.assign({clientX:x,clientY:y},o)));z.dispatchEvent(new PointerEvent('pointermove',Object.assign({clientX:x+60,clientY:y},o)));const r=[touch.jx,!$('#joy').hidden];z.dispatchEvent(new PointerEvent('pointerup',Object.assign({clientX:x+60,clientY:y},o)));return r.concat(touch.jx)})()")
+    check('Joystick : il apparaît aussi à droite de l’écran', jz[0] > .5 and jz[1] and jz[2] == 0, jz)
     check('Tour par tour : hors de la zone d’alerte, pas de combat', not go(pg, "G.cb") and go(pg, "AGGRO") == 3.5)
     go(pg, "L.x+=3.2*TS"); pg.wait_for_timeout(300)
     check('Tour par tour : entrer dans la zone lance le combat, les ennemis jouent d’abord', go(pg, "!!G.cb&&G.cb.ph==='e'&&G.cb.in[0]"))

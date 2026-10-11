@@ -279,12 +279,14 @@ cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mouse.x=
 cv.addEventListener('pointerdown',e=>{Snd.init();const r=cv.getBoundingClientRect();if(e.button===0&&tapEnemy(e.clientX-r.left,e.clientY-r.top,e.pointerType!=='mouse'))return;if(e.pointerType!=='mouse'||tbMe())return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0)mouse.down=false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-(function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0;
+(function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0,t0=0,far=false;
   const R=()=>joy.offsetWidth*.42||45;
   const set=(x,y)=>{let dx=x-cx,dy=y-cy;const d=Math.hypot(dx,dy),r=R();if(d>r){dx*=r/d;dy*=r/d}knob.style.transform=`translate(${dx}px,${dy}px)`;const n=Math.hypot(dx,dy)/r;touch.jx=n<.18?0:dx/r;touch.jy=n<.18?0:dy/r};
-  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();{const r=cv.getBoundingClientRect();if(tapEnemy(e.clientX-r.left,e.clientY-r.top)){e.preventDefault();return}}id=e.pointerId;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
-  zone.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e.clientX,e.clientY)});
-  const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
+  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();{const r=cv.getBoundingClientRect();if(tapEnemy(e.clientX-r.left,e.clientY-r.top)){e.preventDefault();return}}id=e.pointerId;t0=performance.now();far=false;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
+  zone.addEventListener('pointermove',e=>{if(e.pointerId!==id)return;if(Math.hypot(e.clientX-cx,e.clientY-cy)>12)far=true;set(e.clientX,e.clientY)});
+  // un simple toucher du sol (sans glisser) annule l'aperçu ou libère la cible
+  const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0;
+    if(e.type==='pointerup'&&!far&&performance.now()-t0<350){const r=cv.getBoundingClientRect();tapEnemy(cx-r.left,cy-r.top,true)}};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
 holdBtn($('#bAct'),()=>actQ=true);
 $('#bEnd').addEventListener('click',()=>{Snd.init();L&&L.tbEnd?cancelEnd():endTurn()});

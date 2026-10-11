@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-q/aeyfg/wm9+rEmpZUCvoPEpU/bb0zt+vL35Jb09zD8=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-WDXHhp9YLK/sqK1DzRF91SwaWCOVwSiXnzecxLnMXho=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -125,7 +125,9 @@ input[type=text]{background:var(--deep);border:2px solid var(--edge);border-radi
 #mini.sq{border-radius:6px}
 /* contrôles tactiles */
 #touch{position:absolute;inset:0 0 var(--mb,0px) 0;pointer-events:none}
-#joyZone{position:absolute;left:0;bottom:0;width:50%;height:60%;pointer-events:auto;touch-action:none}
+/* joystick : il apparaît là où le doigt se pose, partout sur l'écran sauf sur l'interface (posée au-dessus) */
+#joyZone{position:absolute;inset:0 0 var(--mb,0px) 0;pointer-events:auto;touch-action:none}
+body:not(.touch) #joyZone{display:none}
 #joy{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;background:rgba(255,255,255,.025);border:1.5px solid rgba(239,230,207,.1);pointer-events:none;animation:joyIn .12s ease-out}
 #joy[hidden]{display:none}
 #knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:rgba(226,182,94,.12);border:1.5px solid rgba(226,182,94,.32)}
@@ -176,7 +178,6 @@ body:not(.touch) #touch{display:none}
   #mini{top:auto;bottom:10px;right:auto;left:calc(10px + env(safe-area-inset-left,0px))}
   #bAtk{width:76px;height:76px;right:14px;bottom:12px}#bS1{width:52px;height:52px;right:100px;bottom:18px}#bS2{width:52px;height:52px;right:96px;bottom:96px}#bS3{width:52px;height:52px;right:26px;bottom:98px}
   #bUlt{width:54px;height:54px;right:24px;bottom:160px}#bPot{width:42px;height:42px;right:166px;bottom:14px}#bAct{bottom:224px;height:36px}
-  #joyZone{height:75%;width:45%}
 }
 /* fenêtres */
 .over{position:absolute;inset:0;background:rgba(7,16,20,.8);display:grid;place-items:center;padding:14px;pointer-events:auto;overflow:auto}
@@ -648,6 +649,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
 
 <div id="game" hidden>
   <canvas id="cv"></canvas>
+  <div id="joyZone"></div>
   <div id="hud">
     <div class="top">
       <div class="card me" id="cMe">
@@ -689,7 +691,6 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     <div id="hbar" role="toolbar" aria-label="Attaque, compétences et potion"></div>
     <div id="pvHint" hidden></div>
     <div id="touch">
-      <div id="joyZone"></div>
       <div id="joy" hidden><div id="knob"></div></div>
       <div class="tb" id="bAct" hidden>Entrer</div>
       <div class="tb" id="bUlt"><span class="ic"></span><span class="t"></span><span class="k">Ultime</span></div>
@@ -736,7 +737,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='b7db2955';
+const BUILD='92328274';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -5382,12 +5383,14 @@ cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mouse.x=
 cv.addEventListener('pointerdown',e=>{Snd.init();const r=cv.getBoundingClientRect();if(e.button===0&&tapEnemy(e.clientX-r.left,e.clientY-r.top,e.pointerType!=='mouse'))return;if(e.pointerType!=='mouse'||tbMe())return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0)mouse.down=false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
-(function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0;
+(function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0,t0=0,far=false;
   const R=()=>joy.offsetWidth*.42||45;
   const set=(x,y)=>{let dx=x-cx,dy=y-cy;const d=Math.hypot(dx,dy),r=R();if(d>r){dx*=r/d;dy*=r/d}knob.style.transform=`translate(${dx}px,${dy}px)`;const n=Math.hypot(dx,dy)/r;touch.jx=n<.18?0:dx/r;touch.jy=n<.18?0:dy/r};
-  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();{const r=cv.getBoundingClientRect();if(tapEnemy(e.clientX-r.left,e.clientY-r.top)){e.preventDefault();return}}id=e.pointerId;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
-  zone.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e.clientX,e.clientY)});
-  const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
+  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();{const r=cv.getBoundingClientRect();if(tapEnemy(e.clientX-r.left,e.clientY-r.top)){e.preventDefault();return}}id=e.pointerId;t0=performance.now();far=false;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
+  zone.addEventListener('pointermove',e=>{if(e.pointerId!==id)return;if(Math.hypot(e.clientX-cx,e.clientY-cy)>12)far=true;set(e.clientX,e.clientY)});
+  // un simple toucher du sol (sans glisser) annule l'aperçu ou libère la cible
+  const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0;
+    if(e.type==='pointerup'&&!far&&performance.now()-t0<350){const r=cv.getBoundingClientRect();tapEnemy(cx-r.left,cy-r.top,true)}};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
 holdBtn($('#bAct'),()=>actQ=true);
 $('#bEnd').addEventListener('click',()=>{Snd.init();L&&L.tbEnd?cancelEnd():endTurn()});
