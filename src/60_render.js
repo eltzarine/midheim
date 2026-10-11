@@ -261,6 +261,7 @@ function render(dt){
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
     if(i!==myIdx&&G.cb&&G.cb.ph==='h'&&G.cb.in[i]&&G.cb.rd[i]&&!p.down)label('prêt ✓',w.x,w.y-52,'#9ff08a',11);
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
+  drawEnemyTags(vis);
   if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&(bd.act.startsWith('house:')||bd.act==='talents')))continue;   // maisons : l'enseigne remplace le nom
     const dx=(bd.door.x+.5)*TS,dy=bd.kind==='tour'?bd.door.y*TS-78:bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(Math.hypot(n.x-L.x,n.y-L.y)<220)label(NPC_NAMES[n.who]||'',n.x,n.y-(n.who==='virganth'?62:34),'#cfe8ff',11)}
@@ -292,6 +293,14 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){ctx.save();ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();
     if(L.tbMv>2){ctx.fillStyle='rgba(142,197,232,.1)';ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.beginPath();ctx.arc(L.x,L.y,L.tbMv,0,6.28);ctx.fill();ctx.stroke()}
     ctx.restore()}}}
+/* au-dessus des ennemis : ce qu'ils viennent de faire (tour des ennemis, puis 4 s), sinon leurs états */
+const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume'];
+function pill(t,x,y,col,bg){ctx.font='700 11px "Alegreya Sans",system-ui,sans-serif';const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-8,w,16,8);else ctx.rect(x-w/2,y-8,w,16);ctx.fill();ctx.stroke();ctx.fillStyle=col;ctx.fillText(t,x,y+.5)}
+function drawEnemyTags(vis){const c=G.cb,recent=c&&c.lg&&c.lg.length&&(c.ph==='e'||performance.now()-(L.tbLgT||0)<4000);
+  for(const e of G.enemies){if(e.hp<=0)continue;const x=e.rx??e.x,y=(e.ry??e.y)-e.r-(e.type==='boss'?34:18);if(!vis(x,y))continue;
+    const it=recent&&c.lg.find(q=>q.id===e.id);
+    if(it){pill(TB_TAG[it.k]+(it.d?' · −'+it.d:''),x,y,it.k===4?'#9fd0ff':'#ffd2c8',it.k===4?'rgba(29,54,64,.92)':'rgba(90,26,20,.92)');continue}
+    const st=enemyStates(e);if(st.length)pill(st[0][0]+(st.length>1?' +'+(st.length-1):''),x,y,st[0][1],'rgba(19,37,44,.9)')}}
 function objTarget(){const qt=questTarget();if(qt)return qt;const o=OBJ[Math.min(G.q,6)];if(!o||!o.at||!WORLD)return null;return placePx(o.at)}
 function edgeArrow(x,y,col,label,hw,hh){const a=Math.atan2(y-L.y,x-L.x);const r=Math.min(hw,hh*.5)*.72;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;const pu=1+.12*Math.sin(G.time*6);
   ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.scale(pu,pu);ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.moveTo(17,1);ctx.lineTo(-7,-11);ctx.lineTo(-2,1);ctx.lineTo(-7,13);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-12);ctx.lineTo(-3,0);ctx.lineTo(-8,12);ctx.fill();ctx.restore();

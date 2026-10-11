@@ -7,7 +7,7 @@ const Gn={};
 let parts=[],lastFx=-1,lastMsg=-1,saveT=0;
 function newWorld(){return{zd:'',ep:0,time:0,m:null,lv:1,enemies:[],projs:[],drops:[],fx:[],fxId:0,msgs:[],msgId:0,opened:new Set(),wOpened:new Set(),crates:[],platesOn:[],gateOpen:false,key:0,stairsOpen:false,stairsT:0,zones:[],fires:[],traps:[],decoys:[],later:[],xpTot:0,players:[],defT:0,dc:0,eid:1,dropId:1,flow:null,flowT:0,
   gain:{g:[0,0],pt:[0,0],gm:[0,0],sh:[0,0]},guestPeer:null,guestPres:null,coop:false,cool:{},emap:new Map(),q:0,fl:new Set(),night:0,dun:null,camps:[],campT:0,qT:0,reinOn:false,abhOn:false}}
-function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0,tbKey:'',tbR:0,tbMv:0,tbAct:false,tbPot:false,tbEnd:false,et:0}}
+function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0,tbKey:'',tbR:0,tbMv:0,tbSpent:0,tbPot:false,tbEnd:false,et:0}}
 function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,rx:0,ry:0,down:false,rev:0,drT:0,mv:[0,0],aim:0,iv:0,ivT:0,spCd:0,ac:null,sk:null,pc:null,lu:null,it:null,
   shield:0,shieldT:0,tauntT:0,criT:0,stealthT:0,stormT:0,stormCd:0,kelCd:0,guardT:0,guardBy:-1,rageT:0,banT:0,blessT:0}}
 
@@ -182,10 +182,10 @@ function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;con
   gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
   if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0}
-  let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;if(tbGate(1,'ac'))hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
+  let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;if(tbGate(1,'ac',1))hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
   const fin=(v,d,hi)=>Number.isFinite(+v)?clamp(+v,0,hi):d;
   const tp=Array.isArray(inp.tp)?{x:fin(inp.tp[0],gp.x,G.m.W*TS),y:fin(inp.tp[1],gp.y,G.m.H*TS)}:null;
-  const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s]&&tbGate(1,'ac'))hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
+  const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s]&&tbGate(1,'ac',tbCost(ks[s])))hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
   n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;if(tbGate(1,'po'))usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
   if(G.cb&&G.cb.ph==='h'&&G.cb.in[1]&&!gp.down)G.cb.rd[1]=(inp.et|0)===G.cb.r;   // fin du tour (ou annulation) de l'invité
   if(gp.lu<(inp.lu|0)){gp.lu=inp.lu|0;if(!gp.down)gp.hp=gp.mhp}
@@ -311,32 +311,32 @@ function updEnemies(dt){
       case'slime':toward();e.wob+=dt*5;sp*=.7+.45*Math.max(0,Math.sin(e.wob));break;
       case'bat':toward();e.wob+=dt*7;vx+=Math.cos(e.wob*1.3)*.7;vy+=Math.sin(e.wob)*.7;break;
       case'archer':e.cd-=dt;e.wob+=dt*.7;if(td<3.5*TS){const f=flowDir(e,true);if(f){vx=f.x;vy=f.y}}else if(td>6.5*TS||!see)toward();else{const s=Math.sin(e.wob)>0?1:-1;vx=-dy/td*s*.6;vy=dx/td*s*.6}
-        if(e.cd<=0&&see&&td<9*TS&&can){shootE(e.x,e.y,Math.atan2(dy,dx),260,e.dmg,3);e.cd=(1.7+Math.random()*.6)*(e.lv>5?.85:1);e.tbA=true}break;
+        if(e.cd<=0&&see&&td<9*TS&&can){shootE(e.x,e.y,Math.atan2(dy,dx),260,e.dmg,3,e);tbLog(e,3,G.players.indexOf(tp));e.cd=(1.7+Math.random()*.6)*(e.lv>5?.85:1);e.tbA=true}break;
       case'orc':if(turn)e.ccd-=dt;
         if(e.chg>0){e.chg-=dt;vx=e.cvx;vy=e.cvy;sp=300}
         else if(e.tele>0){e.tele-=dt;sp=0;if(e.tele<=0){e.chg=.55;e.cvx=dx/td;e.cvy=dy/td}}
-        else{toward();if(td<4.2*TS&&see&&e.ccd<=0&&can&&!e.tbC){e.tele=.6;e.ccd=3.2;e.tbC=true}}break;
+        else{toward();if(td<4.2*TS&&see&&e.ccd<=0&&can&&!e.tbC){e.tele=.6;e.ccd=3.2;e.tbC=true;tbLog(e,2,G.players.indexOf(tp))}}break;
       case'boss':{if(turn)bossAI(e,dt,tp,td,see);const B=BOSSES[e.bv??0];
         if(e.chg>0){e.chg-=dt;vx=e.cvx;vy=e.cvy;sp=330}
         else if(e.tele>0){e.tele-=dt;sp=0;if(e.tele<=0){e.chg=.6;e.cvx=dx/td;e.cvy=dy/td}}
-        else{if(td>(B.charge?1.2:4)*TS)toward();if(B.charge&&turn){e.ccd-=dt;if(e.ccd<=0&&see&&td<7*TS&&can&&!e.tbC){e.tele=.55;e.ccd=e.hp<e.mhp/2?2.4:3.4;e.tbC=true}}}
+        else{if(td>(B.charge?1.2:4)*TS)toward();if(B.charge&&turn){e.ccd-=dt;if(e.ccd<=0&&see&&td<7*TS&&can&&!e.tbC){e.tele=.55;e.ccd=e.hp<e.mhp/2?2.4:3.4;e.tbC=true;tbLog(e,2,G.players.indexOf(tp))}}}
         break}}
     if(stay&&e.chg<=0){vx=vy=0}
     const len=Math.hypot(vx,vy);if(len>0){const bl=moveBody(e,vx/len*sp*dt,vy/len*sp*dt,e.r*.75);if(bl&&e.chg>0)e.chg=0}
-    if(can)for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){hurt(p,e.dmg*(e.chg>0?1.6:1),e);e.hitCd=.8;e.tbA=true;e.chg=0;break}}}
+    if(can)for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){const h0=p.hp,k=e.chg>0?2:1;hurt(p,e.dmg*(e.chg>0?1.6:1),e);tbLog(e,k,G.players.indexOf(p),Math.max(0,h0-p.hp));e.hitCd=.8;e.tbA=true;e.chg=0;break}}}
   const A=G.enemies.filter(e=>e.hp>0&&e.act);
   for(let i=0;i<A.length;i++)for(let j=i+1;j<A.length;j++){const a=A[i],b=A[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d>0&&d<m){const p=(m-d)/2/d;if(a.type!=='boss')moveBody(a,-dx*p,-dy*p,a.r*.75);if(b.type!=='boss')moveBody(b,dx*p,dy*p,b.r*.75)}}
   G.enemies=G.enemies.filter(e=>e.hp>0)}
-function shootE(x,y,a,spd,dmg,k){G.projs.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:k===4?7:5,dmg,from:'e',k,life:4})}
+function shootE(x,y,a,spd,dmg,k,src){G.projs.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:k===4?7:5,dmg,from:'e',k,life:4,src:src||null})}
 function bossAI(e,dt,tp,td,see){const rage=e.hp<e.mhp/2;if(rage&&!e.raged){e.raged=true;sayE(e,'rage')}e.t1-=dt;e.t2-=dt;e.t3-=dt;e.t4-=dt;
   const B=BOSSES[e.bv??0];if(B.regen)e.hp=Math.min(e.mhp,e.hp+e.mhp*B.regen*dt);
   if(e.bv===5&&!e.summoned){e.summoned=true;for(let k=0;k<5;k++){const q=freeNear(tp.x,tp.y,2*TS,4*TS);const m=spawnEnemy('slime',q.x,q.y,false,true,undefined,e.lv);m.act=true;fx(12,m.x,m.y,14)}msg('Cinq silhouettes sortent du sol !')}
   if(e.tele>0||e.chg>0)return;
-  if(e.t1<=0&&B.ring){const n=B.ring+(rage?6:0),o=Math.random()*6.28;for(let i=0;i<n;i++)shootE(e.x,e.y,o+i/n*6.283,150,e.dmg*.8,4);e.t1=rage?2.4:3.4}
-  if(e.t2<=0&&see&&B.triple){const a=Math.atan2(tp.y-e.y,tp.x-e.x);for(const k of[-.2,0,.2])shootE(e.x,e.y,a+k,240,e.dmg,4);e.t2=rage?1.1:1.8}
-  if(e.t3<=0&&B.minions.length){if(G.enemies.filter(o=>o.minion&&o.hp>0).length<4){for(let k=0;k<2;k++){const q=freeNear(e.x,e.y,30,60);const m=spawnEnemy(B.minions[k%B.minions.length],q.x,q.y,false,true,undefined,e.lv);fx(12,m.x,m.y,14)}}e.t3=11}
+  if(e.t1<=0&&B.ring){const n=B.ring+(rage?6:0),o=Math.random()*6.28;for(let i=0;i<n;i++)shootE(e.x,e.y,o+i/n*6.283,150,e.dmg*.8,4,e);tbLog(e,5);e.t1=rage?2.4:3.4}
+  if(e.t2<=0&&see&&B.triple){const a=Math.atan2(tp.y-e.y,tp.x-e.x);for(const k of[-.2,0,.2])shootE(e.x,e.y,a+k,240,e.dmg,4,e);tbLog(e,3,G.players.indexOf(tp));e.t2=rage?1.1:1.8}
+  if(e.t3<=0&&B.minions.length){if(G.enemies.filter(o=>o.minion&&o.hp>0).length<4){for(let k=0;k<2;k++){const q=freeNear(e.x,e.y,30,60);const m=spawnEnemy(B.minions[k%B.minions.length],q.x,q.y,false,true,undefined,e.lv);fx(12,m.x,m.y,14)}tbLog(e,6);}e.t3=11}
   if(e.t4<=0&&!B.tp)e.t4=99;
-  if(e.t4<=0&&(B.near||G.m.kind!=='dun')){reinMist(e);e.t4=rage?5:7.5;return}
+  if(e.t4<=0&&(B.near||G.m.kind!=='dun')){tbLog(e,7);reinMist(e);e.t4=rage?5:7.5;return}
   if(e.t4<=0){const r=G.m.exitR;for(let k=0;k<20;k++){const x=(ri(Math.random,r.x+1,r.x+r.w-2)+.5)*TS,y=(ri(Math.random,r.y+1,r.y+r.h-2)+.5)*TS;if(G.players.every(p=>Math.hypot(p.x-x,p.y-y)>3*TS)&&!hits(x,y,e.r*.75)){fx(12,e.x,e.y,30);e.x=e.rx=x;e.y=e.ry=y;fx(12,x,y,30);break}}e.t4=rage?6:8.5}}
 function updProjs(dt){
   for(const p of G.projs){p.life-=dt;if(p.life<=0)continue;p.x+=p.vx*dt;p.y+=p.vy*dt;
@@ -346,7 +346,7 @@ function updProjs(dt){
       if(p.boom&&!p.back&&p.life<.5){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy}
       if(p.pierce){if(ow)for(const e of G.enemies){if(e.hp<=0||p.hit.has(e.id))continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){p.hit.add(e.id);pDmg(p.pi,e,p.mult||1,{kx:p.vx*.2,ky:p.vy*.2})}}continue}
       for(const e of G.enemies){if(e.hp<=0)continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){if(!ow){p.life=0;break}pDmg(p.pi,e,p.mult||1,{kx:p.vx*.25,ky:p.vy*.25});p.life=0;if(p.splash){p.hitIds=new Set([e.id]);explode(p)}break}}}
-    else{for(let i=0;i<G.players.length;i++){const q=G.players[i];if(q.down||pInv(i))continue;if(Math.hypot(q.x-p.x,q.y-p.y)<11+p.r){hurt(q,p.dmg);p.life=0;break}}}}
+    else{for(let i=0;i<G.players.length;i++){const q=G.players[i];if(q.down||pInv(i))continue;if(Math.hypot(q.x-p.x,q.y-p.y)<11+p.r){const h0=q.hp;hurt(q,p.dmg);if(p.src){const it=G.cb&&G.cb.lg.find(x=>x.id===p.src.id);if(it){it.d+=Math.round(Math.max(0,h0-q.hp));if(it.pi<0)it.pi=i}}p.life=0;break}}}}
   G.projs=G.projs.filter(p=>p.life>0)}
 function updDrops(dt){
   for(const d of G.drops){d.t+=dt;if(d.vx||d.vy){moveBody(d,d.vx*dt,d.vy*dt,4);const k=Math.pow(.01,dt);d.vx*=k;d.vy*=k;if(Math.abs(d.vx)+Math.abs(d.vy)<4)d.vx=d.vy=0}
@@ -417,18 +417,18 @@ function savePos(){if(!G||!G.m)return;let px=null;if(G.m.kind==='world')px={x:L.
 function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)return;saveT=now;if(hero){if(G&&G.m)savePos();Store.save(hero)}}
 
 /* ================= Contrôle local ================= */
-const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,false,false,false],potQ=false,actQ=false;
+const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,false,false,false],potQ=false,actQ=false,atkQ=false;
 const touch={on:false,jx:0,jy:0,atk:false,aimOn:false,aimAng:0,aimLen:0,relAim:false,aimSlot:null};
 function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
-function aimPoint(){const t=!touch.aimOn&&tbTarget();if(t)return{x:t.rx??t.x,y:t.ry??t.y};if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
+function aimPoint(){const t=!touch.aimOn&&tbAimAt();if(t)return{x:t.rx??t.x,y:t.ry??t.y};if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
   if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
-  if(!tbCanAct()){toast(tbWhy(),'tb');return}
+  const cost=tbCost(id);if(!tbCanAct(cost)){toast(tbWhy(cost),'tb');return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
-  {const t=tbTarget();if(t&&!touch.aimOn)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // compétence lancée sur la cible touchée
-  tbUse('ac');L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
+  {const t=tbAimAt();if(t)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // compétence lancée vers la cible
+  tbUse('ac',cost);L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
 function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!touch.aimOn?L.face:L.aim;
   switch(id){
     case'charge':L.dashT=.22;L.dvx=Math.cos(L.aim)*850;L.dvy=Math.sin(L.aim)*850;L.ivT=.3;Snd.play('dash');break;
@@ -455,13 +455,7 @@ function updateLocal(dt){
   if(keys.has('KeyA')||keys.has('ArrowLeft'))mx-=1;if(keys.has('KeyD')||keys.has('ArrowRight'))mx+=1;if(keys.has('KeyW')||keys.has('ArrowUp'))my-=1;if(keys.has('KeyS')||keys.has('ArrowDown'))my+=1;
   if(touch.jx||touch.jy){mx=touch.jx;my=touch.jy}
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
-  const down=!me||me.down;if(down){mx=my=0;L.tbGo=0}
-  // ennemi touché à l'écran : on s'en approche puis on le frappe (un geste du joystick annule)
-  let goAtk=false;if(ml>.2)L.tbGo=0;const ge=L.tbGo&&G.enemies.find(e=>e.id===L.tbGo&&e.hp>0);if(L.tbGo&&!ge)L.tbGo=0;
-  if(ge){const ex=ge.rx??ge.x,ey=ge.ry??ge.y,d=Math.hypot(ex-L.x,ey-L.y),rng=tbReach(ge);L.tbGoT=(L.tbGoT||0)+dt;
-    if(d<=rng&&los(L.x,L.y,ex,ey)){goAtk=true;L.tbGo=0;L.aim=Math.atan2(ey-L.y,ex-L.x)}
-    else if(tbMe()&&L.tbMv<=.5||L.tbGoT>4){toast(tbMe()?'Trop loin : rapproche-toi davantage au prochain tour, ou utilise une compétence.':'Impossible de l’atteindre.','tbfar');L.tbGo=0}
-    else{mx=(ex-L.x)/d;my=(ey-L.y)/d;ml=1}}
+  const down=!me||me.down;if(down){mx=my=0}
   // au combat : on ne bouge que pendant son tour, et de tbMv pixels au plus
   if(tbMe()&&(G.cb.ph!=='h'||L.tbEnd||L.tbMv<=.5)){if(ml>.2&&G.cb.ph==='h'&&!L.tbEnd&&!down)toast('Plus de déplacement ce tour. Agis ou touche « Fin du tour ».','tbmv');mx=my=0;ml=0}
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
@@ -470,16 +464,19 @@ function updateLocal(dt){
   const useMouse=!touch.on&&performance.now()-mouse.t<2500;
   if(touch.aimOn)L.aim=touch.aimAng;
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
-  else{const t=tbTarget(),n=t?{x:t.rx??t.x,y:t.ry??t.y}:nearestEnemy(330);L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
-  if(goAtk&&ge)L.aim=Math.atan2((ge.ry??ge.y)-L.y,(ge.rx??ge.x)-L.x);
+  else{const t=tbAimAt(),n=t?{x:t.rx??t.x,y:t.ry??t.y}:null;L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
+  {const t=tbTarget();if(t&&!touch.aimOn)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // cible choisie : on la vise, souris comprise
   // découverte des lieux et région
   L.wpT-=dt;if(L.wpT<=0&&G.m&&G.m.kind==='world'){L.wpT=.5;const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS);
     for(const k in WAYPOINTS){if(hero.wp.includes(k))continue;const w=WAYPOINTS[k];if((w.pt[0]-tx)**2+(w.pt[1]-ty)**2<64){hero.wp.push(k);toast('Lieu découvert : '+w.nom+'. Voyage rapide possible depuis la carte.');questEvent('wp');doSave(true)}}
     const rg=townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
   if(down){skQ=[false,false,false,false];potQ=false;actQ=false;return}
-  const atk=mouse.down||keys.has('KeyJ')||touch.atk||goAtk;
-  if(atk&&tbMe()&&!tbCanAct()&&!tbFoe())toast(tbWhy(),'tb');
-  if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)&&tbCanAct()){tbUse('ac');L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
+  // au combat, une attaque par appui (1 point d'action) ; hors combat, on frappe tant qu'on appuie
+  const held=mouse.down||keys.has('KeyJ')||touch.atk,press=held&&!L.atkHeld||atkQ;L.atkHeld=held;atkQ=false;
+  let atk=tbMe()?press:held||press;
+  if(atk&&tbMe()){const t=tbAimAt();if(!tbCanAct()){if(!tbFoe())toast(tbWhy(),'tb');atk=false}
+    else if(!t||!inReach('atk',t)){toast(t?'Trop loin : rapproche-toi de '+enemyName(t)+'.':'Aucun ennemi à portée.','tbfar');atk=false}}
+  if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)&&tbCanAct()){tbUse('ac',1);L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
     L.swing=SWD;L.swingA=L.aim;Snd.play(hero.cls==='mage'||hero.cls==='soigneur'?'fire':'swing');if(mode!=='guest')hostAttack(0,L.aim,buffed)}
   for(let s=0;s<4;s++)if(skQ[s]){skQ[s]=false;trySkill(s)}
   if(touch.relAim){touch.relAim=false;touch.aimOn=false}
@@ -497,7 +494,7 @@ function interactLabel(it){if(!it)return'';const a=it.act;
   if(a.startsWith('house:'))return'Entrer : '+it.label;if(a==='exit')return'Sortir';if(a==='leave')return'Quitter le donjon';if(a.startsWith('shop:'))return it.label;
   if(a==='arena')return G.q>=3?'Défier Abhorash':'Examiner les pierres';if(a.startsWith('talk:')||a.startsWith('closed:'))return'Parler : '+it.label;return it.label}
 function doInteract(it){const a=it.act;
-  if(a==='revive'){requestAct('revive');tbUse('ac');return}
+  if(a==='revive'){requestAct('revive');tbUse('ac',1);return}
   if(a.startsWith('talk:')){talkTo(a.slice(5));return}
   if(a.startsWith('closed:')){showDialog('garde',it.label,a.slice(7));return}
   if(a.startsWith('shop:')){openTrade(a.slice(5),it.town);return}

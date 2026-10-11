@@ -104,7 +104,30 @@ function buildSkillUI(){if(!ST)return;const ks=ST.ks,cc=CLS[hero.cls].col;$('#bA
   const bar=$('#skillbar');bar.textContent='';const keysL=['1','2','3','R'];
   ks.forEach((id,i)=>{const s=SK[id];if(!s)return;const d=el('div','sk'+(s.t==='u'?' ult':''));d.id='sk'+i;const ic=el('i','ic');ic.innerHTML=iconSvg(id,s.t==='u'?'#f0c95a':cc);d.append(el('em',null,keysL[i]),ic,el('span',null,s.court));d.title=s.nom+' : '+s.desc;d.onclick=()=>{skQ[i]=true};bar.append(d)});
   if(ST.pa){const s=SK[ST.pa],d=el('div','sk pas');const ic=el('i','ic');ic.innerHTML=iconSvg(ST.pa,'#9ff08a');d.append(el('em',null,'P'),ic,el('span',null,s.court));d.title='Passif · '+s.nom+' : '+s.desc;bar.append(d)}
-  const pd=el('div','sk');pd.id='skPot';pd.append(el('em',null,'E'),el('span',null,'Potion'));pd.onclick=()=>{potQ=true};bar.append(pd)}
+  const pd=el('div','sk');pd.id='skPot';pd.append(el('em',null,'E'),el('span',null,'Potion'));pd.onclick=()=>{potQ=true};bar.append(pd);buildBar()}
+/* barre de combat : attaque, 3 compétences, ultime, potion ; les compétences partent vers la cible (ou l'ennemi le plus proche) */
+function buildBar(){const bar=$('#hbar');if(!bar)return;bar.textContent='';const ks=ST.ks,cc=CLS[hero.cls].col;
+  const mk=(key,label,col,cls)=>{const b=el('button','hb'+(cls?' '+cls:''));b.type='button';b.dataset.k=key;b.append(el('i','ic'),el('b',null,label),el('small',null,''),el('span','cdn',''));if(col)b.style.setProperty('--c',col);bar.append(b);return b},ic=b=>b.querySelector('.ic');
+  {const b=mk('atk',CLS[hero.cls].atk,'#c8483c');ic(b).innerHTML=iconSvg('atk_'+hero.cls,'#fff6e8');b.setAttribute('aria-label','Attaque : '+CLS[hero.cls].atk)}
+  for(let i=0;i<3;i++){const S=SK[ks[i]];const b=S?mk('s'+i,S.court,cc):mk('s'+i,'—',null,'lock');if(S)ic(b).innerHTML=iconSvg(ks[i],'#fff6e8');b.setAttribute('aria-label',S?S.nom:'Compétence à apprendre')}
+  {const S=SK[ks[3]];const b=S?mk('ult',S.court,'#f0c95a','ult'):mk('ult','Ultime',null,'ult lock');if(S)ic(b).innerHTML=iconSvg(ks[3],'#f0c95a');b.setAttribute('aria-label',S?'Ultime : '+S.nom:'Ultime à apprendre')}
+  {const b=mk('pot','Potion','#8fb357');ic(b).innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v2h-1v4.2c3 1 5 3.7 5 6.8a7 7 0 01-14 0c0-3.1 2-5.8 5-6.8V4H9z" fill="#c8e8a0"/></svg>';b.setAttribute('aria-label','Potion')}
+  for(const b of bar.children){const k=b.dataset.k;
+    b.addEventListener('pointerdown',e=>{Snd.init();touch.on=true;b.classList.add('on');try{b.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();
+      if(k==='atk'){if(tbMe())atkQ=true;else touch.atk=true}else if(k==='pot')potQ=true;else skQ[k==='ult'?3:+k.slice(1)]=true});
+    const up=()=>{b.classList.remove('on');if(k==='atk')touch.atk=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)}}
+/* état de chaque bouton : coût, recharge (en tours au combat), portée sur la cible */
+function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
+  for(const b of bar.children){const k=b.dataset.k;let sub='',hot=false,far=false,off=false,cd=0,cdn='';
+    if(k==='atk'){const r=t?inReach('atk',t):false;sub=inTb?'1 action':'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
+    else if(k==='pot'){sub='× '+hero.pot;off=hero.pot<=0||inTb&&!tbCanPot()}
+    else{const i=k==='ult'?3:+k.slice(1),id=ks[i],S=SK[id];if(!S)continue;
+      if(S.t==='u'){const rd=L.ult>=100;b.classList.toggle('ready',rd);sub=rd?(inTb?'2 actions':'prête'):Math.floor(L.ult)+' %';cd=rd?0:1-L.ult/100;off=inTb&&!tbCanAct(2)}
+      else if(L.cd[i]>0){cd=clamp(L.cd[i]/(S.cd*ST.cdm),0,1);cdn=inTb?String(tbTurns(L.cd[i])):String(Math.ceil(L.cd[i]));sub=inTb?'tour'+(tbTurns(L.cd[i])>1?'s':''):'s'}
+      else if(L.mp<S.mp){sub='mana';off=true}
+      else{sub=S.mp+' mana';off=inTb&&!tbCanAct(1)}
+      if(!cdn&&(S.t!=='u'||L.ult>=100)){const r=inReach(id,t);if(r===false){far=true;sub='trop loin'}else if(r===true)hot=true}}
+    b.classList.toggle('hot',hot&&!off);b.classList.toggle('far',far);b.classList.toggle('off',off);setTxt(b.querySelector('small'),sub);setTxt(b.querySelector('.cdn'),cdn);setCss(b,'--cd',cd.toFixed(3))}}
 /* pastille heure + météo sous la mini-carte */
 function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out=G&&G.m&&G.m.kind==='world';t.hidden=!out;if(!out)return;
   const nt=Sky.isNight(),key=Sky.label()+Sky.weatherName()+Sky.moon+(Sky.hour<5.5||Sky.hour>=21)+nt;if(t.dataset.k!==key){t.dataset.k=key;t.innerHTML=Sky.icon()+'<span>'+Sky.label()+'</span>'+(nt?'<span class="x4">×4</span>':'');t.classList.toggle('danger',nt)}
@@ -144,7 +167,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   ks.forEach((id,i)=>{const S=SK[id],d=$('#sk'+i);if(!S||!d)return;if(S.t==='u'){d.classList.toggle('ready',L.ult>=100);setCss(d,'--cd',(1-L.ult/100).toFixed(3))}else setCss(d,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3))});
   {const d=$('#skPot');if(d)setTxt(d.querySelector('span'),'Potion '+hero.pot)}
   setTxt(hq('#potN'),hero.pot);hq('#bPot').classList.toggle('empty',hero.pot<=0);
-  tbHud();
+  tbHud();barHud();
   const it=findInteract();const lab=interactLabel(it);const ba=hq('#bAct');setHid(ba,!it);if(it)setTxt(ba,lab.length>24?lab.split(' : ')[0]:lab);const ah=hq('#actHint');setHid(ah,!it);if(it)setTxt(ah,'F · '+lab)}
 
 /* ================= Talents et compétences ================= */
@@ -251,7 +274,7 @@ addEventListener('keydown',e=>{if(!inGame())return;if(e.target&&e.target.tagName
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();mouse.down=false;touch.atk=false});
 cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();touch.on=false});
-cv.addEventListener('pointerdown',e=>{Snd.init();const r=cv.getBoundingClientRect();if(e.button===0&&tapEnemy(e.clientX-r.left,e.clientY-r.top))return;if(e.pointerType!=='mouse')return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
+cv.addEventListener('pointerdown',e=>{Snd.init();const r=cv.getBoundingClientRect();if(e.button===0&&tapEnemy(e.clientX-r.left,e.clientY-r.top,e.pointerType!=='mouse'))return;if(e.pointerType!=='mouse'||tbMe())return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0)mouse.down=false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 (function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0;
@@ -261,22 +284,7 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
   zone.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e.clientX,e.clientY)});
   const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
-/* Visée au doigt : on appuie sur l'attaque ou une compétence et on glisse pour viser.
-   Attaque : on frappe en continu vers la direction tenue. Compétence : on vise en glissant, le sort part au relâcher
-   (un simple appui sans glisser lance comme avant, vers l'ennemi le plus proche). */
-const AIM_DEAD=16;
-function aimBtn(elx,slot){let id=null,cx=0,cy=0,moved=false;
-  elx.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();id=e.pointerId;try{elx.setPointerCapture(id)}catch(_){}const r=elx.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;moved=false;
-    elx.classList.add('on');touch.on=true;touch.aimSlot=slot;if(slot<0)touch.atk=true;e.preventDefault()});
-  elx.addEventListener('pointermove',e=>{if(e.pointerId!==id)return;const dx=e.clientX-cx,dy=e.clientY-cy,len=Math.hypot(dx,dy);
-    if(len>AIM_DEAD){moved=true;touch.aimOn=true;touch.aimAng=Math.atan2(dy,dx);touch.aimLen=len}else if(moved){touch.aimOn=false}});
-  const end=(cast)=>e=>{if(e.pointerId!==id)return;id=null;elx.classList.remove('on');
-    if(slot<0){touch.atk=false;touch.aimOn=false}
-    else if(cast){skQ[slot]=true;if(touch.aimOn)touch.relAim=true}else touch.aimOn=false;
-    touch.aimSlot=null};
-  elx.addEventListener('pointerup',end(true));elx.addEventListener('pointercancel',end(false))}
-aimBtn($('#bAtk'),-1);aimBtn($('#bS1'),0);aimBtn($('#bS2'),1);aimBtn($('#bS3'),2);aimBtn($('#bUlt'),3);
-holdBtn($('#bPot'),()=>potQ=true);holdBtn($('#bAct'),()=>actQ=true);
+holdBtn($('#bAct'),()=>actQ=true);
 $('#bEnd').addEventListener('click',()=>{Snd.init();L&&L.tbEnd?cancelEnd():endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};

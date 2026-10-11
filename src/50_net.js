@@ -88,16 +88,16 @@ function onState(s,first){
   if(!s||typeof s!=='object'||typeof s.z!=='string')return;
   // l'état vient de l'autre joueur : on borne la taille des listes et on force les nombres
   const A=(v,n)=>Array.isArray(v)?v.slice(0,n):[],N=v=>{v=+v;return isFinite(v)?v:0};
-  s.p=A(s.p,2).map(a=>A(a,11).map(N));s.nm=A(s.nm,2);s.e=A(s.e,60).map(a=>A(a,7).map(N));s.j=A(s.j,60).map(a=>A(a,4).map(N));s.d=A(s.d,40).map(a=>A(a,5).map(N));
+  s.p=A(s.p,2).map(a=>A(a,11).map(N));s.nm=A(s.nm,2);s.e=A(s.e,60).map(a=>A(a,8).map(N));s.j=A(s.j,60).map(a=>A(a,4).map(N));s.d=A(s.d,40).map(a=>A(a,5).map(N));
   s.zo=A(s.zo,20).map(a=>A(a,4).map(N));s.fi=A(s.fi,20).map(a=>A(a,3).map(N));s.cr=A(s.cr,40).map(a=>A(a,2).map(N));s.x=A(s.x,30).map(a=>A(a,6).map(N));s.m=A(s.m,5).map(a=>A(a,2));
   s.tq=A(s.tq,40).map(a=>A(a,4).map(N));s.o=A(s.o,200);s.pl=A(s.pl,20);s.gp=A(s.gp,10).map(N);s.g=A(s.g,2).map(N);s.pt=A(s.pt,2).map(N);s.gm=A(s.gm,2).map(N);s.sh=A(s.sh,2).map(N);
   if(s.ep!==G.ep){Log.ev('à deux','changement de zone',s.z,'ep',s.ep);G.ep=s.ep;G.zd=s.z;G.m=zoneFromDesc(s.z);G.emap=new Map();G.opened=new Set();
     if(s.p&&s.p[1]){L.x=s.p[1][0];L.y=s.p[1][1]}else{L.x=G.m.start.x+36;L.y=G.m.start.y}L.dashT=0}
-  G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;G.cb=tbUnpack(s.cb);
+  G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;
   const nm=s.nm||[];
   G.players=(s.p||[]).map((a,i)=>{const old=G.players[i]||{};return{name:clean(nm[i])||('Joueur '+(i+1)),cls:CLS_IDS[a[6]]||'guerrier',x:a[0],y:a[1],rx:old.rx!=null?old.rx:a[0],ry:old.ry!=null?old.ry:a[1],hp:a[2],mhp:a[3]||1,down:!!a[4],rev:(a[5]||0)/40,drT:a[7]&1?1:0,shield:a[7]&2?1:0,stealthT:a[7]&4?1:0,aim:(a[8]||0)/10,sh:a[9]||0,lk:a[10]|0}});
-  const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);em.set(a[0],o)}
-  G.emap=em;G.enemies=[...em.values()];
+  const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);o.st=enemyStateUnpack(a[7]);em.set(a[0],o)}
+  G.emap=em;G.enemies=[...em.values()];G.cb=tbUnpack(s.cb);
   G.projs=(s.j||[]).map(a=>({x:a[0],y:a[1],k:a[2],ang:(a[3]||0)/10}));
   G.drops=(s.d||[]).map(a=>({id:a[0],k:a[1],x:a[2],y:a[3],r:a[4]|0,t:1}));
   G.zones=(s.zo||[]).map(a=>({x:a[0],y:a[1],r:a[2],smoke:a[3]===1?1:0,slow:a[3]===2?1:0}));
@@ -116,7 +116,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
   const s={z:G.zd,ep:G.ep,t:r(G.time*10),q:G.q,n:G.night,lv:G.lv,
     p:G.players.map(p=>[r(p.x),r(p.y),Math.ceil(p.hp),p.mhp,p.down?1:0,r(p.rev*40),CLS_IDS.indexOf(p.cls),(p.drT>0?1:0)|(p.shield>0?2:0)|(p.stealthT>0?4:0),Math.round((p.aim||0)*10),Math.round(p.shield||0),p.lk|0]),
     nm:G.players.map(p=>p.name),
-    e:G.enemies.filter(e=>e.hp>0&&near(e.x,e.y)).slice(0,34).map(e=>[e.id,ETYPES.indexOf(e.type),r(e.x),r(e.y),Math.max(1,Math.ceil(e.hp/e.mhp*100)),(e.frz>0?1:0)|(e.tele>0?2:0)|(e.flash>0?4:0)|(e.elite?8:0)|(e.chg>0?16:0)|(e.mistT>0?32:0)|(e.burn>0?64:0)|(e.act?128:0),e.bv??-1]),
+    e:G.enemies.filter(e=>e.hp>0&&near(e.x,e.y)).slice(0,34).map(e=>[e.id,ETYPES.indexOf(e.type),r(e.x),r(e.y),Math.max(1,Math.ceil(e.hp/e.mhp*100)),(e.frz>0?1:0)|(e.tele>0?2:0)|(e.flash>0?4:0)|(e.elite?8:0)|(e.chg>0?16:0)|(e.mistT>0?32:0)|(e.burn>0?64:0)|(e.act?128:0),e.bv??-1,enemyStatePack(e)]),
     j:G.projs.slice(0,34).map(p=>[r(p.x),r(p.y),p.k,r(Math.atan2(p.vy,p.vx)*10)]),
     d:G.drops.filter(d=>near(d.x,d.y)).slice(0,26).map(d=>[d.id,d.k,r(d.x),r(d.y),d.r]),
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),

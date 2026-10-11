@@ -158,7 +158,7 @@ with sync_playwright() as pw:
               for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}tbUpdate(0)}})()""")
             n = go(pg, "hero.tr.length")
             for sl in range(4):
-                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ac=[false,false];G.cb.rd=[false,false]}}L.tbAct=false;L.tbEnd=false;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : un nouveau tour par compétence
+                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ap=[9,9];G.cb.rd=[false,false]}}L.tbSpent=0;L.tbEnd=false;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : assez de points pour chaque compétence
             pg.wait_for_timeout(300)
             ok = go(pg, "ST.ks.every((id,i)=>!id||L.sk[i]>=1)&&!!ST.ks[3]&&!!ST.pa&&ST.ks.filter(Boolean).length===3")
             check(f'{cls} branche {b + 1} : 10 crans, passif, 2 compétences et ultime lancés', ok and n == 10, go(pg, "[hero.tr.join(' '),ST.ks.join(','),ST.pa,L.sk.join(',')].join(' | ')"))
@@ -179,7 +179,7 @@ with sync_playwright() as pw:
     pg.screenshot(path=f'{OUT}/a7_arbre.png')
     pg.click('#bTalClose'); pg.wait_for_timeout(100)
     go(pg, "(()=>{hero.cls='voleur';hero.lvl=LVL_MAX;hero.tr=['0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9'];hero.eq={arme:starter('voleur','arme'),armure:starter('voleur','armure'),talisman:null};refreshStats();G.players[0].cls='voleur';G.players[0].st=ST;buildSkillUI()})()")
-    rs = go(pg, "['#bAtk','#bS1','#bS2','#bS3','#bUlt','#bPot'].map(s=>{const e=document.querySelector(s);e.hidden=false;const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
+    rs = go(pg, "[...document.querySelectorAll('#hbar .hb')].map(e=>{const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
     ov = any(not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]) for i, a in enumerate(rs) for b in rs[i + 1:])
     check('Portrait : boutons sans chevauchement', not ov, rs)
     go(pg, "buildSkillUI();L.mp=ST.mmp;L.ult=60;L.cd=[0,0,0,0]"); clearUI(pg); pg.wait_for_timeout(250); pg.screenshot(path=f'{OUT}/a8_boutons.png')
@@ -329,7 +329,7 @@ with sync_playwright() as pw:
     # ================= Téléphone à l'horizontale =================
     ctx, pg = page(br, w=844, h=390, tag='paysage'); pg.goto(URL); pg.wait_for_timeout(600); pg.click('#bSolo'); pg.wait_for_timeout(900)
     go(pg, "(()=>{hero.lvl=LVL_MAX;hero.tr=['1.0','1.1','1.2','1.3','1.4','1.5','1.6','1.7','1.8','1.9'];refreshStats();buildSkillUI();['bS1','bS2','bS3','bUlt'].forEach(i=>$('#'+i).hidden=false)})()"); clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/d1_paysage.png')
-    rs = go(pg, "['#bAtk','#bS1','#bS2','#bS3','#bUlt','#bPot'].map(s=>{const r=document.querySelector(s).getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
+    rs = go(pg, "[...document.querySelectorAll('#hbar .hb')].map(e=>{const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
     ov = any(not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]) for i, a in enumerate(rs) for b in rs[i + 1:])
     check('Paysage : boutons sans chevauchement', not ov, rs)
     pg.click('#mini'); pg.wait_for_timeout(250)
@@ -364,8 +364,9 @@ with sync_playwright() as pw:
         pg.wait_for_timeout(200)
     check('Tour par tour : puis le tour des héros, bandeau et bouton Fin du tour', go(pg, "G.cb.ph==='h'&&G.cb.r===2") and pg.is_visible('#tbInfo') and pg.is_visible('#bEnd'))
     hp = go(pg, "G.enemies.map(e=>e.hp).reduce((a,b)=>a+b,0)")
-    ac0 = go(pg, "L.ac"); go(pg, "touch.atk=true"); pg.wait_for_timeout(1200); go(pg, "touch.atk=false")
-    check('Tour par tour : une seule action par tour', go(pg, "L.ac") - ac0 == 1 and go(pg, "G.cb.ac[0]"), go(pg, "L.ac"))
+    ac0 = go(pg, "L.ac"); hb = pg.locator('#hbar .hb[data-k=atk]')
+    for _ in range(3): hb.dispatch_event('pointerdown'); pg.wait_for_timeout(500); hb.dispatch_event('pointerup')
+    check('Tour par tour : 2 points d’action, une attaque par appui', go(pg, "L.ac") - ac0 <= 2 and go(pg, "!G.cb||G.cb.ap[0]<2"), [go(pg, "L.ac") - ac0, go(pg, "G.cb&&G.cb.ap[0]")])
     x0 = go(pg, "L.x"); go(pg, "touch.jx=-1"); pg.wait_for_timeout(3000); go(pg, "touch.jx=0")
     mv = (x0 - go(pg, "L.x")) / 32; left = go(pg, "L.tbMv") / 32
     check('Tour par tour : déplacement limité à 5 cases', 0 < mv <= 5.1 and mv + left <= 5.15, [round(mv, 2), round(left, 2)])
@@ -379,15 +380,21 @@ with sync_playwright() as pw:
     go(pg, "G.enemies=[];(()=>{const q=freeNear(L.x+5*TS,L.y,0,TS);spawnEnemy('orc',q.x,q.y,false,false,undefined,1)})()"); pg.wait_for_timeout(300)
     sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
     pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
-    check('Tour par tour : toucher un ennemi le cible et on marche vers lui', go(pg, "L.tbT===G.enemies[0].id"))
+    check('Tour par tour : toucher un ennemi le choisit pour cible (fiche affichée)', go(pg, "L.tbT===G.enemies[0].id") and pg.is_visible('#tgtBox'))
+    go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-30;L.y=e.y})()")  # on entre dans sa zone : les ennemis jouent, puis c'est à nous
     for _ in range(30):
-        if go(pg, "G.cb&&G.cb.ph==='h'&&!G.cb.ac[0]"): break
+        if go(pg, "G.cb&&G.cb.ph==='h'&&G.cb.ap[0]===2"): break
         pg.wait_for_timeout(200)
     go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-30;L.y=e.y})()"); pg.wait_for_timeout(100)
     sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
-    h0 = go(pg, "G.enemies[0].hp"); pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(700)
+    h0 = go(pg, "G.enemies[0].hp"); pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(300); h0b = go(pg, "G.enemies[0].hp")
+    check('Tour par tour : toucher la cible ne frappe pas', h0b == h0 and go(pg, "G.cb.ap[0]") == 2)
+    pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
+    check('Tour par tour : la cible à portée allume l’attaque dans la barre', go(pg, "document.querySelector('#hbar .hb[data-k=atk]').classList.contains('hot')"))
+    pg.screenshot(path=f'{OUT}/f2_cible.png')
+    hb.dispatch_event('pointerdown'); pg.wait_for_timeout(600); hb.dispatch_event('pointerup')
     h1 = go(pg, "G.enemies[0]?G.enemies[0].hp:0")
-    check('Tour par tour : toucher l’ennemi au contact le frappe', h1 < h0 and go(pg, "!G.cb||G.cb.ac[0]"), [h0, h1])
+    check('Tour par tour : l’attaque de la barre frappe la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===1"), [h0, h1])
     go(pg, "G.enemies.forEach(e=>killEnemy(e))"); pg.wait_for_timeout(400)
     check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo'))
     check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])
