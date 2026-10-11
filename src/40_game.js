@@ -89,7 +89,7 @@ function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0||e.ret)return;   // qu
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
 function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);const held=e.frz>0;let d=r.d*mult*(p.criT>0?1.25:1)*(p.rageT>0?1.5:1)*(p.banT>0?1.3:1)*(p.blessT>0?1.25:1)*(held&&st.pa==='fracas'?2:1)*(held&&st.pa==='oppor'?1.3:1);
-  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(G.cb)d*=TB_DMG;else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);
+  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(tbIn(pi))d*=TB_DMG;else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);
   if(!o.noEnch&&e.hp>0){if(st.pa==='froid')e.slowT=1.5;else if(st.pa==='embras'||st.pa==='saignee'){e.burn=3;e.burnD=Math.max(e.burnD||0,st.dmg*(st.pa==='saignee'?.3:.25));e.burnP=pi}else if(st.pa==='chatiment')e.markT=4}
   if(!o.noEnch){if(st.we==='lath'&&Math.random()<.12)healP(p,p.mhp*.04,true);if(st.we==='feu'){e.burn=3;e.burnD=st.dmg*.35;e.burnP=pi}
     if(st.we==='talos'&&Math.random()<.15){let n=0;for(const o2 of G.enemies){if(o2===e||o2.hp<=0||n>=2)continue;if(Math.hypot(o2.x-e.x,o2.y-e.y)<140){n++;fx(40,e.x,e.y,Math.round(o2.x)*10000+Math.round(o2.y));hitEnemy(o2,d*.5,false)}}}}
@@ -178,7 +178,7 @@ function explode(pr){for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.
 function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;const pr=G.guestPres,inp=pr.i;
   if(pr.st)applyGuestStats(gp,pr.st);gp.lvl=clamp(pr.l|0,1,99);
   if(!inp||!Array.isArray(inp.p))return;if(inp.z!==G.ep)return; // positions d'une autre zone : ignorées
-  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!tbFoe()){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
+  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!(tbIn(1)&&G.cb.ph==='e')){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
   gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
   if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0}
@@ -187,7 +187,7 @@ function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;con
   const tp=Array.isArray(inp.tp)?{x:fin(inp.tp[0],gp.x,G.m.W*TS),y:fin(inp.tp[1],gp.y,G.m.H*TS)}:null;
   const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s]&&tbGate(1,'ac'))hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
   n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;if(tbGate(1,'po'))usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
-  if(G.cb&&G.cb.ph==='h'&&(inp.et|0)===G.cb.r)G.cb.rd[1]=true;
+  if(G.cb&&G.cb.ph==='h'&&G.cb.in[1]&&!gp.down)G.cb.rd[1]=(inp.et|0)===G.cb.r;   // fin du tour (ou annulation) de l'invité
   if(gp.lu<(inp.lu|0)){gp.lu=inp.lu|0;if(!gp.down)gp.hp=gp.mhp}
   if(gp.it<(inp.it|0)){gp.it=inp.it|0;if(typeof inp.ia==='string')hostRequest(inp.ia.slice(0,80),1)}}
 function hostUpdate(dt){
@@ -196,9 +196,9 @@ function hostUpdate(dt){
   applyGuestInput();tbUpdate(dt);
   // au tour par tour, les durées d'effet avancent à la fin de chaque tour (tbRoundEnd), pas en continu
   const sdt=G.cb?0:dt;
-  for(const p of G.players){p.spCd-=dt;p.ivT-=dt;pStatus(p,sdt);
+  for(const p of G.players){p.spCd-=dt;p.ivT-=dt;pStatus(p,tbIn(G.players.indexOf(p))?0:dt);
     const mvv=p.mv||[0,0];p.idleT=(Math.abs(mvv[0])+Math.abs(mvv[1])>.1||p.down)?0:(p.idleT||0)+dt;if(p.idleT>12){p.idleT=-20;sayP(G.players.indexOf(p),'idle')}
-    if(p.stormT>0&&!p.down&&!tbFoe()){p.stormT-=dt;p.stormCd-=dt;if(p.stormCd<=0){let b=null,bd=330;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
+    if(p.stormT>0&&!p.down&&!(G.cb&&G.cb.ph==='e'&&tbIn(G.players.indexOf(p)))){p.stormT-=dt;p.stormCd-=dt;if(p.stormCd<=0){let b=null,bd=330;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
       if(b){const a=Math.atan2(b.y-p.y,b.x-p.x);G.projs.push({x:p.x,y:p.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:7,from:'p',k:1,life:1,pi:G.players.indexOf(p),splash:36})}p.stormCd=.22}}}
   // relever
   if(!G.cb)for(const p of G.players){if(!p.down)continue;let rate=0;for(const q of G.players){if(q===p||q.down)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<48)rate=Math.max(rate,q.cls==='soigneur'?3:1)}
@@ -279,10 +279,11 @@ function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o
    pendant leur tour, chacun bouge et attaque une fois (e.tbA), un ennemi étourdi passe son tour (e.tbSkip). */
 function updEnemies(dt){
   const ph=G.cb?G.cb.ph:'';
-  if(ph==='h'){for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}}
+  const all=G.players.filter(p=>!p.down&&!(p.stealthT>0)),alive=ph?all.filter(p=>tbIn(G.players.indexOf(p))):all;   // au combat, les ennemis ne visent que les héros au combat
+  if(ph==='h'){for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
+      if(!e.act&&!e.ret&&e.blind<=0)for(const p of all){if(Math.hypot(p.x-e.x,p.y-e.y)<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,p.x,p.y)){e.act=true;e.tbA=false;sayE(e);alertChain(e);break}}}
     G.enemies=G.enemies.filter(e=>e.hp>0);return}
   const sdt=ph?0:dt,turn=ph==='e';
-  const alive=G.players.filter(p=>!p.down&&!(p.stealthT>0));
   for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=sdt;e.blind-=sdt;e.slowT-=sdt;e.markT-=sdt;if(e.mistT>0){e.mistT-=dt;continue}
     if(e.burn>0&&!ph){e.burn-=dt;e.hp-=e.burnD*dt;e.burnFx=(e.burnFx||0)-dt;if(e.burnFx<=0){e.burnFx=.5;fx(41,e.x,e.y-e.r,Math.round(e.burnD*.5))}if(e.hp<=0){killEnemy(e);continue}}
     if(e.ret){e.retT+=dt;const hx=e.hx-e.x,hy=e.hy-e.y,hd=Math.hypot(hx,hy);
@@ -291,6 +292,7 @@ function updEnemies(dt){
     let tp=null,td=1e9;if(e.taunt>0&&G.players[e.tauntP]&&!G.players[e.tauntP].down){tp=G.players[e.tauntP];td=Math.hypot(tp.x-e.x,tp.y-e.y)}
     else{for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
       for(const d of G.decoys){const dd=Math.hypot(d.x-e.x,d.y-e.y);if(dd<7*TS&&dd<td+3*TS){td=dd;tp=d}}}
+    if(!e.act&&ph){tp=null;td=1e9;for(const p of all){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}}   // repérage : tous les héros
     if(!tp||e.blind>0)continue;
     if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;e.tbA=false;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
@@ -419,12 +421,13 @@ const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,fals
 const touch={on:false,jx:0,jy:0,atk:false,aimOn:false,aimAng:0,aimLen:0,relAim:false,aimSlot:null};
 function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
-function aimPoint(){if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
+function aimPoint(){const t=!touch.aimOn&&tbTarget();if(t)return{x:t.rx??t.x,y:t.ry??t.y};if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
   if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
   if(!tbCanAct()){toast(tbWhy(),'tb');return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
+  {const t=tbTarget();if(t&&!touch.aimOn)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // compétence lancée sur la cible touchée
   tbUse('ac');L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
 function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!touch.aimOn?L.face:L.aim;
   switch(id){
@@ -447,33 +450,40 @@ function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!tou
     default:Snd.play('fire')}}
 function updateLocal(dt){
   const me=myP();const C=CLS[hero.cls];
-  tbLocal();L.cdA-=dt;L.ivT-=dt;L.swing-=dt;tickLocal(G.cb?0:dt,false);
+  tbLocal();L.cdA-=dt;L.ivT-=dt;L.swing-=dt;tickLocal(tbMe()?0:dt,false);
   let mx=0,my=0;
   if(keys.has('KeyA')||keys.has('ArrowLeft'))mx-=1;if(keys.has('KeyD')||keys.has('ArrowRight'))mx+=1;if(keys.has('KeyW')||keys.has('ArrowUp'))my-=1;if(keys.has('KeyS')||keys.has('ArrowDown'))my+=1;
   if(touch.jx||touch.jy){mx=touch.jx;my=touch.jy}
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
-  const down=!me||me.down;if(down){mx=my=0}
+  const down=!me||me.down;if(down){mx=my=0;L.tbGo=0}
+  // ennemi touché à l'écran : on s'en approche puis on le frappe (un geste du joystick annule)
+  let goAtk=false;if(ml>.2)L.tbGo=0;const ge=L.tbGo&&G.enemies.find(e=>e.id===L.tbGo&&e.hp>0);if(L.tbGo&&!ge)L.tbGo=0;
+  if(ge){const ex=ge.rx??ge.x,ey=ge.ry??ge.y,d=Math.hypot(ex-L.x,ey-L.y),rng=tbReach(ge);L.tbGoT=(L.tbGoT||0)+dt;
+    if(d<=rng&&los(L.x,L.y,ex,ey)){goAtk=true;L.tbGo=0;L.aim=Math.atan2(ey-L.y,ex-L.x)}
+    else if(tbMe()&&L.tbMv<=.5||L.tbGoT>4){toast(tbMe()?'Trop loin : rapproche-toi davantage au prochain tour, ou utilise une compétence.':'Impossible de l’atteindre.','tbfar');L.tbGo=0}
+    else{mx=(ex-L.x)/d;my=(ey-L.y)/d;ml=1}}
   // au combat : on ne bouge que pendant son tour, et de tbMv pixels au plus
-  if(G.cb&&(G.cb.ph!=='h'||L.tbEnd||L.tbMv<=.5)){if(ml>.2&&G.cb.ph==='h'&&!L.tbEnd&&!down)toast('Plus de déplacement ce tour. Agis ou touche « Fin du tour ».','tbmv');mx=my=0;ml=0}
+  if(tbMe()&&(G.cb.ph!=='h'||L.tbEnd||L.tbMv<=.5)){if(ml>.2&&G.cb.ph==='h'&&!L.tbEnd&&!down)toast('Plus de déplacement ce tour. Agis ou touche « Fin du tour ».','tbmv');mx=my=0;ml=0}
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
   if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}
-  else if(ml>0){let sp=ST.spd*dt;if(G.cb)sp=Math.min(sp,L.tbMv);const ox=L.x,oy=L.y;moveBody(L,mx*sp,my*sp,10);if(G.cb)L.tbMv=Math.max(0,L.tbMv-Math.hypot(L.x-ox,L.y-oy))}
+  else if(ml>0){let sp=ST.spd*dt;if(tbMe())sp=Math.min(sp,L.tbMv);const ox=L.x,oy=L.y;moveBody(L,mx*sp,my*sp,10);if(tbMe())L.tbMv=Math.max(0,L.tbMv-Math.hypot(L.x-ox,L.y-oy))}
   const useMouse=!touch.on&&performance.now()-mouse.t<2500;
   if(touch.aimOn)L.aim=touch.aimAng;
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
-  else{const n=nearestEnemy(330);L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
+  else{const t=tbTarget(),n=t?{x:t.rx??t.x,y:t.ry??t.y}:nearestEnemy(330);L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
+  if(goAtk&&ge)L.aim=Math.atan2((ge.ry??ge.y)-L.y,(ge.rx??ge.x)-L.x);
   // découverte des lieux et région
   L.wpT-=dt;if(L.wpT<=0&&G.m&&G.m.kind==='world'){L.wpT=.5;const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS);
     for(const k in WAYPOINTS){if(hero.wp.includes(k))continue;const w=WAYPOINTS[k];if((w.pt[0]-tx)**2+(w.pt[1]-ty)**2<64){hero.wp.push(k);toast('Lieu découvert : '+w.nom+'. Voyage rapide possible depuis la carte.');questEvent('wp');doSave(true)}}
     const rg=townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
   if(down){skQ=[false,false,false,false];potQ=false;actQ=false;return}
-  const atk=mouse.down||keys.has('KeyJ')||touch.atk;
-  if(atk&&G.cb&&!tbCanAct()&&!tbFoe())toast(tbWhy(),'tb');
+  const atk=mouse.down||keys.has('KeyJ')||touch.atk||goAtk;
+  if(atk&&tbMe()&&!tbCanAct()&&!tbFoe())toast(tbWhy(),'tb');
   if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)&&tbCanAct()){tbUse('ac');L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
     L.swing=SWD;L.swingA=L.aim;Snd.play(hero.cls==='mage'||hero.cls==='soigneur'?'fire':'swing');if(mode!=='guest')hostAttack(0,L.aim,buffed)}
   for(let s=0;s<4;s++)if(skQ[s]){skQ[s]=false;trySkill(s)}
   if(touch.relAim){touch.relAim=false;touch.aimOn=false}
-  if(potQ){potQ=false;if(G.cb&&!tbCanPot())toast(tbFoe()?'Attends ton tour.':'Une potion par tour.','tb');else if(hero.pot>0&&me&&me.hp<me.mhp){tbUse('po');hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
+  if(potQ){potQ=false;if(tbMe()&&!tbCanPot())toast(tbFoe()?'Attends ton tour.':'Une potion par tour.','tb');else if(hero.pot>0&&me&&me.hp<me.mhp){tbUse('po');hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
   if(actQ){actQ=false;const it=findInteract();if(it)doInteract(it)}}
 /* recharges, mana, ultime et effets du héros local : s secondes (chaque image hors combat, un tour entier au combat) */
 function tickLocal(s,round){for(let k=0;k<4;k++)L.cd[k]-=s;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*s);L.buffT-=s;L.stealthT-=s;L.rageT-=s;
@@ -481,7 +491,7 @@ function tickLocal(s,round){for(let k=0;k<4;k++)L.cd[k]-=s;L.mp=Math.min(ST.mmp,
 function townAt(tx,ty){for(const k in TOWNS){const p=PL[k];if((p[0]-tx)**2+(p[1]-ty)**2<100)return{id:'t_'+k,nom:TOWNS[k].nom,lv:0}}return null}
 function findInteract(){const m=G.m;if(!m)return null;
   if(tbHero()&&tbCanAct()){const me=myP(),q=G.players.find((o,j)=>j!==myIdx&&o.down&&Math.hypot((o.rx??o.x)-L.x,(o.ry??o.y)-L.y)<60);if(me&&!me.down&&q)return{x:q.x,y:q.y,r:60,act:'revive',label:'Relever '+q.name}}
-  if(G.cb||!m.inter)return null;let best=null,bd=1e9;for(const it of m.inter){const d=Math.hypot(it.x-L.x,it.y-L.y);if(d<it.r&&d<bd){bd=d;best=it}}return best}
+  if(tbMe()||!m.inter)return null;let best=null,bd=1e9;for(const it of m.inter){const d=Math.hypot(it.x-L.x,it.y-L.y);if(d<it.r&&d<bd){bd=d;best=it}}return best}
 function interactLabel(it){if(!it)return'';const a=it.act;
   if(a.startsWith('dun:')){const s=DUNGEONS[a.slice(4)];return(G.q<s.need?'Examiner : ':'Entrer : ')+s.nom}
   if(a.startsWith('house:'))return'Entrer : '+it.label;if(a==='exit')return'Sortir';if(a==='leave')return'Quitter le donjon';if(a.startsWith('shop:'))return it.label;

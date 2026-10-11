@@ -50,6 +50,7 @@ function processFx(list){for(const f of list){if(f.id<=lastFx)continue;lastFx=f.
     case 39:addText(f.x,f.y,'absorbé','#ffe9a0',.7,11);break;
     case 40:{const tx=Math.floor(f.v/10000),ty=f.v%10000;parts.push({k:'bolt',x:f.x,y:f.y,x2:tx,y2:ty,life:.25,max:.25});Snd.play('crit');break}
     case 45:{const FXC=['#c9a27c','#c27bff','#9fd0ff','#ff7a3a','#f0c95a','#86cc70','#e0644c'];ring(f.x,f.y,6,Math.max(8,Math.floor(f.v/10)),.5,FXC[f.v%10]||'#fff',3);break}
+    case 46:addText(f.x,f.y,'Étourdi','#9fd0ff',1.1,12);break;
     case 41:addText(f.x+(Math.random()*10-5),f.y,String(f.v),'#ff9b3d',.6,11);break;
   }}}
 function processMsgs(list){for(const m of list){if(m[0]<=lastMsg)continue;lastMsg=m[0];toast(String(m[1]).slice(0,140))}}
@@ -194,10 +195,7 @@ function render(dt){
   for(const t of G.traps||[]){if(!vis(t.x,t.y))continue;drawTrap(t.x,t.y,T)}
   for(const d of G.decoys||[]){if(!vis(d.x,d.y))continue;ctx.globalAlpha=.55+.15*Math.sin(T*8);drawHero2(ctx,d.cls,d.x,d.y,0,T,false,{lk:d.lk|0});ctx.globalAlpha=1;ctx.strokeStyle='rgba(194,123,255,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(d.x,d.y+12,16,6,0,0,6.28);ctx.stroke()}
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
-  {const w=wpos(myIdx);if(w)for(const e of G.enemies){if(e.hp<=0||e.type==='boss'||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;   // zones d'alerte
-    if(Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS||!vis(ex,ey))continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
-    if(e.act){ctx.fillStyle='rgba(226,75,74,.16)';ctx.fill();ctx.strokeStyle='rgba(240,149,149,.85)';ctx.lineWidth=2;ctx.stroke()}
-    else{ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}}}
+  drawTbGround(T,vis);
   // tri en profondeur
   const Z=[];
   for(const c of m.chests){const op=G.opened.has(c.id);const py=(c.y+.5)*TS;if(vis((c.x+.5)*TS,py))Z.push([py+6,()=>drawChest(c,op)])}
@@ -261,6 +259,7 @@ function render(dt){
   if(Scene.on)Scene.drawFx(Scene.time);
   if(!hideP)G.players.forEach((p,i)=>{const w=wpos(i);label(p.name,w.x,w.y-38,i===myIdx?'#ffe9c2':'#cfe8ff');
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
+    if(i!==myIdx&&G.cb&&G.cb.ph==='h'&&G.cb.in[i]&&G.cb.rd[i]&&!p.down)label('prêt ✓',w.x,w.y-52,'#9ff08a',11);
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
   if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&(bd.act.startsWith('house:')||bd.act==='talents')))continue;   // maisons : l'enseigne remplace le nom
     const dx=(bd.door.x+.5)*TS,dy=bd.kind==='tour'?bd.door.y*TS-78:bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
@@ -278,6 +277,21 @@ function render(dt){
     if(!G.stairsOpen&&m.goal&&m.goal.type==='waves'&&!G.wave&&!vis(m.goal.at.x,m.goal.at.y))edgeArrow(m.goal.at.x,m.goal.at.y,'#f0c95a','LES PORTES',hw,hh)}
   if(isW&&!Scene.on){const o=objTarget();if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
   if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const a=Math.atan2(w.y-L.y,w.x-L.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
+/* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
+function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
+  for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
+    if(e.act){ctx.strokeStyle='rgba(240,120,110,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,e.r+6,(e.r+6)*.45,0,0,6.28);ctx.stroke();continue}
+    if(e.type==='boss'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
+    ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}
+  // zone de combat : visible par le héros resté dehors, elle englobe tous les ennemis en combat
+  if(G.cb&&!inn){ctx.save();ctx.fillStyle='rgba(200,72,60,.07)';ctx.strokeStyle='rgba(240,149,149,.55)';ctx.lineWidth=2;ctx.setLineDash([10,8]);ctx.lineDashOffset=T*10;
+    for(const e of G.enemies){if(e.hp<=0||!e.act||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(Math.hypot(w.x-ex,w.y-ey)>(TB_FIGHT+8)*TS)continue;ctx.beginPath();ctx.arc(ex,ey,TB_FIGHT*TS,0,6.28);ctx.fill();ctx.stroke()}
+    ctx.restore()}
+  const t=tbTarget();if(t){const tx=t.rx??t.x,ty=t.ry??t.y,pu=1+.08*Math.sin(T*6);ctx.strokeStyle='#f0c95a';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(tx,ty+t.r*.6,(t.r+9)*pu,(t.r+9)*.45*pu,0,0,6.28);ctx.stroke();
+    ctx.fillStyle='#f0c95a';ctx.beginPath();ctx.moveTo(tx,ty-t.r-10);ctx.lineTo(tx-6,ty-t.r-20);ctx.lineTo(tx+6,ty-t.r-20);ctx.closePath();ctx.fill()}
+  if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){ctx.save();ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();
+    if(L.tbMv>2){ctx.fillStyle='rgba(142,197,232,.1)';ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.beginPath();ctx.arc(L.x,L.y,L.tbMv,0,6.28);ctx.fill();ctx.stroke()}
+    ctx.restore()}}}
 function objTarget(){const qt=questTarget();if(qt)return qt;const o=OBJ[Math.min(G.q,6)];if(!o||!o.at||!WORLD)return null;return placePx(o.at)}
 function edgeArrow(x,y,col,label,hw,hh){const a=Math.atan2(y-L.y,x-L.x);const r=Math.min(hw,hh*.5)*.72;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;const pu=1+.12*Math.sin(G.time*6);
   ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.scale(pu,pu);ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.moveTo(17,1);ctx.lineTo(-7,-11);ctx.lineTo(-2,1);ctx.lineTo(-7,13);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-12);ctx.lineTo(-3,0);ctx.lineTo(-8,12);ctx.fill();ctx.restore();

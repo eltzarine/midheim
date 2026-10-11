@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ukzn5li4QAHVqt6GJi2ZFAroTS+kb97DqGctTuTn21I=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-nvp8a0vQQzpVXAsMx9V9EszbUEr0ic5C0MLpyP/hs8w=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -401,6 +401,31 @@ body.touch .tb.nomp,body.touch .tb.empty{opacity:.28}
 .center>.obj{max-height:calc(2.5em + 6px)}
 
 
+
+/* ---- combat au tour par tour ---- */
+.tbinfo{grid-column:1/-1;justify-self:stretch;background:rgba(19,37,44,.94);border:2px solid var(--brass);border-radius:10px;padding:4px 10px 6px;display:grid;gap:4px;pointer-events:none}
+.tbinfo.foe{border-color:var(--blood);background:rgba(40,14,12,.94)}
+.tbinfo .tbh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tbinfo .tbh b{font-family:var(--f-title);font-weight:400;font-size:16px;color:var(--gold)}
+.tbinfo.foe .tbh b{color:#ff9a8a}
+.tbinfo .tbh span{font-size:12.5px;font-weight:700;color:#9ff08a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbinfo .tbp{display:flex;gap:6px;flex-wrap:wrap}
+.tbinfo .tbp i{font-style:normal;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;border:1.5px solid}
+#tbAct{background:#6a2a22;border-color:#e0644c}#tbPot{background:#2f4a20;border-color:#8fb357}#tbMv{background:#1d3640;border-color:var(--frost)}
+.tbinfo .tbp i.off{background:rgba(255,255,255,.05)!important;border-color:var(--edge)!important;color:var(--dim)}
+#tbFlash{position:absolute;left:0;right:0;top:30%;text-align:center;font-family:var(--f-title);font-size:clamp(20px,6vw,30px);color:var(--parch);text-shadow:0 2px 0 #0a1418,0 0 18px rgba(0,0,0,.6);opacity:0;pointer-events:none;z-index:9}
+#tbFlash.show{animation:tbfl 1.5s ease-out}
+@keyframes tbfl{0%{opacity:0;transform:scale(.9)}15%{opacity:1;transform:scale(1)}75%{opacity:1}100%{opacity:0}}
+#bEnd{position:absolute;right:calc(100px + env(safe-area-inset-right,0px));bottom:calc(206px + env(safe-area-inset-bottom,0px) + var(--mb,0px));min-height:46px;padding:0 18px;border-radius:23px;pointer-events:auto;touch-action:manipulation;
+  background:var(--bronze);border:3px solid #2a1a14;color:#fff6e8;font:700 15px/1 var(--f-ui);box-shadow:0 0 0 2px var(--brass),0 3px 8px rgba(0,0,0,.55);z-index:5}
+#bEnd[hidden]{display:none}
+#bEnd.glow{animation:tbglow 1.1s ease-in-out infinite}
+#bEnd.undo{background:#1d3640;box-shadow:0 0 0 2px var(--frost),0 3px 8px rgba(0,0,0,.55)}
+@keyframes tbglow{50%{box-shadow:0 0 0 2px var(--gold),0 0 18px 4px rgba(240,201,90,.7)}}
+body:not(.touch) #bEnd{right:24px;bottom:84px}
+@media (orientation:landscape) and (max-height:540px){#bEnd{right:calc(92px + env(safe-area-inset-right,0px));bottom:calc(164px + var(--mb,0px));min-height:38px;font-size:14px}.tbinfo .tbh b{font-size:14px}#tbFlash{top:26%}}
+.tb.used{filter:grayscale(.85) brightness(.65)}
+body.scene #bEnd,body.scene .tbinfo,body.scene #tbFlash{display:none!important}
 /* ---- écran de démarrage (le temps de tout charger) ---- */
 #splash{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:24px;
   background:radial-gradient(120% 80% at 50% 30%,#264650 0%,#13252c 55%,#0b161b 100%);color:var(--parch);transition:opacity .45s ease}
@@ -617,10 +642,13 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
         </div>
         <div class="obj" id="objTxt">—</div>
         <div class="boss" id="bossBox" hidden><b id="bossName">Boss</b><div class="bar"><i id="bossHp"></i></div></div>
+        <div class="tbinfo" id="tbInfo" hidden><div class="tbh"><b id="tbPh">Tour 1</b><span id="tbAl"></span></div><div class="tbp"><i id="tbAct">Action</i><i id="tbPot">Potion</i><i id="tbMv">Déplacement</i></div></div>
         <div id="toasts"></div>
       </div>
     </div>
     <div id="banner"></div>
+    <div id="tbFlash" aria-live="polite"></div>
+    <button type="button" id="bEnd" hidden>Fin du tour</button>
     <canvas id="mini" width="120" height="120" aria-label="Carte autour du héros (toucher pour ouvrir la carte)"></canvas>
     <button type="button" id="skyTag" class="skytag" aria-label="Heure et météo : ouvrir la carte"></button>
     <div id="actHint" hidden></div>
@@ -674,7 +702,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='25a52b8b';
+const BUILD='a991748d';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -936,9 +964,9 @@ function derive(h){const C=CLS[h.cls],L=h.lvl-1,t=treeBonus(h),g=gearSum(h),kit=
 /* rencontres dans le monde : camps espacés (CAMP_GAP cases), qui s'éveillent à CAMP_WAKE cases ;
    un ennemi qui s'éloigne de plus de LEASH cases de son poste (ou à plus de LEASH_P cases du héros) abandonne et y retourne */
 const CAMP_GAP=18,CAMP_WAKE=14,LEASH=18,LEASH_P=12;
-/* zone d'alerte : un ennemi attaque si un héros entre à moins de AGGRO cases ; il réveille en chaîne les ennemis
-   dont la zone touche la sienne (distance < 2×AGGRO). Le cercle n'est dessiné qu'à moins de AGGRO_SHOW cases. */
-const AGGRO=1.5,AGGRO_SHOW=4;
+/* zone d'alerte : un ennemi repère un héros qui entre à moins de AGGRO cases (le combat au tour par tour commence) ;
+   il réveille en chaîne les ennemis dont la zone touche la sienne (distance < 2×AGGRO). Le cercle n'est dessiné qu'à moins de AGGRO_SHOW cases. */
+const AGGRO=3.5,AGGRO_SHOW=8;
 const ETYPES=['slime','bat','archer','orc','boss','mimic'];
 const EN={slime:{hp:26,spd:55,dmg:8,xp:6,r:12},bat:{hp:14,spd:118,dmg:6,xp:6,r:9},archer:{hp:20,spd:72,dmg:9,xp:10,r:11},orc:{hp:70,spd:62,dmg:16,xp:20,r:15},boss:{hp:560,spd:55,dmg:14,xp:220,r:26},mimic:{hp:48,spd:88,dmg:12,xp:26,r:14}};
 /* ---- 11_store.js ---- */
@@ -2257,7 +2285,8 @@ function genDungeon2(did,idx,seed,lv){const spec=DUNGEONS[did],key=did+idx;const
 /* ================= Objectifs (hôte) ================= */
 function goalInit(){const m=G.m;G.gp=(m.marks||[]).map(()=>0);G.wave=0;G.waveT=0}
 function goalUpdate(dt){const m=G.m;if(m.kind!=='dun'||!m.goal||G.stairsOpen)return;const gl=m.goal;
-  if(gl.type==='marks'){let done=0;m.marks.forEach((mk,i)=>{const x=(mk.x+.5)*TS,y=(mk.y+.5)*TS;if(G.gp[i]>=1){done++;return}
+  if(gl.type==='marks'&&!tbHero()){let done=0;   // au combat, les leviers n'avancent pas pendant le tour des héros
+m.marks.forEach((mk,i)=>{const x=(mk.x+.5)*TS,y=(mk.y+.5)*TS;if(G.gp[i]>=1){done++;return}
       const on=G.players.some(p=>!p.down&&Math.hypot(p.x-x,p.y-y)<38);
       if(on){G.gp[i]=Math.min(1,G.gp[i]+dt/1.8);if(G.gp[i]>=1){done++;fx(37,x,y,70);Snd.play('key');msg(gl.one.replace('{n}',G.gp.filter(v=>v>=1).length).replace('{m}',m.marks.length));
         for(let k=0;k<2;k++){const q=freeNear(x,y,3*TS,5*TS);const e=spawnEnemy(pickMob(DUNGEONS[m.did],Math.random),q.x,q.y,false,false,undefined,m.lv);e.act=true}}}
@@ -2402,7 +2431,7 @@ const Gn={};
 let parts=[],lastFx=-1,lastMsg=-1,saveT=0;
 function newWorld(){return{zd:'',ep:0,time:0,m:null,lv:1,enemies:[],projs:[],drops:[],fx:[],fxId:0,msgs:[],msgId:0,opened:new Set(),wOpened:new Set(),crates:[],platesOn:[],gateOpen:false,key:0,stairsOpen:false,stairsT:0,zones:[],fires:[],traps:[],decoys:[],later:[],xpTot:0,players:[],defT:0,dc:0,eid:1,dropId:1,flow:null,flowT:0,
   gain:{g:[0,0],pt:[0,0],gm:[0,0],sh:[0,0]},guestPeer:null,guestPres:null,coop:false,cool:{},emap:new Map(),q:0,fl:new Set(),night:0,dun:null,camps:[],campT:0,qT:0,reinOn:false,abhOn:false}}
-function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0}}
+function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0,tbKey:'',tbR:0,tbMv:0,tbAct:false,tbPot:false,tbEnd:false,et:0}}
 function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,rx:0,ry:0,down:false,rev:0,drT:0,mv:[0,0],aim:0,iv:0,ivT:0,spCd:0,ac:null,sk:null,pc:null,lu:null,it:null,
   shield:0,shieldT:0,tauntT:0,criT:0,stealthT:0,stormT:0,stormCd:0,kelCd:0,guardT:0,guardBy:-1,rageT:0,banT:0,blessT:0}}
 
@@ -2439,7 +2468,7 @@ const partyLv=()=>Math.max(1,Math.round(G.players.reduce((a,p)=>a+(p.lvl||1),0)/
 
 /* ================= Hôte : changer de zone ================= */
 function hostEnter(zd,pos,opt){opt=opt||{};G.zd=zd;G.m=zoneFromDesc(zd);G.ep++;
-  G.enemies=[];G.projs=[];G.drops=[];G.zones=[];G.fires=[];G.traps=[];G.decoys=[];G.later=[];G.opened=G.m.kind==='world'?G.wOpened:new Set();G.gateOpen=false;G.key=0;G.stairsOpen=false;G.stairsT=0;G.defT=0;G.flow=null;G.reinOn=false;G.abhOn=false;
+  G.enemies=[];G.projs=[];G.drops=[];G.zones=[];G.fires=[];G.traps=[];G.decoys=[];G.later=[];G.opened=G.m.kind==='world'?G.wOpened:new Set();G.gateOpen=false;G.key=0;G.stairsOpen=false;G.stairsT=0;G.defT=0;G.flow=null;G.reinOn=false;G.abhOn=false;G.cb=null;G.tbBy=null;
   G.crates=(G.m.crates||[]).map(c=>({x:c.x,y:c.y,ox:c.x,oy:c.y,rx:c.x,ry:c.y,pushT:0,stuckT:0}));G.platesOn=(G.m.plates||[]).map(()=>0);
   goalInit();if(G.m.kind==='dun'){G.lv=G.m.lv;for(const s of G.m.spawns)spawnEnemy(s.type,s.x,s.y,s.elite,false,s.bv,G.m.lv)}
   if(G.m.kind==='world'){G.camps.forEach(c=>{if(c.state==='live')c.state='idle'});if(G.night&&!G.fl.has('rein'))G.night=0}
@@ -2484,7 +2513,7 @@ function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0||e.ret)return;   // qu
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
 function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);const held=e.frz>0;let d=r.d*mult*(p.criT>0?1.25:1)*(p.rageT>0?1.5:1)*(p.banT>0?1.3:1)*(p.blessT>0?1.25:1)*(held&&st.pa==='fracas'?2:1)*(held&&st.pa==='oppor'?1.3:1);
-  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;hitEnemy(e,d,r.crit,o.kx,o.ky);
+  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(tbIn(pi))d*=TB_DMG;else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);
   if(!o.noEnch&&e.hp>0){if(st.pa==='froid')e.slowT=1.5;else if(st.pa==='embras'||st.pa==='saignee'){e.burn=3;e.burnD=Math.max(e.burnD||0,st.dmg*(st.pa==='saignee'?.3:.25));e.burnP=pi}else if(st.pa==='chatiment')e.markT=4}
   if(!o.noEnch){if(st.we==='lath'&&Math.random()<.12)healP(p,p.mhp*.04,true);if(st.we==='feu'){e.burn=3;e.burnD=st.dmg*.35;e.burnP=pi}
     if(st.we==='talos'&&Math.random()<.15){let n=0;for(const o2 of G.enemies){if(o2===e||o2.hp<=0||n>=2)continue;if(Math.hypot(o2.x-e.x,o2.y-e.y)<140){n++;fx(40,e.x,e.y,Math.round(o2.x)*10000+Math.round(o2.y));hitEnemy(o2,d*.5,false)}}}}
@@ -2573,41 +2602,42 @@ function explode(pr){for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.
 function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;const pr=G.guestPres,inp=pr.i;
   if(pr.st)applyGuestStats(gp,pr.st);gp.lvl=clamp(pr.l|0,1,99);
   if(!inp||!Array.isArray(inp.p))return;if(inp.z!==G.ep)return; // positions d'une autre zone : ignorées
-  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
+  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!(tbIn(1)&&G.cb.ph==='e')){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
   gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
   if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0}
-  let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
+  let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;if(tbGate(1,'ac'))hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
   const fin=(v,d,hi)=>Number.isFinite(+v)?clamp(+v,0,hi):d;
   const tp=Array.isArray(inp.tp)?{x:fin(inp.tp[0],gp.x,G.m.W*TS),y:fin(inp.tp[1],gp.y,G.m.H*TS)}:null;
-  const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s])hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
-  n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
+  const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s]&&tbGate(1,'ac'))hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
+  n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;if(tbGate(1,'po'))usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
+  if(G.cb&&G.cb.ph==='h'&&G.cb.in[1]&&!gp.down)G.cb.rd[1]=(inp.et|0)===G.cb.r;   // fin du tour (ou annulation) de l'invité
   if(gp.lu<(inp.lu|0)){gp.lu=inp.lu|0;if(!gp.down)gp.hp=gp.mhp}
   if(gp.it<(inp.it|0)){gp.it=inp.it|0;if(typeof inp.ia==='string')hostRequest(inp.ia.slice(0,80),1)}}
 function hostUpdate(dt){
   G.time+=dt;updateLocal(dt);
   const me=G.players[0];me.x=L.x;me.y=L.y;me.mv=L.mv;me.aim=L.aim;me.lvl=hero.lvl;me.lk=lookOf(hero.eq);
-  applyGuestInput();
-  for(const p of G.players){p.drT-=dt;p.spCd-=dt;p.ivT-=dt;p.tauntT-=dt;p.criT-=dt;p.stealthT-=dt;p.kelCd-=dt;p.guardT-=dt;p.rageT-=dt;p.banT-=dt;p.blessT-=dt;
-    if(!p.down&&p.st&&p.st.pa==='aura')for(const q of G.players){if(!q.down&&Math.hypot(q.x-p.x,q.y-p.y)<160)healP(q,q.mhp*.015*dt,false)}if(p.shieldT>0){p.shieldT-=dt;if(p.shieldT<=0)p.shield=0}
-    if(!p.down&&p.st&&p.st.reg>0)healP(p,p.st.reg*dt,false);
+  applyGuestInput();tbUpdate(dt);
+  // au tour par tour, les durées d'effet avancent à la fin de chaque tour (tbRoundEnd), pas en continu
+  const sdt=G.cb?0:dt;
+  for(const p of G.players){p.spCd-=dt;p.ivT-=dt;pStatus(p,tbIn(G.players.indexOf(p))?0:dt);
     const mvv=p.mv||[0,0];p.idleT=(Math.abs(mvv[0])+Math.abs(mvv[1])>.1||p.down)?0:(p.idleT||0)+dt;if(p.idleT>12){p.idleT=-20;sayP(G.players.indexOf(p),'idle')}
-    if(p.stormT>0&&!p.down){p.stormT-=dt;p.stormCd-=dt;if(p.stormCd<=0){let b=null,bd=330;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
+    if(p.stormT>0&&!p.down&&!(G.cb&&G.cb.ph==='e'&&tbIn(G.players.indexOf(p)))){p.stormT-=dt;p.stormCd-=dt;if(p.stormCd<=0){let b=null,bd=330;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<bd){bd=d;b=e}}
       if(b){const a=Math.atan2(b.y-p.y,b.x-p.x);G.projs.push({x:p.x,y:p.y,vx:Math.cos(a)*460,vy:Math.sin(a)*460,r:7,from:'p',k:1,life:1,pi:G.players.indexOf(p),splash:36})}p.stormCd=.22}}}
   // relever
-  for(const p of G.players){if(!p.down)continue;let rate=0;for(const q of G.players){if(q===p||q.down)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<48)rate=Math.max(rate,q.cls==='soigneur'?3:1)}
+  if(!G.cb)for(const p of G.players){if(!p.down)continue;let rate=0;for(const q of G.players){if(q===p||q.down)continue;if(Math.hypot(q.x-p.x,q.y-p.y)<48)rate=Math.max(rate,q.cls==='soigneur'?3:1)}
     for(const z of G.zones)if(!z.smoke&&!z.slow&&Math.hypot(z.x-p.x,z.y-p.y)<z.r)rate=Math.max(rate,1.5);
     if(rate>0){p.rev+=dt*rate/2.5;if(p.rev>=1){p.down=false;p.hp=p.mhp*.4;p.rev=0;p.lowSaid=false;msg(p.name+' est relevé !');sayP(G.players.indexOf(p),'rev');fx(14,p.x,p.y,0,G.players.indexOf(p))}}else p.rev=Math.max(0,p.rev-dt*.2)}
-  if(G.m.kind==='dun'){for(const p of G.players){if(p.down)continue;const tx=Math.floor(p.x/TS),ty=Math.floor(p.y/TS);if(tileAt(tx,ty)===5&&spikeUp(tx,ty)&&p.spCd<=0){hurt(p,Math.max(6,p.mhp*.1));p.spCd=.8}}}
+  if(G.m.kind==='dun'&&!G.cb){for(const p of G.players){if(p.down)continue;const tx=Math.floor(p.x/TS),ty=Math.floor(p.y/TS);if(tileAt(tx,ty)===5&&spikeUp(tx,ty)&&p.spCd<=0){hurt(p,Math.max(6,p.mhp*.1));p.spCd=.8}}}
   G.flowT-=dt;if(G.flowT<=0){buildFlow();G.flowT=G.m.kind==='world'?.5:.35}
   updEnemies(dt);updProjs(dt);updDrops(dt);updChests();if(G.m.kind==='dun'){updCrates(dt);goalUpdate(dt)}
-  for(const z of G.zones){z.t-=dt;z.tick-=dt;if(!z.smoke&&!z.slow)for(const p of G.players){if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r){healP(p,p.mhp*.09*dt,false);if(z.tick<=0)fx(3,p.x,p.y-16,Math.round(p.mhp*.045))}}if(z.tick<=0)z.tick=.5}
+  for(const z of G.zones){z.t-=sdt;z.tick-=dt;if(!z.smoke&&!z.slow&&!G.cb)for(const p of G.players){if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r){healP(p,p.mhp*.09*dt,false);if(z.tick<=0)fx(3,p.x,p.y-16,Math.round(p.mhp*.045))}}if(z.tick<=0)z.tick=.5}
   G.zones=G.zones.filter(z=>z.t>0);
-  for(const f of G.fires){f.t-=dt;f.tick-=dt;if(f.tick<=0){f.tick=.5;for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6,{noEnch:true})}}
+  for(const f of G.fires){f.t-=sdt;f.tick-=dt;if(f.tick<=0&&!G.cb){f.tick=.5;for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6,{noEnch:true})}}
   G.fires=G.fires.filter(f=>f.t>0);
-  for(const t of G.traps){t.t-=dt;for(const e of G.enemies){if(e.hp<=0||e.ret||Math.hypot(e.x-t.x,e.y-t.y)>t.r+e.r)continue;e.frz=Math.max(e.frz,e.type==='boss'?1:3);if(G.players[t.pi])pDmg(t.pi,e,1.5,{noEnch:true});fx(30,t.x,t.y,40,t.pi);t.t=0;break}}
+  for(const t of G.traps){t.t-=sdt;for(const e of G.enemies){if(e.hp<=0||e.ret||Math.hypot(e.x-t.x,e.y-t.y)>t.r+e.r)continue;e.frz=Math.max(e.frz,e.type==='boss'?1:3);if(G.players[t.pi])pDmg(t.pi,e,1.5,{noEnch:true});fx(30,t.x,t.y,40,t.pi);t.t=0;break}}
   G.traps=G.traps.filter(t=>t.t>0);
-  for(const d of G.decoys)d.t-=dt;G.decoys=G.decoys.filter(d=>d.t>0);
+  for(const d of G.decoys)d.t-=sdt;G.decoys=G.decoys.filter(d=>d.t>0);
   for(const l of G.later){l.t-=dt;if(l.t<=0)l.fn()}G.later=G.later.filter(l=>l.t>0);
   const alive=G.players.filter(p=>!p.down);
   if(G.m.kind==='dun'){const sx=G.m.stairs.x,sy=G.m.stairs.y;
@@ -2618,6 +2648,10 @@ function hostUpdate(dt){
   if(G.players.length&&G.players.every(p=>p.down)){G.defT+=dt;if(G.defT>2.5){G.dc++;defeat()}}else G.defT=0;
   applyGains({xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,ep:G.ep,q:G.q});
   processFx(G.fx);processMsgs(G.msgs)}
+/* durées d'effet d'un héros, régénération et aura : s secondes (chaque image hors combat, un tour entier au combat) */
+function pStatus(p,s){if(!s)return;p.drT-=s;p.tauntT-=s;p.criT-=s;p.stealthT-=s;p.kelCd-=s;p.guardT-=s;p.rageT-=s;p.banT-=s;p.blessT-=s;
+  if(!p.down&&p.st&&p.st.pa==='aura')for(const q of G.players){if(!q.down&&Math.hypot(q.x-p.x,q.y-p.y)<160)healP(q,q.mhp*.015*s,false)}if(p.shieldT>0){p.shieldT-=s;if(p.shieldT<=0)p.shield=0}
+  if(!p.down&&p.st&&p.st.reg>0)healP(p,p.st.reg*s,false)}
 function spikeUp(tx,ty){const sp=G.m.spikes.find(s=>s.x===tx&&s.y===ty);if(!sp)return false;return((G.time+sp.ph*.8)%2.4)<.8}
 function applyGuestStats(p,s){if(!s||typeof s!=='object')return;let key;try{key=JSON.stringify(s)}catch(e){return}if(p.stKey===key&&p.st)return;p.stKey=key;const n=v=>isFinite(+v)?+v:0;const mhp=clamp(Math.round(n(s.mhp)),1,99999);if(mhp!==p.mhp){p.hp=p.hp*mhp/(p.mhp||mhp);p.mhp=mhp}
   const okE=v=>['lath','feu','talos','kel'].includes(v)?v:null;p.lk=clamp(Math.floor(n(s.lk)),0,200000);
@@ -2632,6 +2666,7 @@ function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){host
   if(spec.done===G.q)setQ(G.q+1,({everwatch:'stone0',karazankor:'stone2',antre:'stone3',prison:'epilogue'})[did]);else msg(spec.nom+' : vous en ressortez plus riches.')}
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
+  if(act==='revive'){tbRevive(pi);return}
   if(act==='exit'){if(m.kind==='house')hostEnter('w',m.exitTo);return}
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
@@ -2663,42 +2698,56 @@ function updCamps(){const pl=G.players.filter(p=>!p.down);if(!pl.length)return;
 
 /* réaction en chaîne : chaque ennemi alerté réveille ceux dont la zone touche la sienne */
 function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='boss'&&Math.hypot(o.x-s.x,o.y-s.y)<2*AGGRO*TS&&los(s.x,s.y,o.x,o.y)){o.act=true;q.push(o)}}}
+/* Ennemis. Hors combat, ils repèrent les héros et les poursuivent, sans attaquer.
+   Au tour par tour (G.cb) : figés pendant le tour des héros (seul le recul des coups les déplace) ;
+   pendant leur tour, chacun bouge et attaque une fois (e.tbA), un ennemi étourdi passe son tour (e.tbSkip). */
 function updEnemies(dt){
-  const alive=G.players.filter(p=>!p.down&&!(p.stealthT>0));
-  for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=dt;e.blind-=dt;e.slowT-=dt;e.markT-=dt;if(e.mistT>0){e.mistT-=dt;continue}
-    if(e.burn>0){e.burn-=dt;e.hp-=e.burnD*dt;e.burnFx=(e.burnFx||0)-dt;if(e.burnFx<=0){e.burnFx=.5;fx(41,e.x,e.y-e.r,Math.round(e.burnD*.5))}if(e.hp<=0){killEnemy(e);continue}}
+  const ph=G.cb?G.cb.ph:'';
+  const all=G.players.filter(p=>!p.down&&!(p.stealthT>0)),alive=ph?all.filter(p=>tbIn(G.players.indexOf(p))):all;   // au combat, les ennemis ne visent que les héros au combat
+  if(ph==='h'){for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
+      if(!e.act&&!e.ret&&e.blind<=0)for(const p of all){if(Math.hypot(p.x-e.x,p.y-e.y)<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,p.x,p.y)){e.act=true;e.tbA=false;sayE(e);alertChain(e);break}}}
+    G.enemies=G.enemies.filter(e=>e.hp>0);return}
+  const sdt=ph?0:dt,turn=ph==='e';
+  for(const e of G.enemies){if(e.hp<=0)continue;e.flash-=dt;e.hitCd-=dt;e.taunt-=sdt;e.blind-=sdt;e.slowT-=sdt;e.markT-=sdt;if(e.mistT>0){e.mistT-=dt;continue}
+    if(e.burn>0&&!ph){e.burn-=dt;e.hp-=e.burnD*dt;e.burnFx=(e.burnFx||0)-dt;if(e.burnFx<=0){e.burnFx=.5;fx(41,e.x,e.y-e.r,Math.round(e.burnD*.5))}if(e.hp<=0){killEnemy(e);continue}}
     if(e.ret){e.retT+=dt;const hx=e.hx-e.x,hy=e.hy-e.y,hd=Math.hypot(hx,hy);
       if(hd<TS*.6||e.retT>6){if(e.retT>6){e.x=e.hx;e.y=e.hy}e.ret=false;e.hp=e.mhp;e.burn=0;e.frz=0}
       else moveBody(e,hx/hd*e.spd*1.15*dt,hy/hd*e.spd*1.15*dt,e.r*.75);continue}
     let tp=null,td=1e9;if(e.taunt>0&&G.players[e.tauntP]&&!G.players[e.tauntP].down){tp=G.players[e.tauntP];td=Math.hypot(tp.x-e.x,tp.y-e.y)}
     else{for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
       for(const d of G.decoys){const dd=Math.hypot(d.x-e.x,d.y-e.y);if(dd<7*TS&&dd<td+3*TS){td=dd;tp=d}}}
+    if(!e.act&&ph){tp=null;td=1e9;for(const p of all){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}}   // repérage : tous les héros
     if(!tp||e.blind>0)continue;
-    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
+    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;e.tbA=false;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
-    if(e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
+    if(!ph&&e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
     if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
-    if(e.frz>0){e.frz-=dt;continue}
+    if(e.frz>0){if(!ph)e.frz-=dt;continue}
+    if(turn&&e.tbSkip)continue;
+    const can=turn&&!e.tbA;   // une attaque par ennemi et par tour, jamais hors combat
     let vx=0,vy=0,sp=e.spd;const dx=tp.x-e.x,dy=tp.y-e.y;const see=td<10*TS&&los(e.x,e.y,tp.x,tp.y);
     for(const z of G.zones)if((z.smoke||z.slow)&&Math.hypot(z.x-e.x,z.y-e.y)<z.r)sp*=z.slow?.35:.4;if(e.slowT>0)sp*=.6;
     const toward=()=>{if(tp.decoy||(td<1.6*TS&&see)){vx=dx/td;vy=dy/td}else{const f=flowDir(e,false);if(f){vx=f.x;vy=f.y}else if(see){vx=dx/td;vy=dy/td}}};
+    // une fois son coup porté, un ennemi au contact ne pousse plus le héros
+    const stay=turn&&e.tbA&&td<e.r+16;
     switch(e.type){
       case'mimic':toward();e.wob+=dt*9;sp*=.6+.6*Math.max(0,Math.sin(e.wob));break;
       case'slime':toward();e.wob+=dt*5;sp*=.7+.45*Math.max(0,Math.sin(e.wob));break;
       case'bat':toward();e.wob+=dt*7;vx+=Math.cos(e.wob*1.3)*.7;vy+=Math.sin(e.wob)*.7;break;
       case'archer':e.cd-=dt;e.wob+=dt*.7;if(td<3.5*TS){const f=flowDir(e,true);if(f){vx=f.x;vy=f.y}}else if(td>6.5*TS||!see)toward();else{const s=Math.sin(e.wob)>0?1:-1;vx=-dy/td*s*.6;vy=dx/td*s*.6}
-        if(e.cd<=0&&see&&td<9*TS){shootE(e.x,e.y,Math.atan2(dy,dx),260,e.dmg,3);e.cd=(1.7+Math.random()*.6)*(e.lv>5?.85:1)}break;
-      case'orc':e.ccd-=dt;
+        if(e.cd<=0&&see&&td<9*TS&&can){shootE(e.x,e.y,Math.atan2(dy,dx),260,e.dmg,3);e.cd=(1.7+Math.random()*.6)*(e.lv>5?.85:1);e.tbA=true}break;
+      case'orc':if(turn)e.ccd-=dt;
         if(e.chg>0){e.chg-=dt;vx=e.cvx;vy=e.cvy;sp=300}
         else if(e.tele>0){e.tele-=dt;sp=0;if(e.tele<=0){e.chg=.55;e.cvx=dx/td;e.cvy=dy/td}}
-        else{toward();if(td<4.2*TS&&see&&e.ccd<=0){e.tele=.6;e.ccd=3.2}}break;
-      case'boss':{bossAI(e,dt,tp,td,see);const B=BOSSES[e.bv??0];
+        else{toward();if(td<4.2*TS&&see&&e.ccd<=0&&can&&!e.tbC){e.tele=.6;e.ccd=3.2;e.tbC=true}}break;
+      case'boss':{if(turn)bossAI(e,dt,tp,td,see);const B=BOSSES[e.bv??0];
         if(e.chg>0){e.chg-=dt;vx=e.cvx;vy=e.cvy;sp=330}
         else if(e.tele>0){e.tele-=dt;sp=0;if(e.tele<=0){e.chg=.6;e.cvx=dx/td;e.cvy=dy/td}}
-        else{if(td>(B.charge?1.2:4)*TS)toward();if(B.charge){e.ccd-=dt;if(e.ccd<=0&&see&&td<7*TS){e.tele=.55;e.ccd=e.hp<e.mhp/2?2.4:3.4}}}
+        else{if(td>(B.charge?1.2:4)*TS)toward();if(B.charge&&turn){e.ccd-=dt;if(e.ccd<=0&&see&&td<7*TS&&can&&!e.tbC){e.tele=.55;e.ccd=e.hp<e.mhp/2?2.4:3.4;e.tbC=true}}}
         break}}
+    if(stay&&e.chg<=0){vx=vy=0}
     const len=Math.hypot(vx,vy);if(len>0){const bl=moveBody(e,vx/len*sp*dt,vy/len*sp*dt,e.r*.75);if(bl&&e.chg>0)e.chg=0}
-    for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){hurt(p,e.dmg*(e.chg>0?1.6:1),e);e.hitCd=.8}}}
+    if(can)for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){hurt(p,e.dmg*(e.chg>0?1.6:1),e);e.hitCd=.8;e.tbA=true;e.chg=0;break}}}
   const A=G.enemies.filter(e=>e.hp>0&&e.act);
   for(let i=0;i<A.length;i++)for(let j=i+1;j<A.length;j++){const a=A[i],b=A[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d>0&&d<m){const p=(m-d)/2/d;if(a.type!=='boss')moveBody(a,-dx*p,-dy*p,a.r*.75);if(b.type!=='boss')moveBody(b,dx*p,dy*p,b.r*.75)}}
   G.enemies=G.enemies.filter(e=>e.hp>0)}
@@ -2796,12 +2845,14 @@ const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,fals
 const touch={on:false,jx:0,jy:0,atk:false,aimOn:false,aimAng:0,aimLen:0,relAim:false,aimSlot:null};
 function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
-function aimPoint(){if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
+function aimPoint(){const t=!touch.aimOn&&tbTarget();if(t)return{x:t.rx??t.x,y:t.ry??t.y};if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
   if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
+  if(!tbCanAct()){toast(tbWhy(),'tb');return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}L.ult=0}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}L.mp-=S.mp;L.cd[slot]=S.cd*ST.cdm}
-  L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
+  {const t=tbTarget();if(t&&!touch.aimOn)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // compétence lancée sur la cible touchée
+  tbUse('ac');L.sk[slot]++;const tp=aimPoint();L.tp=tp;localSkill(id);if(mode!=='guest')hostSkill(0,id,L.aim,tp)}
 function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!touch.aimOn?L.face:L.aim;
   switch(id){
     case'charge':L.dashT=.22;L.dvx=Math.cos(L.aim)*850;L.dvy=Math.sin(L.aim)*850;L.ivT=.3;Snd.play('dash');break;
@@ -2823,38 +2874,54 @@ function localSkill(id){const ml=Math.hypot(L.mv[0],L.mv[1]);const a=ml>.2&&!tou
     default:Snd.play('fire')}}
 function updateLocal(dt){
   const me=myP();const C=CLS[hero.cls];
-  L.cdA-=dt;for(let s=0;s<4;s++)L.cd[s]-=dt;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*dt);L.buffT-=dt;L.ivT-=dt;L.swing-=dt;L.stealthT-=dt;L.rageT-=dt;
-  if(ST.ks[3])L.ult=Math.min(100,L.ult+dt*1.1);
+  tbLocal();L.cdA-=dt;L.ivT-=dt;L.swing-=dt;tickLocal(tbMe()?0:dt,false);
   let mx=0,my=0;
   if(keys.has('KeyA')||keys.has('ArrowLeft'))mx-=1;if(keys.has('KeyD')||keys.has('ArrowRight'))mx+=1;if(keys.has('KeyW')||keys.has('ArrowUp'))my-=1;if(keys.has('KeyS')||keys.has('ArrowDown'))my+=1;
   if(touch.jx||touch.jy){mx=touch.jx;my=touch.jy}
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
-  const down=!me||me.down;if(down){mx=my=0}
+  const down=!me||me.down;if(down){mx=my=0;L.tbGo=0}
+  // ennemi touché à l'écran : on s'en approche puis on le frappe (un geste du joystick annule)
+  let goAtk=false;if(ml>.2)L.tbGo=0;const ge=L.tbGo&&G.enemies.find(e=>e.id===L.tbGo&&e.hp>0);if(L.tbGo&&!ge)L.tbGo=0;
+  if(ge){const ex=ge.rx??ge.x,ey=ge.ry??ge.y,d=Math.hypot(ex-L.x,ey-L.y),rng=tbReach(ge);L.tbGoT=(L.tbGoT||0)+dt;
+    if(d<=rng&&los(L.x,L.y,ex,ey)){goAtk=true;L.tbGo=0;L.aim=Math.atan2(ey-L.y,ex-L.x)}
+    else if(tbMe()&&L.tbMv<=.5||L.tbGoT>4){toast(tbMe()?'Trop loin : rapproche-toi davantage au prochain tour, ou utilise une compétence.':'Impossible de l’atteindre.','tbfar');L.tbGo=0}
+    else{mx=(ex-L.x)/d;my=(ey-L.y)/d;ml=1}}
+  // au combat : on ne bouge que pendant son tour, et de tbMv pixels au plus
+  if(tbMe()&&(G.cb.ph!=='h'||L.tbEnd||L.tbMv<=.5)){if(ml>.2&&G.cb.ph==='h'&&!L.tbEnd&&!down)toast('Plus de déplacement ce tour. Agis ou touche « Fin du tour ».','tbmv');mx=my=0;ml=0}
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
-  if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}else if(ml>0)moveBody(L,mx*ST.spd*dt,my*ST.spd*dt,10);
+  if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}
+  else if(ml>0){let sp=ST.spd*dt;if(tbMe())sp=Math.min(sp,L.tbMv);const ox=L.x,oy=L.y;moveBody(L,mx*sp,my*sp,10);if(tbMe())L.tbMv=Math.max(0,L.tbMv-Math.hypot(L.x-ox,L.y-oy))}
   const useMouse=!touch.on&&performance.now()-mouse.t<2500;
   if(touch.aimOn)L.aim=touch.aimAng;
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
-  else{const n=nearestEnemy(330);L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
+  else{const t=tbTarget(),n=t?{x:t.rx??t.x,y:t.ry??t.y}:nearestEnemy(330);L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
+  if(goAtk&&ge)L.aim=Math.atan2((ge.ry??ge.y)-L.y,(ge.rx??ge.x)-L.x);
   // découverte des lieux et région
   L.wpT-=dt;if(L.wpT<=0&&G.m&&G.m.kind==='world'){L.wpT=.5;const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS);
     for(const k in WAYPOINTS){if(hero.wp.includes(k))continue;const w=WAYPOINTS[k];if((w.pt[0]-tx)**2+(w.pt[1]-ty)**2<64){hero.wp.push(k);toast('Lieu découvert : '+w.nom+'. Voyage rapide possible depuis la carte.');questEvent('wp');doSave(true)}}
     const rg=townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
   if(down){skQ=[false,false,false,false];potQ=false;actQ=false;return}
-  const atk=mouse.down||keys.has('KeyJ')||touch.atk;
-  if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)){L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
+  const atk=mouse.down||keys.has('KeyJ')||touch.atk||goAtk;
+  if(atk&&tbMe()&&!tbCanAct()&&!tbFoe())toast(tbWhy(),'tb');
+  if(atk&&L.cdA<=0&&!(C.atkMp&&L.mp<C.atkMp)&&tbCanAct()){tbUse('ac');L.mp-=C.atkMp;L.cdA=C.atkCd*ST.cdm*(L.rageT>0?.67:1);L.ac++;L.stealthT=0;const buffed=hero.cls==='voleur'&&L.buffT>0;if(buffed){L.buffT=0;L.bc=L.ac}
     L.swing=SWD;L.swingA=L.aim;Snd.play(hero.cls==='mage'||hero.cls==='soigneur'?'fire':'swing');if(mode!=='guest')hostAttack(0,L.aim,buffed)}
   for(let s=0;s<4;s++)if(skQ[s]){skQ[s]=false;trySkill(s)}
   if(touch.relAim){touch.relAim=false;touch.aimOn=false}
-  if(potQ){potQ=false;if(hero.pot>0&&me&&me.hp<me.mhp){hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
+  if(potQ){potQ=false;if(tbMe()&&!tbCanPot())toast(tbFoe()?'Attends ton tour.':'Une potion par tour.','tb');else if(hero.pot>0&&me&&me.hp<me.mhp){tbUse('po');hero.pot--;L.pc++;Snd.play('pot');if(mode!=='guest')usePotion(0)}else if(hero.pot<=0)toast('Plus de potion. Achète-en chez un marchand.','pot')}
   if(actQ){actQ=false;const it=findInteract();if(it)doInteract(it)}}
+/* recharges, mana, ultime et effets du héros local : s secondes (chaque image hors combat, un tour entier au combat) */
+function tickLocal(s,round){for(let k=0;k<4;k++)L.cd[k]-=s;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*s);L.buffT-=s;L.stealthT-=s;L.rageT-=s;
+  if(ST.ks[3])L.ult=Math.min(100,L.ult+s*1.1+(round?TB_ULT:0))}
 function townAt(tx,ty){for(const k in TOWNS){const p=PL[k];if((p[0]-tx)**2+(p[1]-ty)**2<100)return{id:'t_'+k,nom:TOWNS[k].nom,lv:0}}return null}
-function findInteract(){const m=G.m;if(!m||!m.inter)return null;let best=null,bd=1e9;for(const it of m.inter){const d=Math.hypot(it.x-L.x,it.y-L.y);if(d<it.r&&d<bd){bd=d;best=it}}return best}
+function findInteract(){const m=G.m;if(!m)return null;
+  if(tbHero()&&tbCanAct()){const me=myP(),q=G.players.find((o,j)=>j!==myIdx&&o.down&&Math.hypot((o.rx??o.x)-L.x,(o.ry??o.y)-L.y)<60);if(me&&!me.down&&q)return{x:q.x,y:q.y,r:60,act:'revive',label:'Relever '+q.name}}
+  if(tbMe()||!m.inter)return null;let best=null,bd=1e9;for(const it of m.inter){const d=Math.hypot(it.x-L.x,it.y-L.y);if(d<it.r&&d<bd){bd=d;best=it}}return best}
 function interactLabel(it){if(!it)return'';const a=it.act;
   if(a.startsWith('dun:')){const s=DUNGEONS[a.slice(4)];return(G.q<s.need?'Examiner : ':'Entrer : ')+s.nom}
   if(a.startsWith('house:'))return'Entrer : '+it.label;if(a==='exit')return'Sortir';if(a==='leave')return'Quitter le donjon';if(a.startsWith('shop:'))return it.label;
   if(a==='arena')return G.q>=3?'Défier Abhorash':'Examiner les pierres';if(a.startsWith('talk:')||a.startsWith('closed:'))return'Parler : '+it.label;return it.label}
 function doInteract(it){const a=it.act;
+  if(a==='revive'){requestAct('revive');tbUse('ac');return}
   if(a.startsWith('talk:')){talkTo(a.slice(5));return}
   if(a.startsWith('closed:')){showDialog('garde',it.label,a.slice(7));return}
   if(a.startsWith('shop:')){openTrade(a.slice(5),it.town);return}
@@ -2870,6 +2937,127 @@ function talkTo(k){const q=G.q;
   if(k==='brann'){const st=ewState();showDialog('garde','Le sergent Brann',st===2?'Le feu brûle chaque nuit, et les voiles noires ne sont jamais revenues. Eastwatch vous doit une fière chandelle.':st===1?'Le feu d’alarme est éteint depuis trois nuits. Le capitaine Osric est monté avec ses hommes, et aucun n’est redescendu. Montez, je vous en prie : la porte est ouverte.':'Rien à signaler sur la côte. Le feu d’alarme veille, et moi avec.');return}
   if(k==='nains'){showDialog('grinmir',DIALOG.nains[0],DIALOG.nains[1]);return}
   if(k==='abhorash'){showDialog('abhorash',DIALOG.abhorash[0],DIALOG.abhorash[1]);return}}
+/* ---- 42_tour.js ---- */
+/* ================= Combat au tour par tour =================
+   On explore en temps réel. Un héros qui entre dans la zone de combat (à moins de TB_FIGHT cases d'un ennemi alerté),
+   ou qui frappe un ennemi, passe au tour par tour, sur place, sans changer d'écran :
+   - tour des héros : les héros au combat jouent en même temps ; chacun peut se déplacer (TB_MOVE cases, plus pour un héros
+     rapide), faire UNE action (attaque, compétence, ultime ou relever l'allié) et boire UNE potion, puis touche « Fin du tour ».
+     À deux, on peut annuler sa fin de tour tant que l'autre joue, pour se replacer ;
+   - tour des ennemis : chacun avance et attaque une fois (projectiles compris) ; les héros au combat ne bougent pas.
+   Chaque héros entre et sort du combat pour son compte : l'autre peut explorer en temps réel, puis rejoindre la bataille
+   en entrant dans la zone ou en frappant. À plus de TB_LEAVE cases de tout ennemi à la fin d'un tour, on quitte le combat ;
+   quand plus aucun héros n'y est, les ennemis rentrent chez eux.
+   Les durées (recharges, mana, effets, brûlures, zones) avancent de TB_ROUND secondes à la fin de chaque tour.
+   Qui a frappé en premier joue en premier ; un héros repéré laisse l'initiative aux ennemis.
+   L'hôte décide de tout ; l'invité reçoit l'état (phase, tour, qui est au combat, actions utilisées) et bride ses commandes. */
+const TB_FIGHT=9,TB_LEAVE=12,TB_ROUND=3,TB_EN=1.6,TB_EN_MAX=4,TB_MOVE=5,TB_DMG=2.2,TB_ULT=12,TB_COOP_T=60;
+const tbIn=i=>!!(G&&G.cb&&G.cb.in[i]),tbMe=()=>tbIn(myIdx);
+const tbHero=()=>tbMe()&&G.cb.ph==='h',tbFoe=()=>tbMe()&&G.cb.ph==='e';
+/* ---------- côté hôte ---------- */
+function tbFoes(){return G.enemies.filter(e=>e.hp>0&&e.act&&!e.ret)}
+function tbClose(p,r){return tbFoes().some(e=>Math.hypot(p.x-e.x,p.y-e.y)<r*TS)}
+function tbStart(first){G.cb={ph:'h',r:1,t:0,in:[false,false],rd:[false,false],ac:[false,false],po:[false,false]};
+  for(const e of G.enemies){e.kx=e.ky=0;e.tbA=false}
+  Log.ev('combat','début, '+tbFoes().length+' ennemi(s), '+(first>=0?'les héros':'les ennemis')+' commencent');
+  if(first>=0){msg('Initiative ! Les héros frappent les premiers.');tbHeroPhase()}
+  else{msg('Vous êtes repérés ! Les ennemis jouent en premier.');tbEnemyPhase()}}
+function tbJoin(i,by){const c=G.cb,p=G.players[i];c.in[i]=true;c.rd[i]=false;c.ac[i]=by;c.po[i]=false;
+  if(c.r>1||G.players.length>1&&c.in.filter(Boolean).length>1)msg(p.name+' entre dans le combat.')}
+function tbEnd(win){Log.ev('combat','fin, tour '+G.cb.r,win?'victoire':'fuite');G.cb=null;
+  for(const e of G.enemies){e.tbA=false;e.tbSkip=false;
+    // fuite : les ennemis abandonnent et rentrent à leur poste
+    if(!win&&e.hp>0&&e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null){e.act=false;e.ret=true;e.retT=0}}
+  msg(win?'Victoire ! Le combat est terminé.':'Vous avez semé vos ennemis : ils rentrent chez eux.')}
+function tbHeroPhase(){const c=G.cb;c.ph='h';c.t=0;c.rd=G.players.map((p,i)=>p.down||!c.in[i]);c.ac=[false,false];c.po=[false,false];
+  for(const e of G.enemies){e.mistT=0;e.tele=0;e.chg=0}}
+/* zones posées pendant le tour des héros : le feu brûle et le cercle soigne une fois, pour la durée d'un tour */
+function tbAreas(){const S=TB_ROUND;
+  for(const f of G.fires){const n=Math.max(1,Math.round(Math.min(f.t,S)/.5));for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6*n,{noEnch:true})}
+  for(const z of G.zones){if(z.smoke||z.slow)continue;for(const p of G.players)if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r)healP(p,p.mhp*.09*Math.min(z.t,S),true)}}
+function tbEnemyPhase(){const c=G.cb;tbAreas();c.ph='e';c.t=0;
+  for(const e of G.enemies){if(e.hp<=0)continue;e.tbA=false;e.tbC=false;e.hitCd=0;e.tbSkip=false;
+    if(e.type==='archer')e.cd=.25+Math.random()*.5;
+    if(e.frz>0){if(e.type==='boss'&&e.frz<1)e.frz=0;else if(e.act){e.tbSkip=true;fx(46,e.x,e.y-e.r-6,0)}}}}
+/* fin d'un tour complet : toutes les durées avancent de TB_ROUND secondes (héros au combat et ennemis) */
+function tbRoundEnd(){const S=TB_ROUND,c=G.cb;
+  G.players.forEach((p,i)=>{if(c.in[i])pStatus(p,S)});
+  for(const e of G.enemies){if(e.hp<=0)continue;e.taunt-=S;e.blind-=S;e.slowT-=S;e.markT-=S;e.frz=Math.max(0,e.frz-S);
+    if(e.burn>0){const d=e.burnD*Math.min(e.burn,S);e.burn-=S;e.hp-=d;fx(41,e.x,e.y-e.r,Math.round(d));if(e.hp<=0)killEnemy(e)}}
+  for(const z of G.zones)z.t-=S;G.zones=G.zones.filter(z=>z.t>0);
+  for(const f of G.fires)f.t-=S;G.fires=G.fires.filter(f=>f.t>0);
+  for(const t of G.traps)t.t-=S;G.traps=G.traps.filter(t=>t.t>0);
+  for(const d of G.decoys)d.t-=S;G.decoys=G.decoys.filter(d=>d.t>0);
+  G.enemies=G.enemies.filter(e=>e.hp>0);c.r++;
+  // qui s'est éloigné quitte le combat (un héros à terre y reste : il faut venir le relever)
+  G.players.forEach((p,i)=>{if(c.in[i]&&!p.down&&!tbClose(p,TB_LEAVE)){c.in[i]=false;msg(p.name+' quitte le combat.')}})}
+function tbUpdate(dt){
+  const by=G.tbBy&&G.time-G.tbBy.t<.6?G.tbBy.pi:-1;
+  // qui entre dans la zone de combat, ou frappe un ennemi, passe au tour par tour
+  const want=G.players.map((p,i)=>!p.down&&!tbIn(i)&&(i===by||tbClose(p,TB_FIGHT)));
+  if(!G.cb){if(!want.some(Boolean))return;tbStart(by)}
+  const c=G.cb;want.forEach((w,i)=>{if(w)tbJoin(i,i===by&&c.ph==='h')});if(by>=0)G.tbBy=null;
+  c.t+=dt;
+  if(!tbFoes().length){tbEnd(true);return}
+  if(!c.in.some(Boolean)){tbEnd(false);return}
+  if(c.ph==='h'){G.players.forEach((p,i)=>{if(p.down||!c.in[i])c.rd[i]=true});
+    if(G.coop&&c.t>TB_COOP_T&&!c.rd.every(Boolean)){c.rd=[true,true];msg('Temps écoulé : au tour des ennemis.')}
+    // le tour des héros se termine quand chacun a fini et que ses coups ont touché (projectiles, météore, tempête)
+    if(G.players.every((p,i)=>c.rd[i])&&!G.projs.some(q=>q.from==='p')&&!G.later.length&&!G.players.some((p,i)=>c.in[i]&&p.stormT>0&&!p.down))tbEnemyPhase();return}
+  // tour des ennemis : il dure TB_EN s, et se prolonge le temps que les projectiles et les charges arrivent
+  const busy=G.projs.some(q=>q.from==='e')||G.enemies.some(e=>e.hp>0&&(e.chg>0||e.tele>0));
+  if(c.t>=TB_EN&&(!busy||c.t>=TB_EN_MAX)){tbRoundEnd();
+    if(!tbFoes().length){tbEnd(true);return}
+    if(!c.in.some(Boolean)){tbEnd(false);return}
+    tbHeroPhase()}}
+/* l'invité : une action et une potion par tour, rien pendant le tour des ennemis */
+function tbGate(i,kind){const c=G.cb;if(!c||!c.in[i])return true;if(c.ph!=='h'||c.rd[i])return false;const a=kind==='po'?c.po:c.ac;if(a[i])return false;a[i]=true;return true}
+/* relever l'allié au combat : c'est l'action du tour */
+function tbRevive(pi){const c=G.cb,p=G.players[pi];if(!c||!c.in[pi]||c.ph!=='h'||c.ac[pi]||!p||p.down)return;const q=G.players.find(o=>o!==p&&o.down&&Math.hypot(o.x-p.x,o.y-p.y)<70);if(!q)return;
+  const qi=G.players.indexOf(q);c.ac[pi]=true;q.down=false;q.rev=0;q.hp=q.mhp*(p.cls==='soigneur'?.6:.4);q.lowSaid=false;c.rd[qi]=false;msg(q.name+' est relevé !');sayP(qi,'rev');fx(14,q.x,q.y,0,qi)}
+/* état envoyé à l'invité : [phase 1 héros / 2 ennemis, tour, drapeaux, secondes restantes à deux] */
+function tbPack(){const c=G.cb;if(!c)return 0;const f=(a,b)=>(a[0]?b:0)|(a[1]?b*2:0);
+  return[c.ph==='h'?1:2,c.r,f(c.rd,1)|f(c.ac,4)|f(c.po,16)|f(c.in,64),G.coop&&c.ph==='h'?Math.max(0,Math.ceil(TB_COOP_T-c.t)):0]}
+function tbUnpack(a){if(!Array.isArray(a)||!a.length)return null;const n=v=>Number.isFinite(+v)?+v:0,b=n(a[2])|0,f=k=>[!!(b&k),!!(b&k*2)];
+  return{ph:n(a[0])===2?'e':'h',r:clamp(n(a[1])|0,1,1e6),rd:f(1),ac:f(4),po:f(16),in:f(64),tl:clamp(n(a[3]),0,999),t:0}}
+
+/* ---------- côté joueur (hôte et invité) ---------- */
+function tbCanAct(){if(!tbMe())return true;return G.cb.ph==='h'&&!G.cb.ac[myIdx]&&!L.tbAct&&!L.tbEnd}
+function tbCanPot(){if(!tbMe())return true;return G.cb.ph==='h'&&!G.cb.po[myIdx]&&!L.tbPot&&!L.tbEnd}
+function tbUse(kind){if(!tbMe())return;if(kind==='po'){L.tbPot=true;if(mode!=='guest')G.cb.po[myIdx]=true}else{L.tbAct=true;if(mode!=='guest')G.cb.ac[myIdx]=true}}
+function tbWhy(){return!tbMe()?'':G.cb.ph!=='h'?'Attends : c’est le tour des ennemis.':L.tbEnd?'Tu as fini ton tour.':'Action déjà utilisée ce tour. Déplace-toi ou touche « Fin du tour ».'}
+function tbMoveMax(){return TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}
+function tbActed(){return!!(G.cb&&(G.cb.ac[myIdx]||L.tbAct))}
+function endTurn(){if(!tbHero()||L.tbEnd)return;const me=myP();if(!me||me.down)return;L.tbEnd=true;L.tbGo=0;L.et=G.cb.r;if(mode!=='guest')G.cb.rd[myIdx]=true;Snd.play('key')}
+/* à deux : tant que l'autre joue, on peut revenir sur sa fin de tour ; sans action faite, on repart de sa place de départ */
+function tbOtherPlaying(){const c=G.cb,o=myIdx===0?1:0;return!!(c&&G.players[o]&&c.in[o]&&!c.rd[o]&&!G.players[o].down)}
+function cancelEnd(){if(!tbHero()||!L.tbEnd||!tbOtherPlaying())return;L.tbEnd=false;L.et=0;if(mode!=='guest')G.cb.rd[myIdx]=false;
+  if(!tbActed()){L.x=L.tbOx;L.y=L.tbOy;L.tbMv=tbMoveMax()}Snd.play('key')}
+/* cible touchée à l'écran : on s'en approche (avec le déplacement du tour) puis on la frappe */
+function tbTarget(){if(!L.tbT)return null;const e=G.enemies.find(e=>e.id===L.tbT&&e.hp>0);if(!e)L.tbT=0;return e||null}
+function tbReach(e){const m={guerrier:58,voleur:48}[hero.cls];return m?m+e.r-6:300}
+function enemyAt(sx,sy){if(!G||!G.m)return null;const w=screenToWorld(sx,sy);let b=null,bd=1e9;for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot((e.rx??e.x)-w.x,(e.ry??e.y)-w.y);if(d<e.r+20&&d<bd){bd=d;b=e}}return b}
+function tapEnemy(sx,sy){if(!inGame()||paused||Scene.on)return false;const e=enemyAt(sx,sy);if(!e)return false;const me=myP();if(!me||me.down)return true;
+  L.tbT=e.id;if(tbFoe()){toast(tbWhy(),'tb');return true}if(!tbCanAct()){toast(tbWhy(),'tb');return true}L.tbGo=e.id;L.tbGoT=0;return true}
+/* appelé à chaque image : entrée ou sortie du combat, nouveau tour, nouvelle phase */
+function tbLocal(){const c=G.cb,inn=tbMe(),key=inn?c.r+c.ph:'';if(key===L.tbKey)return;const was=L.tbKey;L.tbKey=key;
+  if(!inn){L.tbR=0;L.tbEnd=false;L.tbGo=0;if(was){tbFlash(c?'Tu quittes le combat':'Fin du combat');Snd.play('lvl')}return}
+  if(L.tbR&&c.r>L.tbR)tickLocal(TB_ROUND*Math.min(3,c.r-L.tbR),true);L.tbR=c.r;
+  if(c.ph==='h'){L.tbMv=tbMoveMax();L.tbAct=false;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;const me=myP();
+    tbFlash(me&&me.down?'Tour '+c.r+' · à terre':'Tour '+c.r+' · à toi de jouer !');Snd.play('gate')}
+  else{L.tbMv=0;L.tbGo=0;tbFlash(was?'Tour des ennemis':'Combat !');Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}}
+let tbFlT=null;function tbFlash(t){const b=$('#tbFlash');if(!b)return;b.textContent=t;b.classList.remove('show');void b.offsetWidth;b.classList.add('show');clearTimeout(tbFlT);tbFlT=setTimeout(()=>b.classList.remove('show'),1500)}
+/* bandeau du tour : phase, action, potion, déplacement, allié */
+function tbHud(){const box=hq('#tbInfo'),be=hq('#bEnd'),c=G.cb,inn=tbMe(),me=myP();setHid(box,!inn);
+  const canEnd=inn&&c.ph==='h'&&me&&!me.down,undo=canEnd&&L.tbEnd&&tbOtherPlaying();
+  setHid(be,!(canEnd&&(!L.tbEnd||undo)));if(!inn)return;
+  const acted=tbActed(),pot=!!(c.po[myIdx]||L.tbPot),hp=c.ph==='h';
+  setTxt(hq('#tbPh'),'Tour '+c.r+' · '+(!hp?'les ennemis jouent':me&&me.down?'à terre':L.tbEnd?'tu as fini':'à toi'));box.classList.toggle('foe',!hp);
+  hq('#tbAct').classList.toggle('off',acted||!hp||L.tbEnd);hq('#tbPot').classList.toggle('off',pot||!hp||L.tbEnd);
+  const mi=hq('#tbMv');setTxt(mi,hp&&!L.tbEnd?'Déplacement '+(L.tbMv/TS).toFixed(1).replace('.',',')+' cases':'Déplacement —');mi.classList.toggle('off',!hp||L.tbEnd||L.tbMv<2);
+  const oi=myIdx===0?1:0,o=G.players[oi],al=hq('#tbAl');setHid(al,!o);
+  if(o)setTxt(al,!c.in[oi]?o.name+' : hors combat':o.down?o.name+' : à terre':!hp?'':c.rd[oi]?o.name+' : prêt ✓':o.name+' joue…'+(c.tl?' '+c.tl+' s':''));
+  setTxt(be,undo?'Annuler la fin du tour':'Fin du tour');be.classList.toggle('glow',acted&&!undo);be.classList.toggle('undo',!!undo)}
 /* ---- 45_quests.js ---- */
 /* ================= Journal de quêtes : histoire + sous-quêtes ================= */
 // Chaque héros garde sa progression (hero.sq) ; les événements viennent des effets envoyés par l'hôte, donc ça marche à deux.
@@ -3051,7 +3239,7 @@ function onState(s,first){
   s.tq=A(s.tq,40).map(a=>A(a,4).map(N));s.o=A(s.o,200);s.pl=A(s.pl,20);s.gp=A(s.gp,10).map(N);s.g=A(s.g,2).map(N);s.pt=A(s.pt,2).map(N);s.gm=A(s.gm,2).map(N);s.sh=A(s.sh,2).map(N);
   if(s.ep!==G.ep){Log.ev('à deux','changement de zone',s.z,'ep',s.ep);G.ep=s.ep;G.zd=s.z;G.m=zoneFromDesc(s.z);G.emap=new Map();G.opened=new Set();
     if(s.p&&s.p[1]){L.x=s.p[1][0];L.y=s.p[1][1]}else{L.x=G.m.start.x+36;L.y=G.m.start.y}L.dashT=0}
-  G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;
+  G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;G.cb=tbUnpack(s.cb);
   const nm=s.nm||[];
   G.players=(s.p||[]).map((a,i)=>{const old=G.players[i]||{};return{name:clean(nm[i])||('Joueur '+(i+1)),cls:CLS_IDS[a[6]]||'guerrier',x:a[0],y:a[1],rx:old.rx!=null?old.rx:a[0],ry:old.ry!=null?old.ry:a[1],hp:a[2],mhp:a[3]||1,down:!!a[4],rev:(a[5]||0)/40,drT:a[7]&1?1:0,shield:a[7]&2?1:0,stealthT:a[7]&4?1:0,aim:(a[8]||0)/10,sh:a[9]||0,lk:a[10]|0}});
   const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);em.set(a[0],o)}
@@ -3079,7 +3267,7 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
     d:G.drops.filter(d=>near(d.x,d.y)).slice(0,26).map(d=>[d.id,d.k,r(d.x),r(d.y),d.r]),
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),
     m:G.msgs.slice(-3),o:[...G.opened].slice(-60),cr:G.crates.map(c=>[c.x,c.y]),pl:G.platesOn,go:G.gateOpen?1:0,k:G.key,gp:(G.gp||[]).map(v=>Math.round(v*20)),wv:G.wave|0,so:G.stairsOpen?1:0,ab:G.abhOn?1:0,
-    zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:z.slow?2:0]),tq:G.traps.slice(-12).map(t=>[r(t.x),r(t.y),0]).concat(G.decoys.map(d=>[r(d.x),r(d.y),CLS_IDS.indexOf(d.cls)+1,d.lk|0])),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0};
+    zo:G.zones.map(z=>[r(z.x),r(z.y),z.r,z.smoke?1:z.slow?2:0]),tq:G.traps.slice(-12).map(t=>[r(t.x),r(t.y),0]).concat(G.decoys.map(d=>[r(d.x),r(d.y),CLS_IDS.indexOf(d.cls)+1,d.lk|0])),fi:G.fires.map(f=>[r(f.x),r(f.y),f.r]),xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,df:G.defT>0?1:0,cb:tbPack()};
   // taille en octets : un caractère vaut au plus 3 octets, inutile d'encoder un état court (cas courant, 15 fois par seconde)
   const big=()=>{const t=JSON.stringify(s);return t.length*3>3400&&enc.encode(t).length>3400};
   let n=0;while(big()&&n++<24){if(s.j.length>4)s.j.length=Math.floor(s.j.length*.6);else if(s.x.length>4)s.x.splice(0,4);else if(s.o.length>10)s.o.splice(0,10);else if(s.d.length>8)s.d.length-=6;else if(s.e.length>12)s.e.length-=5;else break}
@@ -3091,7 +3279,7 @@ function netTick(dt){if(!room)return;netT-=dt;
   if(mode==='host'&&netT<=0){netT=.066;pres({g:serialize(),l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='solo'&&netT<=0){netT=3;pres({l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='guest'&&netT<=0){netT=.05;const r=Math.round;const tp=L.tp||aimPoint();
-    pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0}})}}
+    pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0,et:L.et|0}})}}
 /* ---- 60_render.js ---- */
 /* ================= Effets visuels ================= */
 function addText(x,y,txt,col,life,size){parts.push({k:'txt',x,y,vy:-38,txt,col,life:life||.9,max:life||.9,size:size||13})}
@@ -3145,6 +3333,7 @@ function processFx(list){for(const f of list){if(f.id<=lastFx)continue;lastFx=f.
     case 39:addText(f.x,f.y,'absorbé','#ffe9a0',.7,11);break;
     case 40:{const tx=Math.floor(f.v/10000),ty=f.v%10000;parts.push({k:'bolt',x:f.x,y:f.y,x2:tx,y2:ty,life:.25,max:.25});Snd.play('crit');break}
     case 45:{const FXC=['#c9a27c','#c27bff','#9fd0ff','#ff7a3a','#f0c95a','#86cc70','#e0644c'];ring(f.x,f.y,6,Math.max(8,Math.floor(f.v/10)),.5,FXC[f.v%10]||'#fff',3);break}
+    case 46:addText(f.x,f.y,'Étourdi','#9fd0ff',1.1,12);break;
     case 41:addText(f.x+(Math.random()*10-5),f.y,String(f.v),'#ff9b3d',.6,11);break;
   }}}
 function processMsgs(list){for(const m of list){if(m[0]<=lastMsg)continue;lastMsg=m[0];toast(String(m[1]).slice(0,140))}}
@@ -3289,10 +3478,7 @@ function render(dt){
   for(const t of G.traps||[]){if(!vis(t.x,t.y))continue;drawTrap(t.x,t.y,T)}
   for(const d of G.decoys||[]){if(!vis(d.x,d.y))continue;ctx.globalAlpha=.55+.15*Math.sin(T*8);drawHero2(ctx,d.cls,d.x,d.y,0,T,false,{lk:d.lk|0});ctx.globalAlpha=1;ctx.strokeStyle='rgba(194,123,255,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(d.x,d.y+12,16,6,0,0,6.28);ctx.stroke()}
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
-  {const w=wpos(myIdx);if(w)for(const e of G.enemies){if(e.hp<=0||e.type==='boss'||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;   // zones d'alerte
-    if(Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS||!vis(ex,ey))continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
-    if(e.act){ctx.fillStyle='rgba(226,75,74,.16)';ctx.fill();ctx.strokeStyle='rgba(240,149,149,.85)';ctx.lineWidth=2;ctx.stroke()}
-    else{ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}}}
+  drawTbGround(T,vis);
   // tri en profondeur
   const Z=[];
   for(const c of m.chests){const op=G.opened.has(c.id);const py=(c.y+.5)*TS;if(vis((c.x+.5)*TS,py))Z.push([py+6,()=>drawChest(c,op)])}
@@ -3356,6 +3542,7 @@ function render(dt){
   if(Scene.on)Scene.drawFx(Scene.time);
   if(!hideP)G.players.forEach((p,i)=>{const w=wpos(i);label(p.name,w.x,w.y-38,i===myIdx?'#ffe9c2':'#cfe8ff');
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
+    if(i!==myIdx&&G.cb&&G.cb.ph==='h'&&G.cb.in[i]&&G.cb.rd[i]&&!p.down)label('prêt ✓',w.x,w.y-52,'#9ff08a',11);
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
   if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&(bd.act.startsWith('house:')||bd.act==='talents')))continue;   // maisons : l'enseigne remplace le nom
     const dx=(bd.door.x+.5)*TS,dy=bd.kind==='tour'?bd.door.y*TS-78:bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
@@ -3373,6 +3560,21 @@ function render(dt){
     if(!G.stairsOpen&&m.goal&&m.goal.type==='waves'&&!G.wave&&!vis(m.goal.at.x,m.goal.at.y))edgeArrow(m.goal.at.x,m.goal.at.y,'#f0c95a','LES PORTES',hw,hh)}
   if(isW&&!Scene.on){const o=objTarget();if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
   if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const a=Math.atan2(w.y-L.y,w.x-L.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
+/* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
+function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
+  for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
+    if(e.act){ctx.strokeStyle='rgba(240,120,110,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,e.r+6,(e.r+6)*.45,0,0,6.28);ctx.stroke();continue}
+    if(e.type==='boss'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
+    ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}
+  // zone de combat : visible par le héros resté dehors, elle englobe tous les ennemis en combat
+  if(G.cb&&!inn){ctx.save();ctx.fillStyle='rgba(200,72,60,.07)';ctx.strokeStyle='rgba(240,149,149,.55)';ctx.lineWidth=2;ctx.setLineDash([10,8]);ctx.lineDashOffset=T*10;
+    for(const e of G.enemies){if(e.hp<=0||!e.act||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(Math.hypot(w.x-ex,w.y-ey)>(TB_FIGHT+8)*TS)continue;ctx.beginPath();ctx.arc(ex,ey,TB_FIGHT*TS,0,6.28);ctx.fill();ctx.stroke()}
+    ctx.restore()}
+  const t=tbTarget();if(t){const tx=t.rx??t.x,ty=t.ry??t.y,pu=1+.08*Math.sin(T*6);ctx.strokeStyle='#f0c95a';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(tx,ty+t.r*.6,(t.r+9)*pu,(t.r+9)*.45*pu,0,0,6.28);ctx.stroke();
+    ctx.fillStyle='#f0c95a';ctx.beginPath();ctx.moveTo(tx,ty-t.r-10);ctx.lineTo(tx-6,ty-t.r-20);ctx.lineTo(tx+6,ty-t.r-20);ctx.closePath();ctx.fill()}
+  if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){ctx.save();ctx.fillStyle='rgba(255,255,255,.35)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();
+    if(L.tbMv>2){ctx.fillStyle='rgba(142,197,232,.1)';ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.beginPath();ctx.arc(L.x,L.y,L.tbMv,0,6.28);ctx.fill();ctx.stroke()}
+    ctx.restore()}}}
 function objTarget(){const qt=questTarget();if(qt)return qt;const o=OBJ[Math.min(G.q,6)];if(!o||!o.at||!WORLD)return null;return placePx(o.at)}
 function edgeArrow(x,y,col,label,hw,hh){const a=Math.atan2(y-L.y,x-L.x);const r=Math.min(hw,hh*.5)*.72;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;const pu=1+.12*Math.sin(G.time*6);
   ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.scale(pu,pu);ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.moveTo(17,1);ctx.lineTo(-7,-11);ctx.lineTo(-2,1);ctx.lineTo(-7,13);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(16,0);ctx.lineTo(-8,-12);ctx.lineTo(-3,0);ctx.lineTo(-8,12);ctx.fill();ctx.restore();
@@ -4793,7 +4995,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   setTxt(hq('#meName'),myName+' · '+CLS[hero.cls].nom);setTxt(hq('#meLvl'),'Niv '+hero.lvl);
   setW(hq('#meHp'),me.hp/me.mhp);setW(hq('#meSh'),(me.sh||me.shield||0)/me.mhp);setW(hq('#meMp'),L.mp/ST.mmp);setW(hq('#meXp'),hero.lvl>=LVL_MAX?1:hero.xp/xpNeed(hero.lvl));
   const oi=myIdx===0?1:0,o=G.players[oi];
-  if(o){setTxt(hq('#alName'),o.name+' · '+CLS[o.cls].nom);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV')}
+  if(o){setTxt(hq('#alName'),o.name+' · '+CLS[o.cls].nom);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV'+(G.cb&&G.cb.in[oi]&&!tbMe()?' · au combat':''))}
   else{setTxt(hq('#alName'),'Joueur 2');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}
   const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
@@ -4803,11 +5005,13 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   const ot=hq('#objTxt');if(ot._t!==ob+'\n'+os){ot._t=ob+'\n'+os;ot.textContent='';ot.append(el('b',null,ob),document.createTextNode(os))}
   setTxt(hq('#goldTxt'),hero.gold);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
   {const n=stonesQ(Math.max(G.q,hero.q));const gp=hq('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
-  const ks=ST.ks;['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?Math.ceil(L.cd[i]):'');setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
-  if(ks[3]){const b=hq('#bUlt');b.classList.remove('lock');b.classList.toggle('ready',L.ult>=100);setTxt(b.querySelector('.t'),L.ult>=100?'':Math.floor(L.ult)+'%');setCss(b,'--cd',(1-L.ult/100).toFixed(3))}
+  const ks=ST.ks,inTb=tbMe();['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?(inTb?Math.ceil(L.cd[i]/TB_ROUND-.01)+' t':Math.ceil(L.cd[i])):'');b.classList.toggle('used',inTb&&!tbCanAct());setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
+  hq('#bAtk').classList.toggle('used',inTb&&!tbCanAct());hq('#bPot').classList.toggle('used',inTb&&!tbCanPot());
+  if(ks[3]){const b=hq('#bUlt');b.classList.remove('lock');b.classList.toggle('used',inTb&&!tbCanAct());b.classList.toggle('ready',L.ult>=100);setTxt(b.querySelector('.t'),L.ult>=100?'':Math.floor(L.ult)+'%');setCss(b,'--cd',(1-L.ult/100).toFixed(3))}
   ks.forEach((id,i)=>{const S=SK[id],d=$('#sk'+i);if(!S||!d)return;if(S.t==='u'){d.classList.toggle('ready',L.ult>=100);setCss(d,'--cd',(1-L.ult/100).toFixed(3))}else setCss(d,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3))});
   {const d=$('#skPot');if(d)setTxt(d.querySelector('span'),'Potion '+hero.pot)}
   setTxt(hq('#potN'),hero.pot);hq('#bPot').classList.toggle('empty',hero.pot<=0);
+  tbHud();
   const it=findInteract();const lab=interactLabel(it);const ba=hq('#bAct');setHid(ba,!it);if(it)setTxt(ba,lab.length>24?lab.split(' : ')[0]:lab);const ah=hq('#actHint');setHid(ah,!it);if(it)setTxt(ah,'F · '+lab)}
 
 /* ================= Talents et compétences ================= */
@@ -4909,18 +5113,18 @@ addEventListener('keydown',e=>{if(!inGame())return;if(e.target&&e.target.tagName
   if(e.code==='KeyI'){$('#bagBox').hidden?openBag():closeBag();return}if(e.code==='KeyO'){$('#questBox').hidden?openQuests():closeQuests();return}if(e.code==='KeyM'){$('#mapBox').hidden?openMap():($('#mapBox').hidden=true,paused=false);return}
   if(anyOverlay())return;keys.add(e.code);
   if(e.code==='Space'||e.code==='Digit1'||e.code==='KeyK'){skQ[0]=true;e.preventDefault()}if(e.code==='Digit2'||e.code==='KeyL')skQ[1]=true;if(e.code==='Digit3')skQ[2]=true;if(e.code==='KeyR')skQ[3]=true;
-  if(e.code==='KeyE')potQ=true;if(e.code==='KeyF')actQ=true;if(e.code==='KeyT')toggleTalents();
+  if(e.code==='KeyE')potQ=true;if(e.code==='KeyF')actQ=true;if(e.code==='KeyT')toggleTalents();if(e.code==='Enter'||e.code==='KeyN'){e.preventDefault();L.tbEnd?cancelEnd():endTurn()}
   if(e.code.startsWith('Arrow'))e.preventDefault()});
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();mouse.down=false;touch.atk=false});
 cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();touch.on=false});
-cv.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;Snd.init();mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
+cv.addEventListener('pointerdown',e=>{Snd.init();const r=cv.getBoundingClientRect();if(e.button===0&&tapEnemy(e.clientX-r.left,e.clientY-r.top))return;if(e.pointerType!=='mouse')return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0)mouse.down=false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 (function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0;
   const R=()=>joy.offsetWidth*.42||45;
   const set=(x,y)=>{let dx=x-cx,dy=y-cy;const d=Math.hypot(dx,dy),r=R();if(d>r){dx*=r/d;dy*=r/d}knob.style.transform=`translate(${dx}px,${dy}px)`;const n=Math.hypot(dx,dy)/r;touch.jx=n<.18?0:dx/r;touch.jy=n<.18?0:dy/r};
-  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();id=e.pointerId;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
+  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();{const r=cv.getBoundingClientRect();if(tapEnemy(e.clientX-r.left,e.clientY-r.top)){e.preventDefault();return}}id=e.pointerId;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
   zone.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e.clientX,e.clientY)});
   const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
@@ -4940,6 +5144,7 @@ function aimBtn(elx,slot){let id=null,cx=0,cy=0,moved=false;
   elx.addEventListener('pointerup',end(true));elx.addEventListener('pointercancel',end(false))}
 aimBtn($('#bAtk'),-1);aimBtn($('#bS1'),0);aimBtn($('#bS2'),1);aimBtn($('#bS3'),2);aimBtn($('#bUlt'),3);
 holdBtn($('#bPot'),()=>potQ=true);holdBtn($('#bAct'),()=>actQ=true);
+$('#bEnd').addEventListener('click',()=>{Snd.init();L&&L.tbEnd?cancelEnd():endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();

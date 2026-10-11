@@ -98,7 +98,7 @@ with sync_playwright() as pw:
     pg.wait_for_timeout(600); skip(pg)
     check('Sortie fermée tant que les herses sont baissées', go(pg, "!G.stairsOpen&&G.m.goal.id==='levers'&&G.m.marks.length===3"))
     for i in range(3):
-        go(pg, f"(()=>{{const mk=G.m.marks[{i}];L.x=(mk.x+.5)*TS;L.y=(mk.y+.5)*TS}})()"); pg.wait_for_timeout(2300)
+        go(pg, f"(()=>{{const mk=G.m.marks[{i}];L.x=(mk.x+.5)*TS;L.y=(mk.y+.5)*TS;G.enemies.length=0;G.cb=null}})()"); pg.wait_for_timeout(2300)
     check('Les trois herses levées ouvrent le donjon', go(pg, "G.stairsOpen&&G.gp.every(v=>v>=1)"))
     go(pg, "L.x=G.m.stairs.x;L.y=G.m.stairs.y"); pg.wait_for_timeout(1400); skip(pg)
     check('Étage 2 : le donjon de Sinthara', go(pg, "G.m.idx===1&&G.enemies.some(e=>e.type==='boss'&&e.bv===0)"))
@@ -155,10 +155,10 @@ with sync_playwright() as pw:
     for cls in ['guerrier', 'mage', 'voleur', 'soigneur']:
         for b in range(3):
             go(pg, f"""(()=>{{QDone.q.length=0;QDone.close();hero.cls='{cls}';hero.lvl=LVL_MAX;hero.tr=[];for(let k=0;k<10;k++){{const key='{b}.'+k;if(!treeWhy(hero,key))hero.tr.push(key)}}hero.eq={{arme:starter('{cls}','arme'),armure:starter('{cls}','armure'),talisman:null}};refreshStats();G.players[0].cls='{cls}';G.players[0].st=ST;L.mp=ST.mmp;L.ult=100;L.cd=[0,0,0,0];buildSkillUI();
-              for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}}})()""")
+              for(let k=0;k<4;k++){{const q=freeNear(L.x,L.y,60,120);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.act=true}}tbUpdate(0)}})()""")
             n = go(pg, "hero.tr.length")
             for sl in range(4):
-                go(pg, f"QDone.q.length=0;QDone.close();skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")
+                go(pg, f"QDone.q.length=0;QDone.close();if(G.cb){{G.cb.ph='h';G.cb.ac=[false,false];G.cb.rd=[false,false]}}L.tbAct=false;L.tbEnd=false;skQ[{sl}]=true"); pg.wait_for_timeout(220); go(pg, "L.mp=ST.mmp")  # au tour par tour : un nouveau tour par compétence
             pg.wait_for_timeout(300)
             ok = go(pg, "ST.ks.every((id,i)=>!id||L.sk[i]>=1)&&!!ST.ks[3]&&!!ST.pa&&ST.ks.filter(Boolean).length===3")
             check(f'{cls} branche {b + 1} : 10 crans, passif, 2 compétences et ultime lancés', ok and n == 10, go(pg, "[hero.tr.join(' '),ST.ks.join(','),ST.pa,L.sk.join(',')].join(' | ')"))
@@ -352,6 +352,47 @@ with sync_playwright() as pw:
     check('Aucune erreur JavaScript (ordinateur)', not pg.errs, pg.errs[:4])
     ctx.close()
 
+    # ================= Combat au tour par tour (solo) =================
+    ctx, pg = page(br, tag='tour'); pg.goto(URL); pg.wait_for_timeout(700); pg.click('#bSolo'); pg.wait_for_timeout(900)
+    go(pg, "(()=>{if(G.m.kind!=='world')hostEnter('w',WORLD.start);QDone.q.length=0;QDone.close();G.enemies=[];G.cb=null;G.night=0;G.reinOn=false;hero.lvl=3;refreshStats();G.players[0].hp=G.players[0].mhp})()"); pg.wait_for_timeout(400)
+    go(pg, "(()=>{for(let k=0;k<3;k++){const q=freeNear(L.x+6*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.hx=q.x;e.hy=q.y}})()"); pg.wait_for_timeout(300)
+    check('Tour par tour : hors de la zone d’alerte, pas de combat', not go(pg, "G.cb") and go(pg, "AGGRO") == 3.5)
+    go(pg, "L.x+=3.2*TS"); pg.wait_for_timeout(300)
+    check('Tour par tour : entrer dans la zone lance le combat, les ennemis jouent d’abord', go(pg, "!!G.cb&&G.cb.ph==='e'&&G.cb.in[0]"))
+    for _ in range(20):
+        if go(pg, "G.cb&&G.cb.ph==='h'"): break
+        pg.wait_for_timeout(200)
+    check('Tour par tour : puis le tour des héros, bandeau et bouton Fin du tour', go(pg, "G.cb.ph==='h'&&G.cb.r===2") and pg.is_visible('#tbInfo') and pg.is_visible('#bEnd'))
+    hp = go(pg, "G.enemies.map(e=>e.hp).reduce((a,b)=>a+b,0)")
+    ac0 = go(pg, "L.ac"); go(pg, "touch.atk=true"); pg.wait_for_timeout(1200); go(pg, "touch.atk=false")
+    check('Tour par tour : une seule action par tour', go(pg, "L.ac") - ac0 == 1 and go(pg, "G.cb.ac[0]"), go(pg, "L.ac"))
+    x0 = go(pg, "L.x"); go(pg, "touch.jx=-1"); pg.wait_for_timeout(3000); go(pg, "touch.jx=0")
+    mv = (x0 - go(pg, "L.x")) / 32; left = go(pg, "L.tbMv") / 32
+    check('Tour par tour : déplacement limité à 5 cases', 0 < mv <= 5.1 and mv + left <= 5.15, [round(mv, 2), round(left, 2)])
+    pg.screenshot(path=f'{OUT}/f1_tour_heros.png')
+    pg.click('#bEnd'); pg.wait_for_timeout(250)
+    check('Tour par tour : Fin du tour → tour des ennemis', go(pg, "G.cb.ph==='e'"))
+    pg.wait_for_timeout(2600)
+    check('Tour par tour : recharges et mana comptées en tours', go(pg, "G.cb.ph==='h'&&G.cb.r===3"))
+    go(pg, "(()=>{const q=freeNear(L.x-18*TS,L.y,0,2*TS);L.x=q.x;L.y=q.y})()"); pg.click('#bEnd'); pg.wait_for_timeout(2800)
+    check('Tour par tour : fuite à plus de 12 cases, les ennemis rentrent chez eux', not go(pg, "G.cb") and go(pg, "G.enemies.every(e=>e.ret||!e.act)"))
+    go(pg, "G.enemies=[];(()=>{const q=freeNear(L.x+5*TS,L.y,0,TS);spawnEnemy('orc',q.x,q.y,false,false,undefined,1)})()"); pg.wait_for_timeout(300)
+    sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
+    pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
+    check('Tour par tour : toucher un ennemi le cible et on marche vers lui', go(pg, "L.tbT===G.enemies[0].id"))
+    for _ in range(30):
+        if go(pg, "G.cb&&G.cb.ph==='h'&&!G.cb.ac[0]"): break
+        pg.wait_for_timeout(200)
+    go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-30;L.y=e.y})()"); pg.wait_for_timeout(100)
+    sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
+    h0 = go(pg, "G.enemies[0].hp"); pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(700)
+    h1 = go(pg, "G.enemies[0]?G.enemies[0].hp:0")
+    check('Tour par tour : toucher l’ennemi au contact le frappe', h1 < h0 and go(pg, "!G.cb||G.cb.ac[0]"), [h0, h1])
+    go(pg, "G.enemies.forEach(e=>killEnemy(e))"); pg.wait_for_timeout(400)
+    check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo'))
+    check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])
+    ctx.close()
+
     # ================= À deux =================
     ctx = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
     ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE)
@@ -366,6 +407,9 @@ with sync_playwright() as pw:
     check('À deux : le frère rejoint le monde', go(B, "mode==='guest'&&G.zd==='w'") and go(A, "G.players.length") == 2)
     go(B, "hero.lvl=7;hero.tr=['0.0','0.1','0.2','0.3'];refreshStats();buildSkillUI();L.mp=ST.mmp"); B.wait_for_timeout(500)
     go(A, "(()=>{for(let k=0;k<3;k++){const p=G.players[1];const e=spawnEnemy('orc',p.x+40+k*10,p.y,false,false,undefined,2);e.act=true}})()"); A.wait_for_timeout(300)
+    for _ in range(25):  # au tour par tour, le frère attend le tour des héros pour agir
+        if go(B, "!tbMe()||tbHero()"): break
+        B.wait_for_timeout(200)
     go(B, "skQ[1]=true"); B.wait_for_timeout(600)
     check('À deux : compétence du frère exécutée par l’hôte', go(A, "G.players[1].sk[1]") >= 1)
     go(A, "addDrop(6,G.players[1].x+4,G.players[1].y,999,1,2)"); A.wait_for_timeout(1500)
@@ -393,6 +437,22 @@ with sync_playwright() as pw:
     check('À deux : pause de l’allié, sa place est gardée', go(A, "G.players.length===2&&!!G.guestPeer"))
     go(B, "pres({bg:0})"); A.wait_for_timeout(600)
     check('À deux : retour de pause, toujours ensemble', go(A, "G.players.length") == 2 and go(B, "mode") == 'guest')
+    # tour par tour à deux : chacun entre et sort pour son compte, on joue en même temps, on peut annuler sa fin de tour
+    go(A, "G.enemies=[];G.cb=null;G.players.forEach(q=>{q.down=false;q.hp=q.mhp})"); go(B, "(()=>{L.x=G.players[0].x+14*TS;L.y=G.players[0].y})()"); A.wait_for_timeout(500)
+    go(A, "(()=>{for(let k=0;k<2;k++){const q=freeNear(L.x+3*TS,L.y,0,TS);const e=spawnEnemy('slime',q.x,q.y,false,false,undefined,1);e.act=true}})()"); A.wait_for_timeout(500)
+    check('À deux : l’hôte au combat, le frère reste en temps réel', go(A, "!!G.cb&&G.cb.in[0]&&!G.cb.in[1]") and go(B, "!tbMe()"))
+    go(B, "(()=>{const e=G.enemies[0];L.x=e.x+6*TS;L.y=e.y})()"); B.wait_for_timeout(800)
+    check('À deux : le frère entre dans la zone de combat et rejoint le tour par tour', go(A, "G.cb.in[1]") and go(B, "tbMe()"))
+    for _ in range(25):
+        if go(A, "G.cb&&G.cb.ph==='h'") and go(B, "tbHero()"): break
+        A.wait_for_timeout(200)
+    go(A, "endTurn()"); A.wait_for_timeout(300)
+    check('À deux : l’hôte a fini, il peut annuler tant que le frère joue', go(A, "G.cb.ph==='h'&&G.cb.rd[0]&&!G.cb.rd[1]") and 'Annuler' in A.inner_text('#bEnd'))
+    A.click('#bEnd'); A.wait_for_timeout(200)
+    check('À deux : annulation de la fin du tour', go(A, "!G.cb.rd[0]&&!L.tbEnd"))
+    go(A, "endTurn()"); B.click('#bEnd'); A.wait_for_timeout(800)
+    check('À deux : les deux ont fini → tour des ennemis', go(A, "G.cb.ph==='e'"))
+    go(B, "(()=>{L.x+=0})()"); go(A, "G.enemies.forEach(e=>killEnemy(e))"); A.wait_for_timeout(600)
     B.click('#pMenu'); B.click('#bQuit'); A.wait_for_timeout(900)
     check('À deux : le frère quitte, l’hôte continue', go(A, "G.players.length") == 1)
     check('Aucune erreur JavaScript (à deux)', not A.errs and not B.errs, (A.errs + B.errs)[:4])

@@ -128,7 +128,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   setTxt(hq('#meName'),myName+' · '+CLS[hero.cls].nom);setTxt(hq('#meLvl'),'Niv '+hero.lvl);
   setW(hq('#meHp'),me.hp/me.mhp);setW(hq('#meSh'),(me.sh||me.shield||0)/me.mhp);setW(hq('#meMp'),L.mp/ST.mmp);setW(hq('#meXp'),hero.lvl>=LVL_MAX?1:hero.xp/xpNeed(hero.lvl));
   const oi=myIdx===0?1:0,o=G.players[oi];
-  if(o){setTxt(hq('#alName'),o.name+' · '+CLS[o.cls].nom);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV')}
+  if(o){setTxt(hq('#alName'),o.name+' · '+CLS[o.cls].nom);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV'+(G.cb&&G.cb.in[oi]&&!tbMe()?' · au combat':''))}
   else{setTxt(hq('#alName'),'Joueur 2');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}
   const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
@@ -138,11 +138,13 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   const ot=hq('#objTxt');if(ot._t!==ob+'\n'+os){ot._t=ob+'\n'+os;ot.textContent='';ot.append(el('b',null,ob),document.createTextNode(os))}
   setTxt(hq('#goldTxt'),hero.gold);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
   {const n=stonesQ(Math.max(G.q,hero.q));const gp=hq('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
-  const ks=ST.ks;['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?Math.ceil(L.cd[i]):'');setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
-  if(ks[3]){const b=hq('#bUlt');b.classList.remove('lock');b.classList.toggle('ready',L.ult>=100);setTxt(b.querySelector('.t'),L.ult>=100?'':Math.floor(L.ult)+'%');setCss(b,'--cd',(1-L.ult/100).toFixed(3))}
+  const ks=ST.ks,inTb=tbMe();['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?(inTb?Math.ceil(L.cd[i]/TB_ROUND-.01)+' t':Math.ceil(L.cd[i])):'');b.classList.toggle('used',inTb&&!tbCanAct());setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
+  hq('#bAtk').classList.toggle('used',inTb&&!tbCanAct());hq('#bPot').classList.toggle('used',inTb&&!tbCanPot());
+  if(ks[3]){const b=hq('#bUlt');b.classList.remove('lock');b.classList.toggle('used',inTb&&!tbCanAct());b.classList.toggle('ready',L.ult>=100);setTxt(b.querySelector('.t'),L.ult>=100?'':Math.floor(L.ult)+'%');setCss(b,'--cd',(1-L.ult/100).toFixed(3))}
   ks.forEach((id,i)=>{const S=SK[id],d=$('#sk'+i);if(!S||!d)return;if(S.t==='u'){d.classList.toggle('ready',L.ult>=100);setCss(d,'--cd',(1-L.ult/100).toFixed(3))}else setCss(d,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3))});
   {const d=$('#skPot');if(d)setTxt(d.querySelector('span'),'Potion '+hero.pot)}
   setTxt(hq('#potN'),hero.pot);hq('#bPot').classList.toggle('empty',hero.pot<=0);
+  tbHud();
   const it=findInteract();const lab=interactLabel(it);const ba=hq('#bAct');setHid(ba,!it);if(it)setTxt(ba,lab.length>24?lab.split(' : ')[0]:lab);const ah=hq('#actHint');setHid(ah,!it);if(it)setTxt(ah,'F · '+lab)}
 
 /* ================= Talents et compétences ================= */
@@ -244,18 +246,18 @@ addEventListener('keydown',e=>{if(!inGame())return;if(e.target&&e.target.tagName
   if(e.code==='KeyI'){$('#bagBox').hidden?openBag():closeBag();return}if(e.code==='KeyO'){$('#questBox').hidden?openQuests():closeQuests();return}if(e.code==='KeyM'){$('#mapBox').hidden?openMap():($('#mapBox').hidden=true,paused=false);return}
   if(anyOverlay())return;keys.add(e.code);
   if(e.code==='Space'||e.code==='Digit1'||e.code==='KeyK'){skQ[0]=true;e.preventDefault()}if(e.code==='Digit2'||e.code==='KeyL')skQ[1]=true;if(e.code==='Digit3')skQ[2]=true;if(e.code==='KeyR')skQ[3]=true;
-  if(e.code==='KeyE')potQ=true;if(e.code==='KeyF')actQ=true;if(e.code==='KeyT')toggleTalents();
+  if(e.code==='KeyE')potQ=true;if(e.code==='KeyF')actQ=true;if(e.code==='KeyT')toggleTalents();if(e.code==='Enter'||e.code==='KeyN'){e.preventDefault();L.tbEnd?cancelEnd():endTurn()}
   if(e.code.startsWith('Arrow'))e.preventDefault()});
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();mouse.down=false;touch.atk=false});
 cv.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();touch.on=false});
-cv.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')return;Snd.init();mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
+cv.addEventListener('pointerdown',e=>{Snd.init();const r=cv.getBoundingClientRect();if(e.button===0&&tapEnemy(e.clientX-r.left,e.clientY-r.top))return;if(e.pointerType!=='mouse')return;mouse.x=e.offsetX;mouse.y=e.offsetY;mouse.t=performance.now();if(e.button===0)mouse.down=true;if(e.button===2)skQ[0]=true});
 addEventListener('pointerup',e=>{if(e.pointerType==='mouse'&&e.button===0)mouse.down=false});
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 (function(){const zone=$('#joyZone'),joy=$('#joy'),knob=$('#knob');let id=null,cx=0,cy=0;
   const R=()=>joy.offsetWidth*.42||45;
   const set=(x,y)=>{let dx=x-cx,dy=y-cy;const d=Math.hypot(dx,dy),r=R();if(d>r){dx*=r/d;dy*=r/d}knob.style.transform=`translate(${dx}px,${dy}px)`;const n=Math.hypot(dx,dy)/r;touch.jx=n<.18?0:dx/r;touch.jy=n<.18?0:dy/r};
-  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();id=e.pointerId;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
+  zone.addEventListener('pointerdown',e=>{if(id!==null)return;Snd.init();{const r=cv.getBoundingClientRect();if(tapEnemy(e.clientX-r.left,e.clientY-r.top)){e.preventDefault();return}}id=e.pointerId;try{zone.setPointerCapture(id)}catch(_){}const g=$('#game').getBoundingClientRect();cx=e.clientX;cy=e.clientY;joy.style.left=(cx-g.left)+'px';joy.style.top=(cy-g.top)+'px';joy.hidden=false;knob.style.transform='';touch.on=true;e.preventDefault()});
   zone.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e.clientX,e.clientY)});
   const end=e=>{if(e.pointerId!==id)return;id=null;joy.hidden=true;knob.style.transform='';touch.jx=touch.jy=0};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
@@ -275,6 +277,7 @@ function aimBtn(elx,slot){let id=null,cx=0,cy=0,moved=false;
   elx.addEventListener('pointerup',end(true));elx.addEventListener('pointercancel',end(false))}
 aimBtn($('#bAtk'),-1);aimBtn($('#bS1'),0);aimBtn($('#bS2'),1);aimBtn($('#bS3'),2);aimBtn($('#bUlt'),3);
 holdBtn($('#bPot'),()=>potQ=true);holdBtn($('#bAct'),()=>actQ=true);
+$('#bEnd').addEventListener('click',()=>{Snd.init();L&&L.tbEnd?cancelEnd():endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
