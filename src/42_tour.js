@@ -116,9 +116,14 @@ function tbWhy(cost){return!tbMe()?'':G.cb.ph!=='h'?'Attends : c’est le tour d
 function tbMoveMax(){return TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}
 function tbActed(){return!!(tbMe()&&tbAP()<TB_PA)}
 function endTurn(){if(!tbHero()||L.tbEnd)return;const me=myP();if(!me||me.down)return;L.tbEnd=true;L.pv=null;L.et=G.cb.r;if(mode!=='guest')G.cb.rd[myIdx]=true;Snd.play('key')}
+/* plus de points d'action ni de déplacement : le tour se finit tout seul, 1,2 s après (le temps de voir le dernier coup).
+   La potion ne retient pas le tour. Après « Annuler la fin du tour », on ne refinit pas tout seul ce tour-ci. */
+const TB_AUTO=1.2;
+function tbAutoEnd(dt){if(!tbHero()||L.tbEnd||L.tbNoAuto||L.tbReA||L.dashT>0||tbAP()>0||L.tbMv>=TS/2){L.tbAutoT=0;return}
+  const me=myP();if(!me||me.down)return;L.tbAutoT=(L.tbAutoT||0)+dt;if(L.tbAutoT>=TB_AUTO){L.tbAutoT=0;endTurn();toast('Plus d’actions ni de déplacement : fin du tour.','tbauto')}}
 /* à deux : tant que l'autre joue, on peut revenir sur sa fin de tour ; sans action faite, on repart de sa place de départ */
 function tbOtherPlaying(){const c=G.cb,o=myIdx===0?1:0;return!!(c&&G.players[o]&&c.in[o]&&!c.rd[o]&&!G.players[o].down)}
-function cancelEnd(){if(!tbHero()||!L.tbEnd||!tbOtherPlaying())return;L.tbEnd=false;L.et=0;if(mode!=='guest')G.cb.rd[myIdx]=false;
+function cancelEnd(){if(!tbHero()||!L.tbEnd||!tbOtherPlaying())return;L.tbEnd=false;L.tbNoAuto=true;L.et=0;if(mode!=='guest')G.cb.rd[myIdx]=false;
   if(!tbActed()){L.x=L.tbOx;L.y=L.tbOy;tbAnchor(tbMoveMax())}Snd.play('key')}
 /* cible : l'ennemi touché à l'écran ; sans cible, le plus proche */
 function tbTarget(){if(!L.tbT)return null;const e=G.enemies.find(e=>e.id===L.tbT&&e.hp>0);if(!e)L.tbT=0;return e||null}
@@ -136,7 +141,7 @@ function tapEnemy(sx,sy,clear){if(!inGame()||paused||Scene.on)return false;const
 function tbLocal(){const c=G.cb,inn=tbMe(),key=inn?c.r+c.ph:'';if(key===L.tbKey)return;const was=L.tbKey;L.tbKey=key;
   if(!inn){L.tbR=0;L.tbEnd=false;L.tbSpent=0;if(was){toast(c?'Tu quittes le combat.':'Fin du combat.');Snd.play('lvl')}return}
   if(L.tbR&&c.r>L.tbR)tickLocal(TB_ROUND*Math.min(3,c.r-L.tbR),true);L.tbR=c.r;
-  if(c.ph==='h'){tbAnchor(tbMoveMax());L.tbReA=false;L.pv=null;L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;L.tbLgT=performance.now();Snd.play('gate')}
+  if(c.ph==='h'){tbAnchor(tbMoveMax());L.tbReA=false;L.tbNoAuto=false;L.tbAutoT=0;L.pv=null;L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;L.tbLgT=performance.now();Snd.play('gate')}
   else{L.tbMv=0;L.tbF=null;L.pv=null;Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}
   tbPulse()}
 function tbPulse(){const b=$('#tbInfo');if(!b)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse')}

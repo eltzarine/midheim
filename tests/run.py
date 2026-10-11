@@ -405,6 +405,12 @@ with sync_playwright() as pw:
     hb.dispatch_event('pointerdown'); pg.wait_for_timeout(600); hb.dispatch_event('pointerup')
     h1 = go(pg, "G.enemies[0]?G.enemies[0].hp:0")
     check('Tour par tour : 2e appui = l’attaque part et vise la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===1"), [h0, h1])
+    for _ in range(30):
+        if go(pg, "G.cb&&G.cb.ph==='h'&&!L.tbEnd"): break
+        pg.wait_for_timeout(200)
+    go(pg, "G.cb.ap[0]=0;L.tbSpent=0;L.tbReA=false;L.tbMv=0"); pg.wait_for_timeout(500)
+    early = go(pg, "!L.tbEnd"); pg.wait_for_timeout(1100)
+    check('Tour par tour : plus d’actions ni de déplacement, le tour se finit tout seul après un court délai', early and go(pg, "L.tbEnd||G.cb.ph==='e'"))
     go(pg, "G.enemies.forEach(e=>killEnemy(e))"); pg.wait_for_timeout(400)
     check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo'))
     check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])

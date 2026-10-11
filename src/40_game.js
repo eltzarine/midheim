@@ -459,7 +459,7 @@ function updateLocal(dt){
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
   const down=!me||me.down;if(down){mx=my=0}
   // au combat : on ne bouge que pendant son tour, librement dans la zone du tour
-  if(tbMe())tbReanchor();
+  if(tbMe()){tbReanchor();tbAutoEnd(dt)}
   if(tbMe()&&(G.cb.ph!=='h'||L.tbEnd||!L.tbF||L.tbReA)){mx=my=0;ml=0}
   L.mv=[mx,my];if(ml>.2)L.face=Math.atan2(my,mx);
   if(L.dashT>0){L.dashT-=dt;moveBody(L,L.dvx*dt,L.dvy*dt,10)}
