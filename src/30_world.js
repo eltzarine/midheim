@@ -100,7 +100,7 @@ function buildWorld(){
   const kz=mon('karazankor','porte','Karaz Ankor','dun:karazankor',3,2);
   for(const k of['karaznema','karazakarak','karazkadrin'])mon(k,'porte',({karaznema:'Karaz Nema',karazakarak:'Karaz A’Karak',karazkadrin:'Karaz Kadrin'})[k],'talk:nains',3,2);
   const cave=mon('firsttear','grotte','L’antre de Virganth','dun:antre',3,2);
-  const pg=mon('montsoublies','sceau','La plus profonde montagne','dun:prison',3,2);
+  mon('montsoublies','sceau','La plus profonde montagne','dun:prison',3,2);
   // l'arène d'Abhorash : un cercle de pierres levées dans les Silverwoods
   const[ax,ay]=PL.silverwoods;clearDisk(ax,ay,7);
   for(let k=0;k<10;k++){const a=k/10*6.283,x=Math.round(ax+Math.cos(a)*5),y=Math.round(ay+Math.sin(a)*4);if(inb(x,y)&&passT(t[idx(x,y)])&&k!==2){const i=idx(x,y);obj[i]=6;sol[i]=1;blk[i]=0;occ[i]=1}}
