@@ -44,7 +44,7 @@ function loadGame() {
   // les let/const du jeu ne sont visibles que dans le même script : on y ajoute l'accès pour les tests
   vm.runInContext(code + `
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
-  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,
+  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
@@ -247,6 +247,22 @@ if (!fs.existsSync(BUNDLE)) {
       const b = T.tbLogLines([x('Orc', 0, 15), x('Adepte', 2, 8), x('Orc', 0, 19), x('Marionnette', 0, 5)]);
       assert.equal(b.length, 3); assert.equal(b[2], '+ 2 autres actions');
       assert.equal(T.tbLogLines([]).length, 0);
+    } finally { T.setG(old); }
+  });
+
+  test('Combat : pas de combat sans ennemi debout (coup qui tue d’emblée), zone de combat comptée sur les ennemis en alerte', () => {
+    const old = T.getG(), S = T.TS;
+    const foe = (x, o = {}) => Object.assign({ x, y: 0, hp: 10, act: true, ret: false }, o);
+    try {
+      // le héros vient de frapper (initiative) mais le coup a tué le seul ennemi : aucun combat n'est ouvert
+      const G = { time: 5, tbBy: { pi: 0, t: 5 }, cb: null, players: [{ x: 0, y: 0, down: false }], enemies: [foe(S, { hp: 0 })] };
+      T.setG(G); T.tbUpdate(.016);
+      assert.equal(G.cb, null); assert.equal(G.tbBy, null);
+      // zone de combat : seuls les ennemis vivants, en alerte et qui ne rentrent pas chez eux comptent
+      const p = { x: 0, y: 0 };
+      G.enemies = [foe(8 * S)]; assert.equal(T.tbClose(p, 9), true);
+      G.enemies = [foe(8 * S, { act: false }), foe(8 * S, { ret: true }), foe(8 * S, { hp: 0 }), foe(10 * S)];
+      assert.equal(T.tbClose(p, 9), false);
     } finally { T.setG(old); }
   });
 

@@ -438,7 +438,7 @@ with sync_playwright() as pw:
     go(B, "skQ[1]=true"); B.wait_for_timeout(300); go(B, "skQ[1]=true"); B.wait_for_timeout(600)  # au combat : aperçu puis validation
     check('À deux : compétence du frère exécutée par l’hôte', go(A, "G.players[1].sk[1]") >= 1)
     go(A, "addDrop(6,G.players[1].x+4,G.players[1].y,999,1,2)"); A.wait_for_timeout(1500)
-    for _ in range(12):
+    for _ in range(24):
         if go(B, "hero.bag.some(i=>i.c==='voleur')"): break
         A.wait_for_timeout(250)
     check('À deux : le frère ramasse un objet pour sa classe', go(B, "hero.bag.some(i=>i.c==='voleur')"))

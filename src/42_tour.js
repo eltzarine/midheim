@@ -37,7 +37,7 @@ const TB_LG=['','frappe','charge','tire sur','est étourdi et passe son tour','l
 function tbLog(e,k,pi,d){const c=G.cb;if(!c||c.ph!=='e'||!e)return;let it=c.lg.find(x=>x.id===e.id&&x.k===k);if(!it){if(c.lg.length>=8)return;it={id:e.id,k,pi:pi==null?-1:pi,d:0,n:enemyName(e)};c.lg.push(it)}if(d)it.d+=Math.round(d)}
 /* ---------- côté hôte ---------- */
 function tbFoes(){return G.enemies.filter(e=>e.hp>0&&e.act&&!e.ret)}
-function tbClose(p,r){return tbFoes().some(e=>Math.hypot(p.x-e.x,p.y-e.y)<r*TS)}
+function tbClose(p,r){const R=r*TS;for(const e of G.enemies)if(e.hp>0&&e.act&&!e.ret&&Math.hypot(p.x-e.x,p.y-e.y)<R)return true;return false}
 function tbStart(first){G.cb={ph:'h',r:1,t:0,in:[false,false],rd:[false,false],ap:[TB_PA,TB_PA],po:[false,false],lg:[]};
   for(const e of G.enemies){e.kx=e.ky=0;e.tbA=false}
   Log.ev('combat','début, '+tbFoes().length+' ennemi(s), '+(first>=0?'les héros':'les ennemis')+' commencent');
@@ -76,7 +76,7 @@ function tbUpdate(dt){
   const by=G.tbBy&&G.time-G.tbBy.t<.6?G.tbBy.pi:-1;
   // qui entre dans la zone de combat, ou frappe un ennemi, passe au tour par tour
   const want=G.players.map((p,i)=>!p.down&&!tbIn(i)&&(i===by||tbClose(p,TB_FIGHT)));
-  if(!G.cb){if(!want.some(Boolean))return;tbStart(by)}
+  if(!G.cb){if(!want.some(Boolean))return;if(!tbFoes().length){G.tbBy=null;return}tbStart(by)}
   const c=G.cb;want.forEach((w,i)=>{if(w)tbJoin(i,i===by&&c.ph==='h')});if(by>=0)G.tbBy=null;
   c.t+=dt;
   if(!tbFoes().length){tbEnd(true);return}
@@ -160,7 +160,7 @@ function tbHud(){const box=hq('#tbInfo'),be=hq('#bEnd'),c=G.cb,inn=tbMe(),me=myP
   if(o)setTxt(al,!c.in[oi]?o.name+' : hors combat':o.down?o.name+' : à terre':!hp?'':c.rd[oi]?o.name+' : prêt ✓':o.name+' joue…'+(c.tl?' '+c.tl+' s':''));
   // journal : pendant le tour des ennemis, et encore 4 s au début du tour des héros
   const lgOn=c.lg.length&&(!hp||performance.now()-(L.tbLgT||0)<4000),lgEl=hq('#tbLog');setHid(lgEl,!lgOn);
-  if(lgOn)setTxt(lgEl,tbLogLines(c.lg).join(innerWidth>innerHeight?' · ':'\n'))
+  if(lgOn)setTxt(lgEl,tbLogLines(c.lg).join(innerWidth>innerHeight?' · ':'\n'));
   setTxt(be,undo?'Annuler la fin du tour':'Fin du tour');be.classList.toggle('glow',hp&&!ap&&!undo);be.classList.toggle('undo',!!undo)}
 /* journal des ennemis, compact : actions identiques regroupées (« Adepte tire sur César : −10 ×4 »), 3 lignes au plus */
 function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x.pi],l=x.n+' '+TB_LG[x.k]+(t&&x.k<=3?' '+t.name:'')+(x.d?' : −'+x.d:'');m.set(l,(m.get(l)||0)+1)}
@@ -281,7 +281,7 @@ function pvBuild(k,t){const x0=L.x,y0=L.y,a=t?Math.atan2(pvY(t)-y0,pvX(t)-x0):L.
     case'marteau':{let b=null,bd=1e9;for(const e of pvFoes()){if(Math.hypot(pvX(e)-x0,pvY(e)-y0)>260)continue;const dd=Math.hypot(pvX(e)-tp.x,pvY(e)-tp.y);if(dd<bd){bd=dd;b=e}}
       if(b)at(0,()=>{pvFx(36,pvX(b),pvY(b),40);pvHit(b,1.6,'Étourdi')});S.D=.6;break}
     default:at(0,()=>pvFx(11,x0,y0,0));S.D=.6}
-  return S}
+  S.ev.sort((x,y)=>x[0]-y[0]);return S}
 /* projectiles de l'aperçu : ils avancent, touchent (éclat + dégâts estimés), reviennent pour la hache */
 function pvProjs(S,dt){for(const p of S.projs){if(p.life<=0)continue;p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
     if(p.boom&&!p.back&&p.life<.5){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy}
@@ -292,7 +292,7 @@ function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=
   const t=tbAimAt();let S=L.pvS;
   if(!S||L.pvK!==L.pv||T-L.pvC0>=S.D+PV_GAP){if(L.pv!=='atk'&&!SK[ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)]]){L.pv=null;return}S=L.pvS=pvBuild(L.pv,t);L.pvK=L.pv;L.pvC0=T;L.pvLT=T;S.done=0}
   const u=T-L.pvC0,act=u<S.D,dt=clamp(T-(L.pvLT||T),0,.05);L.pvLT=T;
-  S.ev.sort((x,y)=>x[0]-y[0]);while(S.done<S.ev.length&&S.ev[S.done][0]<=u){S.ev[S.done][1]();S.done++}
+  while(S.done<S.ev.length&&S.ev[S.done][0]<=u){S.ev[S.done][1]();S.done++}
   pvProjs(S,dt);
   const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1));
   ctx.save();ctx.globalAlpha=fade;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true);ctx.restore();

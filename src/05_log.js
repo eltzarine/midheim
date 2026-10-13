@@ -45,7 +45,7 @@ const Log={sid:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)
 };
 addEventListener('error',e=>Log.err('js',e.error||e.message,e.filename?'@'+String(e.filename).split('/').pop()+':'+e.lineno+':'+e.colno:''));
 addEventListener('unhandledrejection',e=>Log.err('promesse',e.reason));
-for(const k of['error','warn']){const o=console[k];console[k]=function(...a){try{Log.add(k==='error'?'ERR':'WARN','console',...a)}catch(_){}return o.apply(this,a)}}
+for(const k of['error','warn']){const o=console[k];console[k]=function(...a){try{if(!/\/logidx\//.test(String(a[0])))Log.add(k==='error'?'ERR':'WARN','console',...a)}catch(_){}return o.apply(this,a)}}
 addEventListener('online',()=>Log.ev('réseau','internet revenu'));addEventListener('offline',()=>Log.warn('réseau','internet coupé'));
 document.addEventListener('visibilitychange',()=>{Log.ev('app',document.visibilityState==='visible'?'au premier plan':'en arrière-plan');if(document.visibilityState==='hidden')Log.upload()});
 addEventListener('pagehide',()=>Log.upload());
