@@ -45,8 +45,9 @@ function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const name=
   g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.35)';g.beginPath();g.ellipse(x,y+13,10,3.5,0,0,6.28);g.fill();
   if(o.down){g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.cell(g,sheet,0,0,0,8,sc);g.restore();return true}
-  const ax=Math.cos(aim),ay=Math.sin(aim),col=SPR.dir(ax,ay);
-  const sw=typeof _hsw!=='undefined'&&_hsw;const row=sw?4:moving?Math.floor(t*8)%4:0;const fy=y+14-(moving||sw?0:Math.round(Math.sin(t*2.2)*.6));
+  const sw=typeof _hsw!=='undefined'&&_hsw;const ba=moving&&!sw&&o.mf!=null?o.mf:aim;   // en marche, le corps regarde où l'on va ; l'arme garde la visée
+  const col=SPR.dir(Math.cos(ba),Math.sin(ba));
+  const row=sw?4:moving?(Math.floor(o.ph!=null?o.ph:t*8)%4+4)%4:0;const fy=y+14-(moving||sw?0:Math.round(Math.sin(t*2.2)*.6));
   const wk=HERO_WPN[cls]||HERO_WPN.guerrier,wname=wk[L2.wb];
   const weapon=()=>{const wh=RAR_HUE[L2.wr];g.save();
     let a=aim+(sw?sw.off||0:0);const hx=x+Math.cos(a)*9,hy=y-2+Math.sin(a)*6;g.translate(hx,hy);
