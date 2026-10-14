@@ -518,6 +518,16 @@ body:not(.incb) #hud>.tgt:not(.big) .tgh{font-size:11.5px}body:not(.incb) #hud>.
 .tgt .tgx{font-size:12px;color:#efe6cf}
 #hud>.tgt.big{z-index:21;width:300px!important;padding:8px 12px 10px;gap:5px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 #hud>.tgt.big .tgh{font-size:15px}#hud>.tgt.big .tgi{flex-direction:column;align-items:flex-start;font-size:12.5px}#hud>.tgt.big .tgs{font-size:12px}
+#cMe{pointer-events:auto;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none}
+.mebig{position:absolute;z-index:21;left:calc(8px + env(safe-area-inset-left,0px));top:calc(6px + env(safe-area-inset-top,0px));width:min(320px,calc(100% - 16px));box-sizing:border-box;
+  background:rgba(19,37,44,.98);border:2px solid var(--gold);border-radius:12px;padding:8px 12px 10px;display:grid;gap:6px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5);text-align:left}
+.mebig[hidden]{display:none}
+.mebig h4{margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--f-title);font-weight:400;font-size:16px;color:var(--gold)}.mebig h4 small{font:700 13px var(--f-ui);color:var(--brass)}
+.mebig .mbr{display:grid;grid-template-columns:52px minmax(0,1fr) 62px;gap:6px;align-items:center;font-size:12px;font-weight:700}.mebig .mbr span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.mebig .mbr .bar{height:6px}.mebig .mbr .bar.ul i{background:var(--gold)}
+.mebig hr{border:0;border-top:1px solid #33525a;margin:0;width:100%}
+.mebig .mfx{display:flex;gap:7px;align-items:center;font-size:12px;line-height:1.3}.mebig .mfx .fxc{flex:none}.mebig .mfx b{color:var(--c)}
+.mebig .mst{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--dim)}.mebig .mst b{color:var(--parch)}
 #tgtVeil{position:absolute;inset:0;z-index:20;background:rgba(7,16,20,.55);pointer-events:none}#tgtVeil[hidden]{display:none}
 /* barre d'actions : à son tour au combat (avec Foncer et Fin du tour), ou hors combat quand un ennemi est sélectionné */
 #hud #hbar{display:none;justify-content:center;gap:5px;max-width:none;left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));margin:0}
@@ -786,6 +796,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     </div>
     <div id="tbCol" hidden><b id="tbRd">Tour 1</b><span id="tbAl"></span><div class="tbo" id="tbOrd" role="list" aria-label="Ordre des tours"></div></div>
     <div id="tgtVeil" hidden></div>
+    <div class="mebig" id="meBig" hidden role="dialog" aria-label="Ton héros en détail"></div>
     <div class="tgt" id="tgtBox" hidden><div class="tgh"><b id="tgtName">Ennemi</b><span id="tgtPv"></span></div><div class="bar hp"><i id="tgtHp"></i></div><div class="tgs" id="tgtSt"></div><div class="tgi"><span id="tgtInt"></span><span id="tgtRg"></span></div><div class="tgx" id="tgtMore"></div></div>
     <div id="banner"></div>
     <button type="button" id="bEnd" hidden>Fin du tour</button>

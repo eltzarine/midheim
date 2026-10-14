@@ -140,6 +140,28 @@ function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out
   // la pastille se pose sur le haut de la mini-carte (placée à droite, sous l'en-tête en portrait) ; les messages restent à sa gauche
   const hudEl=$('#hud'),hr=hudEl.getBoundingClientRect(),mr=mi.getBoundingClientRect();if(!mr.width)return;hudEl.style.setProperty('--miniR',(hr.right-mr.left+8)+'px');
   const l=mr.left-hr.left+mr.width/2-t.offsetWidth/2,tp=mr.top-hr.top-8;t.style.left=Math.round(Math.max(4,l))+'px';t.style.top=Math.round(Math.max(2,tp))+'px'}
+/* fiche détaillée de ton héros, tant que tu restes appuyé sur ta fiche (nom et barres) : vie, mana, ultime,
+   effets en cours avec ce qu'ils font, passif, et tes chiffres (dégâts, armure, critiques, vitesse ; points d'action au combat) */
+function meEffects(me){const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),u=n=>n===''?'':inTb?' · '+n+' tour'+(n>1?'s':''):' · '+n+' s',fx=[];
+  if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'','absorbe encore '+Math.round(me.shield||me.sh)+' dégâts']);
+  if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT),'+50 % de dégâts et de vitesse d’attaque']);
+  if(L.stealthT>0)fx.push(['Disparition','#c9a2ff',d(L.stealthT),'les ennemis te perdent de vue']);
+  if(L.buffT>0&&hero.cls==='voleur')fx.push(['Prochain coup renforcé','#ffe08a',d(L.buffT),'ton prochain coup frappe plus fort']);
+  return fx.map(f=>(f.push(u(f[2])),f))}
+function meBigHud(me){const box=hq('#meBig'),on=!!(L.meBig&&me);setHid(box,!on);if(!on){if(!L.tgtBig)setHid(hq('#tgtVeil'),true);return}setHid(hq('#tgtVeil'),false);
+  const inTb=tbMe(),pa=ST.pa&&SK[ST.pa],key=[Math.round(me.hp),Math.round(L.mp),Math.floor(L.ult),hero.lvl,inTb?tbAP()+':'+Math.round(L.tbMv/TS*10):'',meEffects(me).map(f=>f[0]+f[2]).join()].join('|');
+  if(box._k===key)return;box._k=key;box.textContent='';
+  const h=el('h4',null,myName+' · '+CLS[hero.cls].nom);h.append(el('small',null,'Niv '+hero.lvl));box.append(h);
+  const row=(lab,f,txt,cls)=>{const r=el('div','mbr'),b=el('div','bar '+(cls||'')),i=el('i');i.style.width=(clamp(f,0,1)*100).toFixed(1)+'%';b.append(i);r.append(el('span',null,lab),b,el('span',null,txt));box.append(r)};
+  row('PV',me.hp/me.mhp,Math.round(me.hp)+' / '+me.mhp,'hp');row('Mana',L.mp/ST.mmp,Math.round(L.mp)+' / '+Math.round(ST.mmp),'mp');
+  if(ST.ks[3])row('Ultime',L.ult/100,Math.floor(L.ult)+' %','ul');
+  const fx=meEffects(me);if(fx.length||pa)box.append(el('hr'));
+  for(const f of fx){const r=el('div','mfx'),c=el('i','fxc',String(f[2]));c.style.setProperty('--c',f[1]);r.style.setProperty('--c',f[1]);const t=el('span');t.append(el('b',null,f[0]),document.createTextNode(f[4]+' · '+f[3]));r.append(c,t);box.append(r)}
+  if(pa){const r=el('div','mfx'),c=el('i','fxc','P');c.style.setProperty('--c','#9ff08a');r.style.setProperty('--c','#9ff08a');const t=el('span');t.append(el('b',null,'Passif · '+pa.nom),document.createTextNode(' · '+pa.desc));r.append(c,t);box.append(r)}
+  box.append(el('hr'));const st=el('div','mst'),sv=(k,v)=>{const s=el('span',null,k+' ');s.append(el('b',null,v));st.append(s)};
+  sv('Dégâts',String(Math.round(ST.dmg*(inTb?TB_DMG:1))));sv('Armure',Math.round(ST.arm*100)+' %');sv('Critiques',Math.round(ST.crit*100)+' %');sv('Vitesse',String(Math.round(ST.spd)));
+  if(inTb){sv('Actions',tbAP()+' / '+tbPA(myIdx));sv('Déplacement',(L.tbMv/TS).toFixed(1).replace('.',',')+' cases')}else sv('Actions au combat',String(tbPA(myIdx)));
+  box.append(st)}
 /* pastilles des effets sur ton héros (bouclier, rage, disparition, passif) : durée en tours au combat, en secondes sinon */
 function meFx(me){const box=hq('#meFx');if(!box||!me)return;const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),fx=[];
   if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'']);if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT)]);
@@ -168,7 +190,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   if(o){setTxt(hq('#alName'),o.name);setCss(hq('#alFig'),'--c',CLS[o.cls].col);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre':G.cb&&G.cb.in[oi]&&!tbMe()?'Au combat':'');
     ca.setAttribute('aria-label',o.name+', '+CLS[o.cls].nom+', '+(o.down?'à terre : va le relever':Math.round(o.hp)+' sur '+o.mhp+' PV'))}
   else{setTxt(hq('#alName'),'');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre':'Seul');ca.setAttribute('aria-label',room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}}
-  meFx(me);
+  meFx(me);meBigHud(me);
   const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
   else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
@@ -310,7 +332,7 @@ $('#bEnd').addEventListener('click',()=>{Snd.init();endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#objTxt').addEventListener('click',e=>{if(e.target&&e.target.tagName==='B'&&inGame())openQuests()});$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
-holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
+holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});holdable($('#cMe'),()=>{},on=>{if(L)L.meBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
 $('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);

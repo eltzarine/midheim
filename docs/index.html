@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FCtnnk//gT9+iyIJKwsNRIr/cWV+hPHRdSjy+OanrkE=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-KDESb3P9j1AFNml9WOl7490hhLAsX36T/HRjLOiVHp8=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -535,6 +535,16 @@ body:not(.incb) #hud>.tgt:not(.big) .tgh{font-size:11.5px}body:not(.incb) #hud>.
 .tgt .tgx{font-size:12px;color:#efe6cf}
 #hud>.tgt.big{z-index:21;width:300px!important;padding:8px 12px 10px;gap:5px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 #hud>.tgt.big .tgh{font-size:15px}#hud>.tgt.big .tgi{flex-direction:column;align-items:flex-start;font-size:12.5px}#hud>.tgt.big .tgs{font-size:12px}
+#cMe{pointer-events:auto;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none}
+.mebig{position:absolute;z-index:21;left:calc(8px + env(safe-area-inset-left,0px));top:calc(6px + env(safe-area-inset-top,0px));width:min(320px,calc(100% - 16px));box-sizing:border-box;
+  background:rgba(19,37,44,.98);border:2px solid var(--gold);border-radius:12px;padding:8px 12px 10px;display:grid;gap:6px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.5);text-align:left}
+.mebig[hidden]{display:none}
+.mebig h4{margin:0;display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-family:var(--f-title);font-weight:400;font-size:16px;color:var(--gold)}.mebig h4 small{font:700 13px var(--f-ui);color:var(--brass)}
+.mebig .mbr{display:grid;grid-template-columns:52px minmax(0,1fr) 62px;gap:6px;align-items:center;font-size:12px;font-weight:700}.mebig .mbr span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.mebig .mbr .bar{height:6px}.mebig .mbr .bar.ul i{background:var(--gold)}
+.mebig hr{border:0;border-top:1px solid #33525a;margin:0;width:100%}
+.mebig .mfx{display:flex;gap:7px;align-items:center;font-size:12px;line-height:1.3}.mebig .mfx .fxc{flex:none}.mebig .mfx b{color:var(--c)}
+.mebig .mst{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--dim)}.mebig .mst b{color:var(--parch)}
 #tgtVeil{position:absolute;inset:0;z-index:20;background:rgba(7,16,20,.55);pointer-events:none}#tgtVeil[hidden]{display:none}
 /* barre d'actions : à son tour au combat (avec Foncer et Fin du tour), ou hors combat quand un ennemi est sélectionné */
 #hud #hbar{display:none;justify-content:center;gap:5px;max-width:none;left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));margin:0}
@@ -806,6 +816,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     </div>
     <div id="tbCol" hidden><b id="tbRd">Tour 1</b><span id="tbAl"></span><div class="tbo" id="tbOrd" role="list" aria-label="Ordre des tours"></div></div>
     <div id="tgtVeil" hidden></div>
+    <div class="mebig" id="meBig" hidden role="dialog" aria-label="Ton héros en détail"></div>
     <div class="tgt" id="tgtBox" hidden><div class="tgh"><b id="tgtName">Ennemi</b><span id="tgtPv"></span></div><div class="bar hp"><i id="tgtHp"></i></div><div class="tgs" id="tgtSt"></div><div class="tgi"><span id="tgtInt"></span><span id="tgtRg"></span></div><div class="tgx" id="tgtMore"></div></div>
     <div id="banner"></div>
     <button type="button" id="bEnd" hidden>Fin du tour</button>
@@ -863,7 +874,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='975788fd';
+const BUILD='6d3ed8ff';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -3344,13 +3355,13 @@ function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x
   const out=[...m].map(([l,n])=>n>1?l+' ×'+n:l);return out.length>3?out.slice(0,2).concat('+ '+(out.length-2)+' autres actions'):out}
 /* fiche de la cible : petite (nom, vie, états, portée) ; tant qu'on reste appuyé dessus ou sur sa vignette, détaillée
    (prochain coup, effets en tours, dégâts estimés de l'attaque) et le reste de l'écran s'assombrit */
-function tgtHud(){const t=tbTarget(),box=hq('#tgtBox'),big=!!(t&&L.tgtBig);setHid(box,!t);box.classList.toggle('big',big);setHid(hq('#tgtVeil'),!big);document.body.classList.toggle('tgtbig',big);if(!t)return;
+function tgtHud(){const t=tbTarget(),box=hq('#tgtBox'),big=!!(t&&L.tgtBig);setHid(box,!t);box.classList.toggle('big',big);setHid(hq('#tgtVeil'),!big&&!(L.meBig));document.body.classList.toggle('tgtbig',big);if(!t)return;
   setTxt(hq('#tgtName'),enemyName(t)+' · Niv '+(t.lv||G.lv||1));const pct=t.hpP!=null?t.hpP/100:t.hp/t.mhp;setW(hq('#tgtHp'),pct);setTxt(hq('#tgtPv'),t.hpP!=null?t.hpP+' %':Math.ceil(t.hp)+' / '+Math.ceil(t.mhp));
   const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):big?'Aucun effet':'');
   setTxt(hq('#tgtInt'),big?(tbMe()?'Prochain tour : '+enemyIntent(t):(t.act?'En alerte':'Au repos')):'');
   const out=!inReach('atk',t);setTxt(hq('#tgtRg'),out?'Trop loin':'À portée');hq('#tgtRg').classList.toggle('far',out);
   setTxt(hq('#tgtMore'),big?CLS[hero.cls].atk+' sur lui : ~'+Math.round(ST.dmg*(tbMe()?TB_DMG:1))+' dégâts'+(out?' (trop loin)':''):'')}
-if(typeof addEventListener==='function')addEventListener('pointerup',()=>{if(typeof L!=='undefined'&&L&&L.tgtBig)L.tgtBig=false});
+if(typeof addEventListener==='function')addEventListener('pointerup',()=>{if(typeof L!=='undefined'&&L){L.tgtBig=false;L.meBig=false}});
 
 /* ---------- déplacement libre dans la zone du tour ----------
    Le tour donne un budget de déplacement compté depuis une place d'ancrage (le départ du tour) : on peut aller et revenir
@@ -5450,6 +5461,28 @@ function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out
   // la pastille se pose sur le haut de la mini-carte (placée à droite, sous l'en-tête en portrait) ; les messages restent à sa gauche
   const hudEl=$('#hud'),hr=hudEl.getBoundingClientRect(),mr=mi.getBoundingClientRect();if(!mr.width)return;hudEl.style.setProperty('--miniR',(hr.right-mr.left+8)+'px');
   const l=mr.left-hr.left+mr.width/2-t.offsetWidth/2,tp=mr.top-hr.top-8;t.style.left=Math.round(Math.max(4,l))+'px';t.style.top=Math.round(Math.max(2,tp))+'px'}
+/* fiche détaillée de ton héros, tant que tu restes appuyé sur ta fiche (nom et barres) : vie, mana, ultime,
+   effets en cours avec ce qu'ils font, passif, et tes chiffres (dégâts, armure, critiques, vitesse ; points d'action au combat) */
+function meEffects(me){const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),u=n=>n===''?'':inTb?' · '+n+' tour'+(n>1?'s':''):' · '+n+' s',fx=[];
+  if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'','absorbe encore '+Math.round(me.shield||me.sh)+' dégâts']);
+  if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT),'+50 % de dégâts et de vitesse d’attaque']);
+  if(L.stealthT>0)fx.push(['Disparition','#c9a2ff',d(L.stealthT),'les ennemis te perdent de vue']);
+  if(L.buffT>0&&hero.cls==='voleur')fx.push(['Prochain coup renforcé','#ffe08a',d(L.buffT),'ton prochain coup frappe plus fort']);
+  return fx.map(f=>(f.push(u(f[2])),f))}
+function meBigHud(me){const box=hq('#meBig'),on=!!(L.meBig&&me);setHid(box,!on);if(!on){if(!L.tgtBig)setHid(hq('#tgtVeil'),true);return}setHid(hq('#tgtVeil'),false);
+  const inTb=tbMe(),pa=ST.pa&&SK[ST.pa],key=[Math.round(me.hp),Math.round(L.mp),Math.floor(L.ult),hero.lvl,inTb?tbAP()+':'+Math.round(L.tbMv/TS*10):'',meEffects(me).map(f=>f[0]+f[2]).join()].join('|');
+  if(box._k===key)return;box._k=key;box.textContent='';
+  const h=el('h4',null,myName+' · '+CLS[hero.cls].nom);h.append(el('small',null,'Niv '+hero.lvl));box.append(h);
+  const row=(lab,f,txt,cls)=>{const r=el('div','mbr'),b=el('div','bar '+(cls||'')),i=el('i');i.style.width=(clamp(f,0,1)*100).toFixed(1)+'%';b.append(i);r.append(el('span',null,lab),b,el('span',null,txt));box.append(r)};
+  row('PV',me.hp/me.mhp,Math.round(me.hp)+' / '+me.mhp,'hp');row('Mana',L.mp/ST.mmp,Math.round(L.mp)+' / '+Math.round(ST.mmp),'mp');
+  if(ST.ks[3])row('Ultime',L.ult/100,Math.floor(L.ult)+' %','ul');
+  const fx=meEffects(me);if(fx.length||pa)box.append(el('hr'));
+  for(const f of fx){const r=el('div','mfx'),c=el('i','fxc',String(f[2]));c.style.setProperty('--c',f[1]);r.style.setProperty('--c',f[1]);const t=el('span');t.append(el('b',null,f[0]),document.createTextNode(f[4]+' · '+f[3]));r.append(c,t);box.append(r)}
+  if(pa){const r=el('div','mfx'),c=el('i','fxc','P');c.style.setProperty('--c','#9ff08a');r.style.setProperty('--c','#9ff08a');const t=el('span');t.append(el('b',null,'Passif · '+pa.nom),document.createTextNode(' · '+pa.desc));r.append(c,t);box.append(r)}
+  box.append(el('hr'));const st=el('div','mst'),sv=(k,v)=>{const s=el('span',null,k+' ');s.append(el('b',null,v));st.append(s)};
+  sv('Dégâts',String(Math.round(ST.dmg*(inTb?TB_DMG:1))));sv('Armure',Math.round(ST.arm*100)+' %');sv('Critiques',Math.round(ST.crit*100)+' %');sv('Vitesse',String(Math.round(ST.spd)));
+  if(inTb){sv('Actions',tbAP()+' / '+tbPA(myIdx));sv('Déplacement',(L.tbMv/TS).toFixed(1).replace('.',',')+' cases')}else sv('Actions au combat',String(tbPA(myIdx)));
+  box.append(st)}
 /* pastilles des effets sur ton héros (bouclier, rage, disparition, passif) : durée en tours au combat, en secondes sinon */
 function meFx(me){const box=hq('#meFx');if(!box||!me)return;const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),fx=[];
   if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'']);if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT)]);
@@ -5478,7 +5511,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   if(o){setTxt(hq('#alName'),o.name);setCss(hq('#alFig'),'--c',CLS[o.cls].col);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre':G.cb&&G.cb.in[oi]&&!tbMe()?'Au combat':'');
     ca.setAttribute('aria-label',o.name+', '+CLS[o.cls].nom+', '+(o.down?'à terre : va le relever':Math.round(o.hp)+' sur '+o.mhp+' PV'))}
   else{setTxt(hq('#alName'),'');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre':'Seul');ca.setAttribute('aria-label',room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}}
-  meFx(me);
+  meFx(me);meBigHud(me);
   const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
   else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
@@ -5620,7 +5653,7 @@ $('#bEnd').addEventListener('click',()=>{Snd.init();endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#objTxt').addEventListener('click',e=>{if(e.target&&e.target.tagName==='B'&&inGame())openQuests()});$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
-holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
+holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});holdable($('#cMe'),()=>{},on=>{if(L)L.meBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
 $('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);

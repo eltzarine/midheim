@@ -2,7 +2,7 @@
    VERSION = empreinte de la page : chaque nouvelle publication est une nouvelle version,
    que le jeu propose (et impose) via le bandeau « Nouvelle version disponible ». */
 "use strict";
-const VERSION = "midheim-6d13496b5843";
+const VERSION = "midheim-c3fe28b2ef3a";
 const SHELL = `${VERSION}-shell`;
 const RUNTIME = `${VERSION}-runtime`;
 const PRECACHE = ["./", "index.html", "manifest.webmanifest", ...["icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"]];

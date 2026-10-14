@@ -343,6 +343,11 @@ with sync_playwright() as pw:
     go(pg, "$('#mapBox').hidden=true;paused=false"); pg.wait_for_timeout(100)
     go(pg, "L.tbT=0"); pg.wait_for_timeout(250)
     check('Paysage : barre de menus sans Carte (Or, Sac, Talents, Potion), ☰ en haut à gauche ; carte et fiche alignées sur la fiche du héros', go(pg, "Math.abs($('#mini').getBoundingClientRect().top-$('#cMe').getBoundingClientRect().top)<=1") and go(pg, "[...document.querySelectorAll('#mbar .pill')].filter(e=>e.offsetParent).length") == 4 and go(pg, "$('#pMenu').getBoundingClientRect().left<40&&$('#pMenu').getBoundingClientRect().top<40"))
+    pg.locator('#cMe').dispatch_event('pointerdown'); pg.wait_for_timeout(500)
+    check('Paysage : rester appuyé sur sa fiche ouvre le détail du héros (vie, mana, passif, chiffres)', pg.is_visible('#meBig') and pg.is_visible('#tgtVeil') and 'Dégâts' in pg.inner_text('#meBig') and 'Passif' in pg.inner_text('#meBig'))
+    clearUI(pg); pg.screenshot(path=f'{OUT}/d1d_fiche_heros.png')
+    pg.locator('#cMe').dispatch_event('pointerup'); pg.wait_for_timeout(200)
+    check('Paysage : en relâchant, le détail du héros se ferme', pg.is_hidden('#meBig') and pg.is_hidden('#tgtVeil'))
     go(pg, "(()=>{G.enemies=[];for(let k=0;k<6;k++){const q=freeNear(L.x+(3+k%3)*TS,L.y+(k<3?-1:1)*TS,0,TS);spawnEnemy(k%2?'orc':'slime',q.x,q.y,false,false,undefined,1)}})()")
     for _ in range(40):
         if go(pg, "!!G.cb&&tbHero()"): break
