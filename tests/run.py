@@ -376,7 +376,7 @@ with sync_playwright() as pw:
     # ================= Combat au tour par tour (solo) =================
     ctx, pg = page(br, tag='tour'); pg.goto(URL); pg.wait_for_timeout(700); pg.click('#bSolo'); pg.wait_for_timeout(900)
     go(pg, "(()=>{if(G.m.kind!=='world')hostEnter('w',WORLD.start);QDone.q.length=0;QDone.close();G.enemies=[];G.cb=null;G.night=0;G.reinOn=false;hero.lvl=3;refreshStats();G.players[0].hp=G.players[0].mhp})()"); pg.wait_for_timeout(400)
-    go(pg, "(()=>{for(let k=0;k<3;k++){const q=freeNear(L.x+6*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.hx=q.x;e.hy=q.y;e.hp=e.mhp=600}})()")  # assez de vie pour que les trois orcs jouent leur tour; pg.wait_for_timeout(300)
+    go(pg, "(()=>{for(let k=0;k<3;k++){const q=freeNear(L.x+6*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.hx=q.x;e.hy=q.y;e.hp=e.mhp=600;e.criU=1}})()")  # assez de vie pour que les trois orcs jouent leur tour (sans cri : chacun avance et frappe); pg.wait_for_timeout(300)
     jz = go(pg, "(()=>{const z=$('#joyZone'),o={pointerId:7,bubbles:true,pointerType:'touch'},x=vw*.8,y=vh*.45;z.dispatchEvent(new PointerEvent('pointerdown',Object.assign({clientX:x,clientY:y},o)));z.dispatchEvent(new PointerEvent('pointermove',Object.assign({clientX:x+60,clientY:y},o)));const r=[touch.jx,!$('#joy').hidden];z.dispatchEvent(new PointerEvent('pointerup',Object.assign({clientX:x+60,clientY:y},o)));return r.concat(touch.jx)})()")
     check('Joystick : il apparaît aussi à droite de l’écran', jz[0] > .5 and jz[1] and jz[2] == 0, jz)
     check('Tour par tour : hors de la zone d’alerte, pas de combat', not go(pg, "G.cb") and go(pg, "AGGRO") == 3.5)
@@ -458,6 +458,28 @@ with sync_playwright() as pw:
     check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo') and pg.is_hidden('#tbCol'))
     go(pg, "L.tbT=0"); pg.wait_for_timeout(250)
     check('Hors combat sans cible : Sac, Quêtes, Talents, Potion en bas, pas de barre d’attaques', pg.is_hidden('#hbar') and pg.is_visible('#mbar #pPot') and pg.is_visible('#mini') and pg.is_visible('#objTxt'))
+    # ennemis stratégiques : Chef qui marque, Marionnette qui protège l'Adepte, cri de l'Orc, puis moral à la mort du Chef
+    go(pg, """(()=>{G.enemies=[];G.cb=null;G.bones=[];const at=(t,dx,dy,el)=>{const q=freeNear(L.x+dx*TS,L.y+dy*TS,0,.6*TS);const e=spawnEnemy(t,q.x,q.y,!!el,false,undefined,1);e.hp=e.mhp=600;e.act=true;e.hx=q.x;e.hy=q.y;return e};   // groupe déjà en alerte (un obstacle pourrait couper la réaction en chaîne)
+      G.players[0].ivT=999;window.__tac={chef:at('orc',3,0,1).id,adepte:at('archer',6,0).id,mur:at('slime',5,0).id,orc:at('orc',3,1.5).id,orc2:at('orc',3,-1.5).id}})()""")
+    go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-2*TS;L.y=e.y})()")
+    seen = {'mk': False, 'guard': False, 'cry': False}
+    for _ in range(120):
+        if go(pg, "!!(G.cb&&G.cb.mk&&G.cb.mk.pi===0)"): seen['mk'] = True
+        if go(pg, "G.enemies.some(e=>e.guard===__tac.adepte)"): seen['guard'] = True
+        if go(pg, "G.enemies.some(e=>e.cryT>0)"): seen['cry'] = True
+        if all(seen.values()): break
+        if go(pg, "!!(G.cb&&tbHero()&&!L.tbEnd)"): go(pg, "endTurn()")
+        pg.wait_for_timeout(150)
+    check('Ennemis stratégiques : le Chef marque César, la Marionnette protège l’Adepte, l’Orc pousse son cri', all(seen.values()), seen)
+    if go(pg, "!!(G.cb&&G.enemies.some(e=>e.id===__tac.mur&&e.guard===__tac.adepte))"):
+        h = go(pg, "(()=>{const a=G.enemies.find(e=>e.id===__tac.adepte),m=G.enemies.find(e=>e.id===__tac.mur);m.x=a.x-TS;m.y=a.y;const a0=a.hp,m0=m.hp;hitEnemy(a,100,false);return[a0-a.hp,m0-m.hp]})()")   # la Marionnette à côté de son protégé
+        check('Ennemis stratégiques : la moitié des coups sur l’Adepte passe sur la Marionnette qui le protège', abs(h[0] - h[1]) < 1 and h[1] > 0, h)
+    pg.screenshot(path=f'{OUT}/f7_ennemis_strategiques.png')
+    go(pg, "(()=>{const c=G.enemies.find(e=>e.id===__tac.chef);if(c)killEnemy(c)})()"); pg.wait_for_timeout(200)
+    check('Ennemis stratégiques : le Chef tombe, le groupe flanche (panique ou fuite), la marque disparaît', go(pg, "!!(G.cb&&G.cb.mor&&!G.cb.mk&&G.enemies.some(e=>e.hp>0&&(e.panT>0||e.flee)))"))
+    go(pg, "G.enemies.forEach(e=>killEnemy(e))"); pg.wait_for_timeout(400)
+    check('Ennemis stratégiques : fin du combat, rôles remis à zéro', not go(pg, "G.cb") and go(pg, "!(G.bones||[]).length"))
+    go(pg, "G.players[0].ivT=0")
     check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])
     ctx.close()
 
