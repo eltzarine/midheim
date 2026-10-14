@@ -314,12 +314,22 @@ const PV_GAP=1;
 const pvX=e=>e.rx??e.x,pvY=e=>e.ry??e.y;
 function pvFoes(){return G.enemies.filter(e=>e.hp>0)}
 function pvNear(cx,cy,r){return pvFoes().filter(e=>Math.hypot(pvX(e)-cx,pvY(e)-cy)<r+e.r)}
-/* l'aperçu se dessine en gris : tracés gris, fond transparent (filtre du canevas quand il existe, sinon couleurs grises) */
-let PV_FILT=null;
-function pvFilter(){if(PV_FILT===null){try{const c=document.createElement('canvas').getContext('2d');c.filter='grayscale(1)';PV_FILT=c.filter==='grayscale(1)'}catch(_){PV_FILT=false}}return PV_FILT}
-function pvGray(fn){ctx.save();if(pvFilter())ctx.filter='grayscale(1) brightness(1.3)';try{fn()}finally{ctx.restore()}}
+/* l'aperçu se dessine sans couleur : il est d'abord peint sur un calque de la taille de l'écran (même cadrage), puis le calque
+   est passé en niveaux de gris (mélange « saturation » avec du gris, puis découpe à la forme d'origine) et recopié.
+   Rien ne dépend du filtre du canevas (ignoré par Safari sur iPhone). */
+let PV_C=null,PV_C2=null;
+function pvGray(fn){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
+  for(const c of[PV_C,PV_C2])if(c.width!==w||c.height!==h){c.width=w;c.height=h}
+  const g=PV_C.getContext('2d'),g2=PV_C2.getContext('2d'),real=ctx,m=real.getTransform(),a0=real.globalAlpha;
+  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);g.imageSmoothingEnabled=real.imageSmoothingEnabled;
+  ctx=g;try{g.setTransform(m);g.globalAlpha=a0;fn()}finally{ctx=real}
+  g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+  g2.setTransform(1,0,0,1,0,0);g2.globalCompositeOperation='copy';g2.drawImage(PV_C,0,0);   // forme d'origine
+  g.globalCompositeOperation='saturation';g.fillStyle='#808080';g.fillRect(0,0,w,h);   // plus de couleur (le fond transparent devient gris)
+  g.globalCompositeOperation='destination-in';g.drawImage(PV_C2,0,0);g.globalCompositeOperation='source-over';   // on ne garde que la forme
+  real.save();real.setTransform(1,0,0,1,0,0);real.globalAlpha=1;real.drawImage(PV_C,0,0);real.restore()}
 const PV_LINE='rgba(236,236,236,.95)',PV_FILL='rgba(220,220,220,.14)';
-function pvMark(n0){for(let i=n0;i<parts.length;i++){const q=parts[i];q.pv=1;if(!pvFilter()&&q.col)q.col='#d2d2d2'}}
+function pvMark(n0){for(let i=n0;i<parts.length;i++)parts[i].pv=1}
 function pvFx(k,x,y,v){const sp=Snd.play,sh=shake,n0=parts.length;Snd.play=()=>{};try{fxShow({k,x,y,v:v||0,o:-1},true)}finally{Snd.play=sp;shake=sh;pvMark(n0)}}
 function pvHit(e,mult,st){const x=pvX(e),y=pvY(e),n0=parts.length,S=L.pvS;parts.push({k:'imp',x,y:y+8,life:.25,max:.25,rot:Math.random()*6,big:mult>=2?1:0});
   if(mult){addText(x,y-(e.r||12),rangeTxt(dmgRange(mult,e)),'#ececec',1,14);
@@ -397,14 +407,14 @@ function pvProjs(S,dt){for(const p of S.projs){if(p.life<=0)continue;p.x+=p.vx*d
     if(shotBlock(Math.floor(p.x/TS),Math.floor(p.y/TS))){if(p.boom&&!p.back){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy;continue}p.life=0;if(p.splash)pvFx(5,p.x,p.y,p.splash);continue}
     for(const e of pvFoes()){if(p.hit.has(e))continue;if(Math.hypot(pvX(e)-p.x,pvY(e)-p.y)<e.r+p.r){p.hit.add(e);pvHit(e,p.mult||0);if(p.splash){pvFx(5,p.x,p.y,p.splash);for(const o of pvNear(p.x,p.y,p.splash))if(o!==e)pvHit(o,.6)}if(!p.pierce){p.life=0;break}}}}
   S.projs=S.projs.filter(p=>p.life>0)}
-/* empreinte de l'action : trait gris vers la cible, zone touchée en tracé gris sur fond transparent */
+/* empreinte de l'action : zone touchée (ou cible) en tracé gris sur fond transparent */
 function drawPvFoot(S,T){const t=S.tg,x0=L.x,y0=L.y,ca=Math.cos(S.a),sa=Math.sin(S.a);
   ctx.save();ctx.strokeStyle=PV_LINE;ctx.fillStyle=PV_FILL;ctx.lineWidth=2.5;ctx.setLineDash([7,6]);ctx.lineDashOffset=-T*14;
   const circ=(x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();ctx.stroke()};
-  if(S.k==='atk'){const ex=t?pvX(t):x0+ca*120,ey=t?pvY(t):y0+sa*120;ctx.beginPath();ctx.moveTo(x0+ca*16,y0+sa*16);ctx.lineTo(ex,ey);ctx.stroke();
+  if(S.k==='atk'){const ex=t?pvX(t):x0+ca*120,ey=t?pvY(t):y0+sa*120;
     if(t)circ(ex,ey,(t.r||12)+8);if(t&&hero.cls==='mage')circ(ex,ey,46)}
   else{const A=SK_AREA[ST.ks[S.k==='ult'?3:+String(S.k).slice(1)]];
-    if(A&&A[0]==='me')circ(x0,y0,A[1]);else if(A&&A[0]==='tg'){ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(S.tp.x,S.tp.y);ctx.stroke();circ(S.tp.x,S.tp.y,A[1])}
+    if(A&&A[0]==='me')circ(x0,y0,A[1]);else if(A&&A[0]==='tg')circ(S.tp.x,S.tp.y,A[1]);
     else if(A&&A[0]==='line'){const w=26,l=A[1],nx=-sa*w,ny=ca*w;ctx.beginPath();ctx.moveTo(x0+nx,y0+ny);ctx.lineTo(x0+ca*l+nx,y0+sa*l+ny);ctx.lineTo(x0+ca*l-nx,y0+sa*l-ny);ctx.lineTo(x0-nx,y0-ny);ctx.closePath();ctx.fill();ctx.stroke()}}
   ctx.restore()}
 function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=myP();if(!me||me.down)return;
@@ -413,14 +423,14 @@ function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=
   const u=T-L.pvC0,act=u<S.D,dt=clamp(T-(L.pvLT||T),0,.05);L.pvLT=T;
   while(S.done<S.ev.length&&S.ev[S.done][0]<=u){S.ev[S.done][1]();S.done++}
   pvProjs(S,dt);
-  const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1)),gf=pvFilter();
+  const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1));
   drawPvFoot(S,T);
   const n0=parts.length;
   pvGray(()=>{
-    if(gf){ctx.globalAlpha=fade*.7;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true)}
-    ctx.globalAlpha=fade;for(const p of S.projs){if(gf)drawProj2(p);else{ctx.strokeStyle=PV_LINE;ctx.fillStyle=PV_FILL;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,p.r+2,0,6.28);ctx.fill();ctx.stroke()}}
+    ctx.globalAlpha=fade*.7;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true);
+    ctx.globalAlpha=fade;for(const p of S.projs)drawProj2(p);
     const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18,al:.28};
-    ctx.globalAlpha=g.al*(gf?1:.7);drawPlayer(me,g.x,g.y,true,T);
+    ctx.globalAlpha=g.al;drawPlayer(me,g.x,g.y,true,T);
     if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true)}});
   pvMark(n0);   // étincelles laissées par les projectiles de l'aperçu : grises aussi
   // étiquettes : l'action et sa cible, puis la fourchette de dégâts et la chance de toucher

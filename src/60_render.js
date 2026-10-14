@@ -71,7 +71,8 @@ let bannerT=null;function showBanner(t,sub){const b=$('#banner');b.textContent=t
 let loadT=null;function showLoading(t,sub){const b=$('#loadBox');$('#loadTitle').textContent=t||'Midheim';$('#loadSub').textContent=sub||'';b.hidden=false;b.style.opacity=1;clearTimeout(loadT);loadT=setTimeout(()=>{b.style.opacity=0;loadT=setTimeout(()=>{b.hidden=true},260)},650)}
 
 /* ================= Caméra ================= */
-const cv=$('#cv'),ctx=cv.getContext('2d');const lc=document.createElement('canvas'),lx=lc.getContext('2d');
+const cv=$('#cv');let ctx=cv.getContext('2d');   // let : l'aperçu gris dessine un instant sur un calque (pvGray)
+const lc=document.createElement('canvas'),lx=lc.getContext('2d');
 let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0;
 /* caméra : CAM_TILES cases sur le côté court de l'écran ; au combat elle recule à CAM_TILES_TB cases, pour voir que le mode change */
 const CAM_TILES=13,CAM_TILES_TB=16;
@@ -240,7 +241,7 @@ function render(dt){
     else if(q.k==='slash'&&G.players[q.o]){const w=wpos(q.o);drawSlash(w.x,w.y,q.a,1-al,G.players[q.o].cls)}
     else if(FX2[q.k])FX2[q.k](q,al)};
   for(const q of parts)if(!q.pv)drawPart(q);
-  pvGray(()=>{for(const q of parts)if(q.pv)drawPart(q)});   // effets de l'aperçu : en gris
+  if(parts.some(q=>q.pv))pvGray(()=>{for(const q of parts)if(q.pv)drawPart(q)});   // effets de l'aperçu : en gris
   ctx.globalAlpha=1;
   if(L.swing>0)drawSlash(L.x,L.y,L.swingA,1-L.swing/SWD,hero.cls,true);
   // guide de visée au doigt
