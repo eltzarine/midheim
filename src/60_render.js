@@ -203,7 +203,7 @@ function render(dt){
   if(m.kind==='house'){ctx.fillStyle='#2a1d12';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS);ctx.fillStyle='rgba(255,230,170,.18)';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS)}
   drawGroundFx(G.zones,G.fires,G.traps||[],G.decoys||[],T,vis);
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
-  drawTbGround(T,vis);
+  drawTbGround(T,vis);drawTacGround(T,vis);
   // tri en profondeur
   const Z=[];
   for(const c of m.chests){const op=G.opened.has(c.id);const py=(c.y+.5)*TS;if(vis((c.x+.5)*TS,py))Z.push([py+6,()=>drawChest(c,op)])}
@@ -285,6 +285,7 @@ function render(dt){
     if(G.stairsOpen&&!vis(s.x,s.y))edgeArrow(s.x,s.y,'#f2a33a','SORTIE',hw,hh);for(const d of G.drops)if(d.k===4&&!vis(d.x,d.y))edgeArrow(d.x,d.y,'#f0c95a','CLÉ',hw,hh);
     if(!G.stairsOpen&&m.marks&&m.marks.length){let b=null,bd=1e9;m.marks.forEach((mk,i)=>{if((G.gp[i]||0)>=1)return;const mx=(mk.x+.5)*TS,my=(mk.y+.5)*TS,dd=Math.hypot(mx-L.x,my-L.y);if(dd<bd){bd=dd;b={x:mx,y:my}}});if(b&&!vis(b.x,b.y))edgeArrow(b.x,b.y,'#f0c95a','OBJECTIF',hw,hh)}
     if(!G.stairsOpen&&m.goal&&m.goal.type==='waves'&&!G.wave&&!vis(m.goal.at.x,m.goal.at.y))edgeArrow(m.goal.at.x,m.goal.at.y,'#f0c95a','LES PORTES',hw,hh)}
+  drawTacOver(vis,hw,hh);
   if(isW&&!Scene.on){const o=objTarget();if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
   if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const a=Math.atan2(w.y-L.y,w.x-L.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
 /* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
@@ -292,7 +293,7 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
     if(e.act){const now=G.cb&&G.cb.ph==='e'&&G.cb.eid===e.id,pu=now?1+.1*Math.sin(T*8):1;   // l'ennemi qui joue : anneau épais et pulsé
       ctx.strokeStyle=now?'#ffb36a':'rgba(240,120,110,.9)';ctx.lineWidth=now?4:2;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,(e.r+6)*pu,(e.r+6)*.45*pu,0,0,6.28);ctx.stroke();continue}
-    if(e.type==='boss'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
+    if(e.type==='boss'||e.type==='mimic'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);   // la Mimique endormie ne se trahit pas
     ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}
   // zone de combat : visible par le héros resté dehors, elle englobe tous les ennemis en combat
   if(G.cb&&!inn){ctx.save();ctx.fillStyle='rgba(200,72,60,.07)';ctx.strokeStyle='rgba(240,149,149,.55)';ctx.lineWidth=2;ctx.setLineDash([10,8]);ctx.lineDashOffset=T*10;
@@ -302,12 +303,14 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
     ctx.fillStyle='#f0c95a';ctx.beginPath();ctx.moveTo(tx,ty-t.r-10);ctx.lineTo(tx-6,ty-t.r-20);ctx.lineTo(tx+6,ty-t.r-20);ctx.closePath();ctx.fill()}
   if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){drawMoveZone(T);ctx.save();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();ctx.restore()}}}
 /* au-dessus des ennemis : ce qu'ils ont fait cette manche (pendant les tours des ennemis, puis 4 s), sinon leurs états */
-const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume'];
+const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume','Protège','Relève les os','Bouclier sur','Cri · +25 %','Marque','Ordre :','Agrippe','Fuit'];
 function pill(t,x,y,col,bg){ctx.font='700 11px "Alegreya Sans",system-ui,sans-serif';const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-8,w,16,8);else ctx.rect(x-w/2,y-8,w,16);ctx.fill();ctx.stroke();ctx.fillStyle=col;ctx.fillText(t,x,y+.5)}
-function drawEnemyTags(vis){const c=G.cb,recent=c&&c.lg&&c.lg.length&&(c.ph==='e'||performance.now()-(L.tbLgT||0)<4000);
+function drawEnemyTags(vis){const pat=new Set(),c=G.cb,recent=c&&c.lg&&c.lg.length&&(c.ph==='e'||performance.now()-(L.tbLgT||0)<4000);
   for(const e of G.enemies){if(e.hp<=0)continue;const x=e.rx??e.x,y=(e.ry??e.y)-e.r-(e.type==='boss'?34:18);if(!vis(x,y))continue;
     const it=recent&&c.lg.find(q=>q.id===e.id);
-    if(it){pill(TB_TAG[it.k]+(it.d?' · −'+it.d:''),x,y,it.k===4?'#9fd0ff':'#ffd2c8',it.k===4?'rgba(29,54,64,.92)':'rgba(90,26,20,.92)');continue}
+    if(it){const o=it.o>=0&&G.enemies.find(q=>q.id===it.o),t=G.players[it.pi];
+      pill(TB_TAG[it.k]+(o?' '+enemyName(o):t&&(it.k===12||it.k===14)?' '+t.name:'')+(it.d?' · −'+it.d:''),x,y,it.k===4?'#9fd0ff':'#ffd2c8',it.k===4?'rgba(29,54,64,.92)':'rgba(90,26,20,.92)');continue}
+    if(e.pat!=null&&!e.act&&!c){if(!pat.has(e.pat)){pat.add(e.pat);pill(e.elite?'Patrouille · Chef':'Patrouille',x,y,'#efe6cf','rgba(19,37,44,.9)')}continue}
     const st=enemyStates(e);if(st.length)pill(st[0][0]+(st.length>1?' +'+(st.length-1):''),x,y,st[0][1],'rgba(19,37,44,.9)')}}
 function objTarget(){const qt=questTarget();if(qt)return qt;const o=OBJ[Math.min(G.q,6)];if(!o||!o.at||!WORLD)return null;return placePx(o.at)}
 function edgeArrow(x,y,col,label,hw,hh){const a=Math.atan2(y-L.y,x-L.x);const r=Math.min(hw,hh*.5)*.72;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;const pu=1+.12*Math.sin(G.time*6);

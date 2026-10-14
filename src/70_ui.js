@@ -166,6 +166,8 @@ function meBigHud(me){const box=hq('#meBig'),on=!!(L.meBig&&me);setHid(box,!on);
 function meFx(me){const box=hq('#meFx');if(!box||!me)return;const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),fx=[];
   if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'']);if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT)]);
   if(L.stealthT>0)fx.push(['Disparition','#c9a2ff',d(L.stealthT)]);if(L.buffT>0&&hero.cls==='voleur')fx.push(['Prochain coup renforcé','#ffe08a',d(L.buffT)]);
+  {const c=G.cb;if(inTb&&c){if(c.mk&&c.mk.pi===myIdx&&c.r<c.mk.u)fx.push(['Marqué par le Chef : tout le groupe te vise, +15 % de dégâts','#ff6a5a',c.mk.u-c.r]);
+    if(tacGripped(myIdx))fx.push(['Agrippé : pas de déplacement ce tour','#d2dae8',1]);if(tacProvOn(myIdx))fx.push(['Provoqué : −25 % sur les autres cibles','#ff9a8a',1])}}
   if(ST.pa)fx.push(['Passif : '+SK[ST.pa].nom,'#9ff08a','P']);
   const key=fx.map(f=>f.join(':')).join('|');if(box._k===key)return;box._k=key;box.textContent='';
   for(const f of fx){const i=el('i','fxc',String(f[2]));i.style.setProperty('--c',f[1]);i.title=f[0]+(f[2]&&f[2]!=='P'?' · '+f[2]+(inTb?' tour'+(f[2]>1?'s':''):' s'):'');i.setAttribute('role','listitem');i.setAttribute('aria-label',i.title);box.append(i)}}
