@@ -451,7 +451,12 @@ function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)re
 
 /* ================= Contrôle local ================= */
 const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,false,false,false],potQ=false,actQ=false,atkQ=false;
-const touch={on:false,jx:0,jy:0,atk:false,aimOn:false,aimAng:0,aimLen:0,relAim:false,aimSlot:null};
+const touch={on:false,jx:0,jy:0,atk:false,aimOn:false,aimAng:0,aimLen:0,relAim:false,aimSlot:null,oct:null};
+/* joystick : 8 directions comme le sprite, vitesse pleine dès la zone morte franchie (fini la glisse).
+   On ne change de direction que si le doigt s'écarte nettement (évite le tremblement entre deux directions). */
+function joy8(x,y){const a=Math.atan2(y,x),P=Math.PI/4;let k=Math.round(a/P);
+  if(touch.oct!=null){let df=a-touch.oct*P;df=Math.atan2(Math.sin(df),Math.cos(df));if(Math.abs(df)<P/2+.14)k=touch.oct}
+  k=((k%8)+8)%8;touch.oct=k;return[Math.cos(k*P),Math.sin(k*P)]}
 function myP(){return G.players[myIdx]}
 function nearestEnemy(r){let best=null,bd=r;for(const e of G.enemies){if(e.hp<=0)continue;const ex=e.rx!=null?e.rx:e.x,ey=e.ry!=null?e.ry:e.y,d=Math.hypot(ex-L.x,ey-L.y);if(d<bd){bd=d;best={x:ex,y:ey,e}}}return best}
 function aimPoint(){const t=!touch.aimOn&&tbAimAt();if(t)return{x:t.rx??t.x,y:t.ry??t.y};if(touch.aimOn){const d=clamp((touch.aimLen||60)*3.2,90,320);return{x:L.x+Math.cos(L.aim)*d,y:L.y+Math.sin(L.aim)*d}}const n=nearestEnemy(300);if(n)return{x:n.x,y:n.y};return{x:L.x+Math.cos(L.aim)*170,y:L.y+Math.sin(L.aim)*170}}
@@ -489,7 +494,7 @@ function updateLocal(dt){
   tbLocal();L.cdA-=dt;L.ivT-=dt;L.swing-=dt;tickLocal(tbMe()?0:dt,false);
   let mx=0,my=0;
   if(keys.has('KeyA')||keys.has('ArrowLeft'))mx-=1;if(keys.has('KeyD')||keys.has('ArrowRight'))mx+=1;if(keys.has('KeyW')||keys.has('ArrowUp'))my-=1;if(keys.has('KeyS')||keys.has('ArrowDown'))my+=1;
-  if(touch.jx||touch.jy){mx=touch.jx;my=touch.jy}
+  if(touch.jx||touch.jy){const d=joy8(touch.jx,touch.jy);mx=d[0];my=d[1]}else touch.oct=null
   let ml=Math.hypot(mx,my);if(ml>1){mx/=ml;my/=ml;ml=1}
   const down=!me||me.down;if(down){mx=my=0}
   // au combat : on ne bouge que pendant son tour, librement dans la zone du tour
