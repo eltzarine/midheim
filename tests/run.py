@@ -436,6 +436,8 @@ with sync_playwright() as pw:
     hb.dispatch_event('pointerdown'); pg.wait_for_timeout(300); hb.dispatch_event('pointerup')
     check('Tour par tour : 1er appui = aperçu de l’attaque, sans frapper', go(pg, "L.pv==='atk'&&G.cb.ap[0]===3") and pg.is_visible('#pvHint'))
     pg.screenshot(path=f'{OUT}/f3_apercu.png')
+    check('Tour par tour : l’aperçu donne la fourchette de dégâts et la chance de toucher', go(pg, "(()=>{const t=tbAimAt(),r=dmgRange(1,t),h=myHit(t);return r[0]>0&&r[1]>r[0]&&h>0&&h<=1})()"))
+    go(pg, "hitChance=()=>1")   # l'attaque de base peut rater : ici on veut qu'elle touche
     hb.dispatch_event('pointerdown'); pg.wait_for_timeout(600); hb.dispatch_event('pointerup')
     h1 = go(pg, "G.enemies[0]?G.enemies[0].hp:0")
     check('Tour par tour : 2e appui = l’attaque part et vise la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===2"), [h0, h1])
