@@ -1,20 +1,35 @@
 /* ================= Combat au tour par tour =================
    On explore en temps réel. Un héros qui entre dans la zone de combat (à moins de TB_FIGHT cases d'un ennemi alerté),
-   ou qui frappe un ennemi, passe au tour par tour, sur place, sans changer d'écran :
-   - tour des héros : les héros au combat jouent en même temps ; chacun peut se déplacer (TB_MOVE cases, plus pour un héros
-     rapide), dépenser ses TB_PA points d'action (attaque et compétence : 1 point, ultime : 2, relever l'allié : 1)
-     et boire UNE potion, puis touche « Fin du tour ». À deux, on peut annuler sa fin de tour tant que l'autre joue ;
-   - tour des ennemis : chacun avance et attaque une fois (projectiles compris) ; les héros au combat ne bougent pas.
+   ou qui frappe un ennemi, passe au tour par tour, sur place, sans changer d'écran.
+   Ordre des tours : à chaque manche, héros et ennemis au combat sont rangés du plus rapide au plus lent (initiative, tbIni)
+   et jouent UN PAR UN, chacun son tour (G.cb.q, G.cb.k) : jamais deux à la fois, ni deux héros, ni un héros et un ennemi.
+   - tour d'un héros : lui seul peut se déplacer (TB_MOVE cases, plus pour un héros rapide), dépenser ses TB_PA points
+     d'action (attaque et compétence : 1 point, ultime : 2, relever l'allié : 1) et boire UNE potion, puis « Fin du tour » ;
+   - tour d'un ennemi : lui seul avance et attaque une fois (projectiles compris), tout le reste est figé.
      Ce que chaque ennemi a fait est noté (G.cb.lg) et affiché dans le bandeau et au-dessus de lui.
+   Le héros qui ouvre le combat en frappant joue le premier (embuscade).
    Toucher un ennemi le choisit pour cible ; l'attaque et les compétences partent vers lui.
    Chaque héros entre et sort du combat pour son compte : l'autre peut explorer en temps réel, puis rejoindre la bataille
    en entrant dans la zone ou en frappant. À plus de TB_LEAVE cases de tout ennemi à la fin d'un tour, on quitte le combat ;
    quand plus aucun héros n'y est, les ennemis rentrent chez eux.
    Les durées (recharges, mana, effets, brûlures, zones) avancent de TB_ROUND secondes à la fin de chaque tour.
-   L'hôte décide de tout ; l'invité reçoit l'état (phase, tour, qui est au combat, points restants) et bride ses commandes. */
-const TB_FIGHT=9,TB_LEAVE=12,TB_ROUND=3,TB_EN=1.6,TB_EN_MAX=4,TB_MOVE=5,TB_DMG=2.2,TB_ULT=12,TB_COOP_T=60,TB_PA=2;
+   L'hôte décide de tout ; l'invité reçoit l'état (manche, ordre, à qui le tour, qui est au combat, points restants)
+   et bride ses commandes. */
+const TB_FIGHT=9,TB_LEAVE=12,TB_ROUND=3,TB_EN=1.6,TB_EN_MAX=4,TB_EN_AFTER=.5,TB_MOVE=5,TB_DMG=2.2,TB_ULT=12,TB_COOP_T=60,TB_PA=2;
 const tbIn=i=>!!(G&&G.cb&&G.cb.in[i]),tbMe=()=>tbIn(myIdx);
-const tbHero=()=>tbMe()&&G.cb.ph==='h',tbFoe=()=>tbMe()&&G.cb.ph==='e';
+/* tbHero : c'est mon tour ; tbFoe : c'est le tour d'un ennemi ; tbAlly : c'est le tour de mon allié */
+const tbHero=()=>tbMe()&&G.cb.ph==='h'&&G.cb.who===myIdx,tbFoe=()=>tbMe()&&G.cb.ph==='e',tbAlly=()=>tbMe()&&G.cb.ph==='h'&&G.cb.who!==myIdx;
+/* ---------- initiative : qui joue avant qui ----------
+   Héros : sa vitesse de déplacement (classe, talents, équipement) / 12,5 → guerrier, mage et soigneur 12, voleur 14.
+   Ennemis : d'après leur espèce, +1 pour un chef ; ralenti : −3. À égalité, les héros passent avant les ennemis. */
+const TB_INI={slime:7,bat:13,archer:10,orc:9,mimic:11,boss:10};
+function heroSpd(i){const p=G.players[i];if(!p)return 150;if(i===myIdx&&mode!=='guest'&&typeof ST!=='undefined'&&ST&&ST.spd)return ST.spd;return p.st&&p.st.spd||CLS[p.cls].spd}
+function tbIni(tok){if(tok<0)return Math.round(heroSpd(-tok-1)/12.5);const e=G.enemies.find(o=>o.id===tok);if(!e)return 0;
+  return(TB_INI[e.type]||8)+(e.elite?1:0)-(e.slowT>0?3:0)}
+/* rang dans la manche : initiative décroissante, héros d'abord à égalité, puis par numéro */
+function tbRank(a,b){return tbIni(b)-tbIni(a)||(b<0)-(a<0)||(a<0?b-a:a-b)}
+/* jeton d'un acteur : un héros i vaut −(i+1), un ennemi vaut son numéro */
+const tbTok=i=>-(i+1);
 /* coût en points d'action : attaque et compétence 1, ultime 2 */
 const tbCost=id=>id&&SK[id]&&SK[id].t==='u'?2:1;
 /* ---------- noms et états des ennemis (affichés aux deux joueurs) ---------- */
@@ -34,33 +49,53 @@ function enemyIntent(e){const st=enemyStates(e);if(st.some(s=>s[0]==='Étourdi')
   if(e.type==='archer')return'va tirer';if(e.type==='boss')return'attaque spéciale possible';if(e.type==='orc')return'va charger ou frapper';return'va s’approcher et frapper'}
 /* ---------- journal du tour des ennemis ---------- */
 const TB_LG=['','frappe','charge','tire sur','est étourdi et passe son tour','lance une salve','appelle des renforts','disparaît dans la brume'];
-function tbLog(e,k,pi,d){const c=G.cb;if(!c||c.ph!=='e'||!e)return;let it=c.lg.find(x=>x.id===e.id&&x.k===k);if(!it){if(c.lg.length>=8)return;it={id:e.id,k,pi:pi==null?-1:pi,d:0,n:enemyName(e)};c.lg.push(it)}if(d)it.d+=Math.round(d)}
+function tbLog(e,k,pi,d){const c=G.cb;if(!c||c.ph!=='e'||!e)return;let it=c.lg.find(x=>x.id===e.id&&x.k===k);if(!it){if(c.lg.length>=24)return;it={id:e.id,k,pi:pi==null?-1:pi,d:0,n:enemyName(e)};c.lg.push(it)}if(d)it.d+=Math.round(d)}
 /* ---------- côté hôte ---------- */
 function tbFoes(){return G.enemies.filter(e=>e.hp>0&&e.act&&!e.ret)}
 function tbClose(p,r){const R=r*TS;for(const e of G.enemies)if(e.hp>0&&e.act&&!e.ret&&Math.hypot(p.x-e.x,p.y-e.y)<R)return true;return false}
-function tbStart(first){G.cb={ph:'h',r:1,t:0,in:[false,false],rd:[false,false],ap:[TB_PA,TB_PA],po:[false,false],lg:[]};
+/* ouverture : qui entre au combat (want), qui a frappé le premier (first, −1 si les ennemis ont repéré les héros) */
+function tbStart(first,want){const c=G.cb={ph:'',who:-1,eid:-1,q:[],k:0,r:1,t:0,in:[!!want[0],!!want[1]],
+    rd:[false,false],ap:[TB_PA,TB_PA],po:[false,false],pre:[0,0],lg:[]};
   for(const e of G.enemies){e.kx=e.ky=0;e.tbA=false}
-  Log.ev('combat','début, '+tbFoes().length+' ennemi(s), '+(first>=0?'les héros':'les ennemis')+' commencent');
-  if(first>=0){msg('Initiative ! Les héros frappent les premiers.');tbHeroPhase()}
-  else{msg('Vous êtes repérés ! Les ennemis jouent en premier.');tbEnemyPhase()}}
-function tbJoin(i,by){const c=G.cb,p=G.players[i];c.in[i]=true;c.rd[i]=false;c.ap[i]=TB_PA-(by?1:0);c.po[i]=false;
+  c.q=tbQueue();
+  // embuscade : le héros qui a frappé joue le premier (son coup compte déjà pour 1 point d'action)
+  if(first>=0&&c.in[first]){const t=tbTok(first);c.q=[t].concat(c.q.filter(x=>x!==t));c.pre[first]=1}
+  Log.ev('combat','début, '+tbFoes().length+' ennemi(s), ordre '+c.q.map(tbTokName).join(' > '));
+  msg(first>=0?'Initiative ! '+G.players[first].name+' frappe le premier.':'Combat ! Chacun son tour, du plus rapide au plus lent.');
+  tbBegin(0)}
+/* ordre d'une manche : héros au combat et ennemis en alerte, du plus rapide au plus lent */
+function tbQueue(){const c=G.cb,q=[];G.players.forEach((p,i)=>{if(c.in[i])q.push(tbTok(i))});for(const e of tbFoes())q.push(e.id);return q.sort(tbRank)}
+function tbTokName(t){if(t<0){const p=G.players[-t-1];return p?p.name:'?'}const e=G.enemies.find(o=>o.id===t);return e?enemyName(e):'?'}
+/* un héros rejoint un combat en cours : il prend sa place parmi ceux qui n'ont pas encore joué cette manche */
+function tbJoin(i,by){const c=G.cb,p=G.players[i],t=tbTok(i);c.in[i]=true;c.pre[i]=by?1:0;
+  if(c.q[c.k]!==t&&!c.q.slice(c.k+1).includes(t)){let j=c.k+1;while(j<c.q.length&&tbRank(c.q[j],t)<0)j++;c.q.splice(j,0,t)}
   if(c.in.filter(Boolean).length>1)msg(p.name+' entre dans le combat.')}
 function tbEnd(win){Log.ev('combat','fin, tour '+G.cb.r,win?'victoire':'fuite');G.cb=null;
   for(const e of G.enemies){e.tbA=false;e.tbSkip=false;
     // fuite : les ennemis abandonnent et rentrent à leur poste
     if(!win&&e.hp>0&&e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null){e.act=false;e.ret=true;e.retT=0}}
   msg(win?'Victoire ! Le combat est terminé.':'Vous avez semé vos ennemis : ils rentrent chez eux.')}
-function tbHeroPhase(){const c=G.cb;c.ph='h';c.t=0;c.rd=G.players.map((p,i)=>p.down||!c.in[i]);c.ap=[TB_PA,TB_PA];c.po=[false,false];
-  for(const e of G.enemies){e.mistT=0;e.tele=0;e.chg=0}}
-/* zones posées pendant le tour des héros : le feu brûle et le cercle soigne une fois, pour la durée d'un tour */
+/* l'acteur du jeton t peut-il jouer ? (héros au combat et debout, ennemi vivant et en alerte) */
+function tbLive(t){if(t<0){const i=-t-1,p=G.players[i];return!!(p&&G.cb.in[i]&&!p.down)}const e=G.enemies.find(o=>o.id===t);return!!(e&&e.hp>0&&e.act&&!e.ret)}
+/* donne la main au k-ième de la manche (en sautant qui ne peut pas jouer) ; après le dernier, la manche se termine */
+function tbBegin(k){const c=G.cb;
+  for(;;){while(k<c.q.length&&!tbLive(c.q[k]))k++;if(k<c.q.length)break;
+    tbAreas();tbRoundEnd();
+    if(!tbFoes().length){tbEnd(true);return}
+    if(!c.in.some(Boolean)){tbEnd(false);return}
+    c.q=tbQueue();c.lg=[];k=0}
+  c.k=k;c.t=0;c.tA=-1;const t=c.q[k];
+  if(t<0){const i=-t-1;c.ph='h';c.who=i;c.eid=-1;c.rd[i]=false;c.ap[i]=TB_PA-(c.pre[i]||0);c.pre[i]=0;c.po[i]=false;
+    for(const e of G.enemies){e.mistT=0;e.tele=0;e.chg=0}return}
+  const e=G.enemies.find(o=>o.id===t);c.ph='e';c.who=-1;c.eid=t;
+  e.tbA=false;e.tbC=false;e.hitCd=0;e.tbSkip=false;if(e.type==='archer')e.cd=.25+Math.random()*.5;
+  if(e.frz>0){if(e.type==='boss'&&e.frz<1)e.frz=0;else{e.tbSkip=true;fx(46,e.x,e.y-e.r-6,0);tbLog(e,4)}}}
+const tbNext=()=>tbBegin(G.cb.k+1);
+/* zones posées par les héros : le feu brûle et le cercle soigne une fois par manche, pour la durée d'une manche */
 function tbAreas(){const S=TB_ROUND;
   for(const f of G.fires){const n=Math.max(1,Math.round(Math.min(f.t,S)/.5));for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6*n,{noEnch:true})}
   for(const z of G.zones){if(z.smoke||z.slow)continue;for(const p of G.players)if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r)healP(p,p.mhp*.09*Math.min(z.t,S),true)}}
-function tbEnemyPhase(){const c=G.cb;tbAreas();c.ph='e';c.t=0;c.lg=[];
-  for(const e of G.enemies){if(e.hp<=0)continue;e.tbA=false;e.tbC=false;e.hitCd=0;e.tbSkip=false;
-    if(e.type==='archer')e.cd=.25+Math.random()*.5;
-    if(e.frz>0){if(e.type==='boss'&&e.frz<1)e.frz=0;else if(e.act){e.tbSkip=true;fx(46,e.x,e.y-e.r-6,0);tbLog(e,4)}}}}
-/* fin d'un tour complet : toutes les durées avancent de TB_ROUND secondes (héros au combat et ennemis) */
+/* fin d'une manche : toutes les durées avancent de TB_ROUND secondes (héros au combat et ennemis) */
 function tbRoundEnd(){const S=TB_ROUND,c=G.cb;
   G.players.forEach((p,i)=>{if(c.in[i])pStatus(p,S)});
   for(const e of G.enemies){if(e.hp<=0)continue;e.taunt-=S;e.blind-=S;e.slowT-=S;e.markT-=S;e.frz=Math.max(0,e.frz-S);
@@ -76,55 +111,57 @@ function tbUpdate(dt){
   const by=G.tbBy&&G.time-G.tbBy.t<.6?G.tbBy.pi:-1;
   // qui entre dans la zone de combat, ou frappe un ennemi, passe au tour par tour
   const want=G.players.map((p,i)=>!p.down&&!tbIn(i)&&(i===by||tbClose(p,TB_FIGHT)));
-  if(!G.cb){if(!want.some(Boolean))return;if(!tbFoes().length){G.tbBy=null;return}tbStart(by)}
-  const c=G.cb;want.forEach((w,i)=>{if(w)tbJoin(i,i===by&&c.ph==='h')});if(by>=0)G.tbBy=null;
-  c.t+=dt;
+  if(!G.cb){if(!want.some(Boolean))return;if(!tbFoes().length){G.tbBy=null;return}G.tbBy=null;tbStart(by,want);if(!G.cb)return}
+  else{want.forEach((w,i)=>{if(w)tbJoin(i,i===by)});if(by>=0)G.tbBy=null}
+  const c=G.cb;c.t+=dt;
   if(!tbFoes().length){tbEnd(true);return}
   if(!c.in.some(Boolean)){tbEnd(false);return}
-  if(c.ph==='h'){G.players.forEach((p,i)=>{if(p.down||!c.in[i])c.rd[i]=true});
-    if(G.coop&&c.t>TB_COOP_T&&!c.rd.every(Boolean)){c.rd=[true,true];msg('Temps écoulé : au tour des ennemis.')}
-    // le tour des héros se termine quand chacun a fini et que ses coups ont touché (projectiles, météore, tempête)
-    if(G.players.every((p,i)=>c.rd[i])&&!G.projs.some(q=>q.from==='p')&&!G.later.length&&!G.players.some((p,i)=>c.in[i]&&p.stormT>0&&!p.down))tbEnemyPhase();return}
-  // tour des ennemis : il dure TB_EN s, et se prolonge le temps que les projectiles et les charges arrivent
-  const busy=G.projs.some(q=>q.from==='e')||G.enemies.some(e=>e.hp>0&&(e.chg>0||e.tele>0));
-  if(c.t>=TB_EN&&(!busy||c.t>=TB_EN_MAX)){tbRoundEnd();
-    if(!tbFoes().length){tbEnd(true);return}
-    if(!c.in.some(Boolean)){tbEnd(false);return}
-    tbHeroPhase()}}
-/* l'invité : des points d'action et une potion par tour, rien pendant le tour des ennemis */
-function tbGate(i,kind,cost){const c=G.cb;if(!c||!c.in[i])return true;if(c.ph!=='h'||c.rd[i])return false;
+  if(!tbLive(c.q[c.k])){tbNext();return}
+  if(c.ph==='h'){const i=c.who,p=G.players[i];
+    if(G.coop&&c.t>TB_COOP_T&&!c.rd[i]){c.rd[i]=true;msg('Temps écoulé : '+p.name+' passe son tour.')}
+    // le tour du héros se termine quand il a fini et que ses coups ont touché (projectiles, météore, tempête)
+    if(c.rd[i]&&!G.projs.some(q=>q.from==='p')&&!G.later.length&&!(p.stormT>0))tbNext();return}
+  // tour d'un ennemi : il avance jusqu'à TB_EN s ; une fois son coup porté, il rend la main TB_EN_AFTER s plus tard.
+  // Le tour se prolonge le temps que ses projectiles et sa charge arrivent.
+  const e=G.enemies.find(o=>o.id===c.eid);
+  if(c.tA<0&&e.tbA)c.tA=c.t;
+  const busy=G.projs.some(q=>q.from==='e')||e.chg>0||e.tele>0,done=e.tbSkip?c.t>=.6:c.t>=TB_EN||c.tA>=0&&c.t>=c.tA+TB_EN_AFTER;
+  if(done&&!busy||c.t>=TB_EN_MAX)tbNext()}
+/* l'invité : des points d'action et une potion pendant SON tour, rien sinon */
+function tbGate(i,kind,cost){const c=G.cb;if(!c||!c.in[i])return true;if(c.ph!=='h'||c.who!==i||c.rd[i])return false;
   if(kind==='po'){if(c.po[i])return false;c.po[i]=true;return true}cost=cost||1;if(c.ap[i]<cost)return false;c.ap[i]-=cost;return true}
-/* relever l'allié au combat : 1 point d'action */
-function tbRevive(pi){const c=G.cb,p=G.players[pi];if(!c||!c.in[pi]||c.ph!=='h'||c.ap[pi]<1||!p||p.down)return;const q=G.players.find(o=>o!==p&&o.down&&Math.hypot(o.x-p.x,o.y-p.y)<70);if(!q)return;
+/* relever l'allié au combat, pendant son tour : 1 point d'action */
+function tbRevive(pi){const c=G.cb,p=G.players[pi];if(!c||!c.in[pi]||c.ph!=='h'||c.who!==pi||c.ap[pi]<1||!p||p.down)return;const q=G.players.find(o=>o!==p&&o.down&&Math.hypot(o.x-p.x,o.y-p.y)<70);if(!q)return;
   const qi=G.players.indexOf(q);c.ap[pi]--;q.down=false;q.rev=0;q.hp=q.mhp*(p.cls==='soigneur'?.6:.4);q.lowSaid=false;c.rd[qi]=false;msg(q.name+' est relevé !');sayP(qi,'rev');fx(14,q.x,q.y,0,qi)}
-/* état envoyé à l'invité : [phase 1 héros / 2 ennemis, tour, drapeaux, secondes restantes à deux, journal des ennemis] */
+/* état envoyé à l'invité : [phase 1 héros / 2 ennemi, manche, drapeaux, secondes restantes à deux, journal des ennemis,
+   ordre de la manche (jetons), rang de celui qui joue] */
 function tbPack(){const c=G.cb;if(!c)return 0;const f=(a,b)=>(a[0]?b:0)|(a[1]?b*2:0);
   return[c.ph==='h'?1:2,c.r,f(c.rd,1)|f(c.po,4)|f(c.in,16)|clamp(c.ap[0],0,3)<<6|clamp(c.ap[1],0,3)<<8,G.coop&&c.ph==='h'?Math.max(0,Math.ceil(TB_COOP_T-c.t)):0,
-    c.lg.map(x=>[x.id,x.k,x.pi,x.d])]}
+    c.lg.slice(-8).map(x=>[x.id,x.k,x.pi,x.d]),c.q.slice(0,40),c.k]}
 function tbUnpack(a){if(!Array.isArray(a)||!a.length)return null;const n=v=>Number.isFinite(+v)?+v:0,b=n(a[2])|0,f=k=>[!!(b&k),!!(b&k*2)];
   const lg=(Array.isArray(a[4])?a[4].slice(0,8):[]).map(x=>{x=Array.isArray(x)?x:[];const id=n(x[0]),e=G.emap&&G.emap.get(id);return{id,k:clamp(n(x[1])|0,0,TB_LG.length-1),pi:clamp(n(x[2])|0,-1,1),d:clamp(n(x[3])|0,0,1e6),n:e?enemyName(e):'Ennemi'}});
-  return{ph:n(a[0])===2?'e':'h',r:clamp(n(a[1])|0,1,1e6),rd:f(1),po:f(4),in:f(16),ap:[b>>6&3,b>>8&3],tl:clamp(n(a[3]),0,999),t:0,lg}}
+  const q=(Array.isArray(a[5])?a[5].slice(0,40):[]).map(v=>clamp(Math.trunc(n(v)),-2,1e9)),k=clamp(n(a[6])|0,0,Math.max(0,q.length-1)),t=q.length?q[k]:0,ph=n(a[0])===2?'e':'h';
+  return{ph,r:clamp(n(a[1])|0,1,1e6),rd:f(1),po:f(4),in:f(16),ap:[b>>6&3,b>>8&3],tl:clamp(n(a[3]),0,999),t:0,lg,q,k,
+    who:ph==='h'&&t<0?-t-1:-1,eid:ph==='e'&&t>=0?t:-1}}
 
 /* ---------- côté joueur (hôte et invité) ---------- */
 /* points d'action restants : ceux de l'hôte, moins ce que l'invité vient de dépenser et que l'hôte n'a pas encore vu */
 function tbAP(){if(!tbMe())return 9;return Math.max(0,Math.min(G.cb.ap[myIdx],TB_PA-(L.tbSpent||0)))}
-function tbCanAct(cost){if(!tbMe())return true;return G.cb.ph==='h'&&!L.tbEnd&&tbAP()>=(cost||1)}
-function tbCanPot(){if(!tbMe())return true;return G.cb.ph==='h'&&!G.cb.po[myIdx]&&!L.tbPot&&!L.tbEnd}
+function tbCanAct(cost){if(!tbMe())return true;return tbHero()&&!L.tbEnd&&tbAP()>=(cost||1)}
+function tbCanPot(){if(!tbMe())return true;return tbHero()&&!G.cb.po[myIdx]&&!L.tbPot&&!L.tbEnd}
 function tbUse(kind,cost){if(!tbMe())return;if(kind==='po'){L.tbPot=true;if(mode!=='guest')G.cb.po[myIdx]=true;return}
   cost=cost||1;tbCommit();L.pv=null;if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-cost);else L.tbSpent=(L.tbSpent||0)+cost}
-function tbWhy(cost){return!tbMe()?'':G.cb.ph!=='h'?'Attends : c’est le tour des ennemis.':L.tbEnd?'Tu as fini ton tour.':(cost||1)>1&&tbAP()>0?'Il faut '+cost+' points d’action.':'Plus de points d’action ce tour. Déplace-toi ou touche « Fin du tour ».'}
+function tbWhy(cost){return!tbMe()?'':!tbHero()?'Attends ton tour : '+tbTurnName()+' joue.':L.tbEnd?'Tu as fini ton tour.':(cost||1)>1&&tbAP()>0?'Il faut '+cost+' points d’action.':'Plus de points d’action ce tour. Déplace-toi ou touche « Fin du tour ».'}
 function tbMoveMax(){return TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}
-function tbActed(){return!!(tbMe()&&tbAP()<TB_PA)}
 function endTurn(){if(!tbHero()||L.tbEnd)return;const me=myP();if(!me||me.down)return;L.tbEnd=true;L.pv=null;L.et=G.cb.r;if(mode!=='guest')G.cb.rd[myIdx]=true;Snd.play('key')}
 /* plus de points d'action ni de déplacement : le tour se finit tout seul, 1,2 s après (le temps de voir le dernier coup).
-   La potion ne retient pas le tour. Après « Annuler la fin du tour », on ne refinit pas tout seul ce tour-ci. */
+   La potion ne retient pas le tour. */
 const TB_AUTO=1.2;
-function tbAutoEnd(dt){if(!tbHero()||L.tbEnd||L.tbNoAuto||L.tbReA||L.dashT>0||tbAP()>0||L.tbMv>=TS/2){L.tbAutoT=0;return}
+function tbAutoEnd(dt){if(!tbHero()||L.tbEnd||L.tbReA||L.dashT>0||tbAP()>0||L.tbMv>=TS/2){L.tbAutoT=0;return}
   const me=myP();if(!me||me.down)return;L.tbAutoT=(L.tbAutoT||0)+dt;if(L.tbAutoT>=TB_AUTO){L.tbAutoT=0;endTurn();toast('Plus d’actions ni de déplacement : fin du tour.','tbauto')}}
-/* à deux : tant que l'autre joue, on peut revenir sur sa fin de tour ; sans action faite, on repart de sa place de départ */
-function tbOtherPlaying(){const c=G.cb,o=myIdx===0?1:0;return!!(c&&G.players[o]&&c.in[o]&&!c.rd[o]&&!G.players[o].down)}
-function cancelEnd(){if(!tbHero()||!L.tbEnd||!tbOtherPlaying())return;L.tbEnd=false;L.tbNoAuto=true;L.et=0;if(mode!=='guest')G.cb.rd[myIdx]=false;
-  if(!tbActed()){L.x=L.tbOx;L.y=L.tbOy;tbAnchor(tbMoveMax())}Snd.play('key')}
+/* nom de celui qui joue (« Gobelin », « César ») */
+function tbTurnName(){const c=G.cb;if(!c)return'';if(c.ph==='e'){const e=G.enemies.find(o=>o.id===c.eid)||(G.emap&&G.emap.get(c.eid));return e?enemyName(e):'un ennemi'}
+  const p=G.players[c.who];return p?p.name:'ton allié'}
 /* cible : l'ennemi touché à l'écran ; sans cible, le plus proche */
 function tbTarget(){if(!L.tbT)return null;const e=G.enemies.find(e=>e.id===L.tbT&&e.hp>0);if(!e)L.tbT=0;return e||null}
 function tbAimAt(){const t=tbTarget();if(t)return t;const n=nearestEnemy(330);return n?n.e:null}
@@ -137,31 +174,44 @@ function enemyAt(sx,sy){if(!G||!G.m)return null;const w=screenToWorld(sx,sy);let
 /* toucher un ennemi le choisit pour cible (sans frapper) ; toucher à nouveau la même cible la libère */
 function tapEnemy(sx,sy,clear){if(!inGame()||paused||Scene.on)return false;const e=enemyAt(sx,sy);if(!e){if(clear&&L.pv){L.pv=null;return true}if(clear&&L.tbT){L.tbT=0;return true}return false}
   L.tbT=L.tbT===e.id?0:e.id;Snd.play('key');return true}
-/* appelé à chaque image : entrée ou sortie du combat, nouveau tour, nouvelle phase */
-function tbLocal(){const c=G.cb,inn=tbMe(),key=inn?c.r+c.ph:'';if(key===L.tbKey)return;const was=L.tbKey;L.tbKey=key;
+/* appelé à chaque image : entrée ou sortie du combat, nouvelle manche, à qui le tour */
+function tbLocal(){const c=G.cb,inn=tbMe(),key=inn?c.r+':'+c.k+c.ph+(c.ph==='h'?c.who:c.eid):'';if(key===L.tbKey)return;const was=L.tbKey,wasE=L.tbPh==='e';L.tbKey=key;
+  if(wasE&&L.tbEid!=null){L.tbLgId=L.tbEid;L.tbLgT=performance.now()}L.tbPh=inn?c.ph:'';L.tbEid=inn&&c.ph==='e'?c.eid:null;
   if(!inn){L.tbR=0;L.tbEnd=false;L.tbSpent=0;if(was){toast(c?'Tu quittes le combat.':'Fin du combat.');Snd.play('lvl')}return}
   if(L.tbR&&c.r>L.tbR)tickLocal(TB_ROUND*Math.min(3,c.r-L.tbR),true);L.tbR=c.r;
-  if(c.ph==='h'){tbAnchor(tbMoveMax());L.tbReA=false;L.tbNoAuto=false;L.tbAutoT=0;L.pv=null;L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;L.tbLgT=performance.now();Snd.play('gate')}
-  else{L.tbMv=0;L.tbF=null;L.pv=null;Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}
+  if(tbHero()){tbAnchor(tbMoveMax());L.tbReA=false;L.tbAutoT=0;L.pv=null;L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;Snd.play('gate')}
+  else{L.tbMv=0;L.tbF=null;L.pv=null;if(c.ph==='e'&&!wasE)Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}
   tbPulse()}
 function tbPulse(){const b=$('#tbInfo');if(!b)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse')}
-/* bandeau du tour, fiche de la cible, journal des ennemis */
+/* bandeau du tour : ordre des tours, à qui le tour ; pendant SON tour : actions, potion, déplacement */
 function tbHud(){const box=hq('#tbInfo'),be=hq('#bEnd'),c=G.cb,inn=tbMe(),me=myP();setHid(box,!inn);
-  const canEnd=inn&&c.ph==='h'&&me&&!me.down,undo=canEnd&&L.tbEnd&&tbOtherPlaying();
-  setHid(be,!(canEnd&&(!L.tbEnd||undo)));
+  const mine=tbHero(),canEnd=mine&&me&&!me.down;
+  setHid(be,!(canEnd&&!L.tbEnd));
   tgtHud();
   if(!inn)return;
-  const hp=c.ph==='h',ap=tbAP(),pot=!!(c.po[myIdx]||L.tbPot);
-  setTxt(hq('#tbPh'),'Tour '+c.r+' · '+(!hp?'les ennemis jouent':me&&me.down?'à terre':L.tbEnd?'tu as fini':'à toi de jouer'));box.classList.toggle('foe',!hp);
-  setTxt(hq('#tbAct'),'Actions '+'●'.repeat(hp&&!L.tbEnd?ap:0)+'○'.repeat(TB_PA-(hp&&!L.tbEnd?ap:0)));hq('#tbAct').classList.toggle('off',!hp||L.tbEnd||!ap);
-  hq('#tbPot').classList.toggle('off',pot||!hp||L.tbEnd);
-  const mi=hq('#tbMv');setTxt(mi,hp&&!L.tbEnd?'Déplacement '+(L.tbMv/TS).toFixed(1).replace('.',',')+' cases':'Déplacement —');mi.classList.toggle('off',!hp||L.tbEnd||L.tbMv<2);
-  const oi=myIdx===0?1:0,o=G.players[oi],al=hq('#tbAl');setHid(al,!o);
-  if(o)setTxt(al,!c.in[oi]?o.name+' : hors combat':o.down?o.name+' : à terre':!hp?'':c.rd[oi]?o.name+' : prêt ✓':o.name+' joue…'+(c.tl?' '+c.tl+' s':''));
-  // journal : pendant le tour des ennemis, et encore 4 s au début du tour des héros
-  const lgOn=c.lg.length&&(!hp||performance.now()-(L.tbLgT||0)<4000),lgEl=hq('#tbLog');setHid(lgEl,!lgOn);
-  if(lgOn)setTxt(lgEl,tbLogLines(c.lg).join(innerWidth>innerHeight?' · ':'\n'));
-  setTxt(be,undo?'Annuler la fin du tour':'Fin du tour');be.classList.toggle('glow',hp&&!ap&&!undo);be.classList.toggle('undo',!!undo)}
+  const ap=tbAP(),pot=!!(c.po[myIdx]||L.tbPot),on=mine&&!L.tbEnd;
+  setTxt(hq('#tbPh'),'Tour '+c.r+' · '+(mine?(me&&me.down?'à terre':L.tbEnd?'tu as fini':'à toi de jouer'):tbTurnName()+' joue'));box.classList.toggle('foe',!mine);box.classList.toggle('en',c.ph==='e');
+  setTxt(hq('#tbAl'),tbAlly()&&c.tl?c.tl+' s':'');
+  tbOrder(hq('#tbOrd'));
+  setTxt(hq('#tbAct'),'Actions '+'●'.repeat(on?ap:0)+'○'.repeat(TB_PA-(on?ap:0)));hq('#tbAct').classList.toggle('off',!on||!ap);
+  hq('#tbPot').classList.toggle('off',pot||!on);
+  const mi=hq('#tbMv');setTxt(mi,on?'Déplacement '+(L.tbMv/TS).toFixed(1).replace('.',',')+' cases':'Déplacement —');mi.classList.toggle('off',!on||L.tbMv<2);
+  // journal : ce que fait l'ennemi qui joue, puis encore 3 s après son tour
+  const id=c.ph==='e'?c.eid:performance.now()-(L.tbLgT||0)<3000?L.tbLgId:null,lg=id==null?[]:c.lg.filter(x=>x.id===id),lgEl=hq('#tbLog');setHid(lgEl,!lg.length);
+  if(lg.length)setTxt(lgEl,tbLogLines(lg).join(' · '));
+  be.classList.toggle('glow',mine&&!ap)}
+/* frise de l'ordre des tours : un jeton par acteur (carré = héros, rond = ennemi) ; qui joue est grossi, qui a joué est pâli.
+   Elle n'est reconstruite que quand l'ordre ou le tour change. */
+const TB_ORD_MAX=9;
+function tbOrder(el){if(!el)return;const c=G.cb,live=c.q.map((t,j)=>j>=c.k||t<0?true:G.enemies.some(e=>e.id===t&&e.hp>0)),key=c.r+'|'+c.k+'|'+c.q.join(',')+'|'+live.join('')+'|'+G.players.map(p=>p.down?1:0).join('');
+  if(el.dataset.k===key)return;el.dataset.k=key;el.textContent='';const names=[];let n=0;
+  c.q.forEach((t,j)=>{if(!live[j])return;const done=j<c.k,cur=j===c.k;if(done&&c.k-j>2)return;if(n>=TB_ORD_MAX){n++;return}n++;
+    const tk=document.createElement('i');let col,lt,nm;
+    if(t<0){const i=-t-1,p=G.players[i];if(!p)return;col=CLS[p.cls].col;nm=i===myIdx?'Toi':p.name;lt=(p.name||'?').charAt(0).toUpperCase();tk.className='to h'+(i===myIdx?' me':'')+(p.down?' dn':'')}
+    else{const e=G.enemies.find(o=>o.id===t)||(G.emap&&G.emap.get(t));if(!e)return;nm=enemyName(e);lt=nm.charAt(0).toUpperCase();col=e.type==='boss'?'#f0c95a':e.elite?'#ff9a6a':'#e8823f';tk.className='to e'}
+    if(done)tk.classList.add('done');if(cur)tk.classList.add('cur');tk.style.setProperty('--c',col);tk.textContent=lt;tk.title=nm;el.append(tk);names.push((cur?'à '+nm:nm))});
+  if(n>TB_ORD_MAX){const m=document.createElement('i');m.className='to more';m.textContent='+'+(n-TB_ORD_MAX);el.append(m)}
+  el.setAttribute('aria-label','Ordre des tours : '+names.join(', '))}
 /* journal des ennemis, compact : actions identiques regroupées (« Adepte tire sur César : −10 ×4 »), 3 lignes au plus */
 function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x.pi],l=x.n+' '+TB_LG[x.k]+(t&&x.k<=3?' '+t.name:'')+(x.d?' : −'+x.d:'');m.set(l,(m.get(l)||0)+1)}
   const out=[...m].map(([l,n])=>n>1?l+' ×'+n:l);return out.length>3?out.slice(0,2).concat('+ '+(out.length-2)+' autres actions'):out}
