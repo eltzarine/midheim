@@ -179,10 +179,12 @@ with sync_playwright() as pw:
     pg.screenshot(path=f'{OUT}/a7_arbre.png')
     pg.click('#bTalClose'); pg.wait_for_timeout(100)
     go(pg, "(()=>{hero.cls='voleur';hero.lvl=LVL_MAX;hero.tr=['0.0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9'];hero.eq={arme:starter('voleur','arme'),armure:starter('voleur','armure'),talisman:null};refreshStats();G.players[0].cls='voleur';G.players[0].st=ST;buildSkillUI()})()")
+    go(pg, "(()=>{const q=freeNear(L.x+7*TS,L.y,0,TS);const e=spawnEnemy('slime',q.x,q.y,false,false,undefined,1);e.pt=1;L.tbT=e.id})()"); pg.wait_for_timeout(250)
+    check('Portrait : hors combat, la barre d’attaques n’apparaît qu’avec un ennemi sélectionné', pg.is_visible('#hbar') and pg.is_hidden('#mbar'))
     rs = go(pg, "[...document.querySelectorAll('#hbar .hb')].map(e=>{const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
     ov = any(not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]) for i, a in enumerate(rs) for b in rs[i + 1:])
     check('Portrait : boutons sans chevauchement', not ov, rs)
-    go(pg, "buildSkillUI();L.mp=ST.mmp;L.ult=60;L.cd=[0,0,0,0]"); clearUI(pg); pg.wait_for_timeout(250); pg.screenshot(path=f'{OUT}/a8_boutons.png')
+    go(pg, "buildSkillUI();L.mp=ST.mmp;L.ult=60;L.cd=[0,0,0,0]"); clearUI(pg); pg.wait_for_timeout(250); pg.screenshot(path=f'{OUT}/a8_boutons.png'); go(pg, "L.tbT=0;G.enemies=G.enemies.filter(e=>!e.pt)")
     hb = go(pg, "(()=>{const b=WORLD.builds.filter(b=>(b.act||'').startsWith('house:talents'));return b.length})()")
     check('Une maison des talents dans chaque ville', hb == len(go(pg, "Object.keys(TOWNS)")), hb)
     go(pg, "hero.gold=1000;toggleTalents(true)"); pg.wait_for_timeout(150)
@@ -329,13 +331,26 @@ with sync_playwright() as pw:
     # ================= Téléphone à l'horizontale =================
     ctx, pg = page(br, w=844, h=390, tag='paysage'); pg.goto(URL); pg.wait_for_timeout(600); pg.click('#bSolo'); pg.wait_for_timeout(900)
     go(pg, "(()=>{hero.lvl=LVL_MAX;hero.tr=['1.0','1.1','1.2','1.3','1.4','1.5','1.6','1.7','1.8','1.9'];refreshStats();buildSkillUI();['bS1','bS2','bS3','bUlt'].forEach(i=>$('#'+i).hidden=false)})()"); clearUI(pg); pg.wait_for_timeout(200); pg.screenshot(path=f'{OUT}/d1_paysage.png')
+    go(pg, "(()=>{if(G.m.kind!=='world')hostEnter('w',WORLD.start);G.enemies=[];const q=freeNear(L.x+7*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,1);L.tbT=e.id})()"); pg.wait_for_timeout(300)
+    check('Paysage : ennemi sélectionné hors combat, barre d’attaques à la place du menu, petite fiche à gauche de la carte', pg.is_visible('#hbar') and pg.is_hidden('#mbar') and go(pg, "$('#tgtBox').getBoundingClientRect().right<=$('#mini').getBoundingClientRect().left+2"))
+    clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/d1b_paysage_cible.png')
     rs = go(pg, "[...document.querySelectorAll('#hbar .hb')].map(e=>{const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom]})")
     ov = any(not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1]) for i, a in enumerate(rs) for b in rs[i + 1:])
     check('Paysage : boutons sans chevauchement', not ov, rs)
     pg.click('#mini'); pg.wait_for_timeout(250)
     check('Paysage : la carte ronde s’ouvre au toucher', pg.is_visible('#mapBox'))
     go(pg, "$('#mapBox').hidden=true;paused=false"); pg.wait_for_timeout(100)
-    check('Paysage : barre de menus sans Carte', go(pg, "[...document.querySelectorAll('#mbar .pill')].filter(e=>e.offsetParent).length") == 4)
+    go(pg, "L.tbT=0"); pg.wait_for_timeout(250)
+    check('Paysage : barre de menus sans Carte (Sac, Quêtes, Talents, Potion), ☰ en haut à gauche', go(pg, "[...document.querySelectorAll('#mbar .pill')].filter(e=>e.offsetParent).length") == 4 and go(pg, "$('#pMenu').getBoundingClientRect().left<40&&$('#pMenu').getBoundingClientRect().top<40"))
+    go(pg, "(()=>{G.enemies=[];for(let k=0;k<6;k++){const q=freeNear(L.x+(3+k%3)*TS,L.y+(k<3?-1:1)*TS,0,TS);spawnEnemy(k%2?'orc':'slime',q.x,q.y,false,false,undefined,1)}})()")
+    for _ in range(40):
+        if go(pg, "!!G.cb&&tbHero()"): break
+        pg.wait_for_timeout(200)
+    go(pg, "(()=>{L.tbT=G.enemies[0].id})()"); pg.wait_for_timeout(400)
+    rs = go(pg, "[...document.querySelectorAll('#hbar .hb,#hbar #bEnd,#tbCol,#tgtBox,#cMe,#pMenu,#tbInfo')].filter(e=>e.offsetParent).map(e=>{const r=e.getBoundingClientRect();return[r.left,r.top,r.right,r.bottom,e.id||e.dataset.k]})")
+    ov = [(a[4], b[4]) for i, a in enumerate(rs) for b in rs[i + 1:] if not (a[2] <= b[0] or b[2] <= a[0] or a[3] <= b[1] or b[3] <= a[1])]
+    check('Paysage, combat : colonne des tours, fiche de la cible, barre (avec Foncer et Fin du tour) et ligne du tour sans chevauchement', go(pg, "!!G.cb&&tbHero()") and len(rs) >= 12 and not ov, [len(rs), ov])
+    clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/d1c_paysage_combat.png')
     check('Aucune erreur JavaScript (paysage)', not pg.errs, pg.errs[:4])
     ctx.close()
 
@@ -355,18 +370,20 @@ with sync_playwright() as pw:
     # ================= Combat au tour par tour (solo) =================
     ctx, pg = page(br, tag='tour'); pg.goto(URL); pg.wait_for_timeout(700); pg.click('#bSolo'); pg.wait_for_timeout(900)
     go(pg, "(()=>{if(G.m.kind!=='world')hostEnter('w',WORLD.start);QDone.q.length=0;QDone.close();G.enemies=[];G.cb=null;G.night=0;G.reinOn=false;hero.lvl=3;refreshStats();G.players[0].hp=G.players[0].mhp})()"); pg.wait_for_timeout(400)
-    go(pg, "(()=>{for(let k=0;k<3;k++){const q=freeNear(L.x+6*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.hx=q.x;e.hy=q.y}})()"); pg.wait_for_timeout(300)
+    go(pg, "(()=>{for(let k=0;k<3;k++){const q=freeNear(L.x+6*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,3);e.hx=q.x;e.hy=q.y;e.hp=e.mhp=600}})()")  # assez de vie pour que les trois orcs jouent leur tour; pg.wait_for_timeout(300)
     jz = go(pg, "(()=>{const z=$('#joyZone'),o={pointerId:7,bubbles:true,pointerType:'touch'},x=vw*.8,y=vh*.45;z.dispatchEvent(new PointerEvent('pointerdown',Object.assign({clientX:x,clientY:y},o)));z.dispatchEvent(new PointerEvent('pointermove',Object.assign({clientX:x+60,clientY:y},o)));const r=[touch.jx,!$('#joy').hidden];z.dispatchEvent(new PointerEvent('pointerup',Object.assign({clientX:x+60,clientY:y},o)));return r.concat(touch.jx)})()")
     check('Joystick : il apparaît aussi à droite de l’écran', jz[0] > .5 and jz[1] and jz[2] == 0, jz)
     check('Tour par tour : hors de la zone d’alerte, pas de combat', not go(pg, "G.cb") and go(pg, "AGGRO") == 3.5)
     go(pg, "L.x+=3.2*TS"); pg.wait_for_timeout(300)
     check('Tour par tour : entrer dans la zone lance le combat ; le guerrier (vitesse 12) joue avant les orcs (9)', go(pg, "!!G.cb&&G.cb.ph==='h'&&G.cb.who===0&&G.cb.in[0]&&G.cb.q.length===4&&G.cb.q[0]===-1"), go(pg, "G.cb&&G.cb.q"))
-    check('Tour par tour : bandeau, frise de l’ordre des tours (héros grossi) et bouton Fin du tour', pg.is_visible('#tbInfo') and go(pg, "document.querySelectorAll('#tbOrd .to').length") == 4 and go(pg, "document.querySelector('#tbOrd .to.cur.h.me')!==null") and pg.is_visible('#bEnd'))
+    check('Tour par tour : colonne de l’ordre des tours (vignettes carrées, héros qui joue en or), ligne du tour et bouton Fin du tour dans la barre', pg.is_visible('#tbCol') and pg.is_visible('#tbInfo') and go(pg, "document.querySelectorAll('#tbOrd .to').length") == 4 and go(pg, "document.querySelector('#tbOrd .to.cur.h.me')!==null") and go(pg, "(()=>{const t=$('#tbOrd .to');return t.offsetWidth===52&&t.offsetHeight===52})()") and pg.is_visible('#bEnd') and go(pg, "$('#bEnd').parentNode.id==='hbar'"))
+    check('Tour par tour : la carte, la quête et le menu du bas disparaissent ; la caméra recule', pg.is_hidden('#mini') and pg.is_hidden('#objTxt') and pg.is_hidden('#mbar') and go(pg, "(()=>{for(let i=0;i<60;i++)render(.05);return camZ<.82&&scale<baseScale})()"))
+    check('Tour par tour : le guerrier a 3 points d’action, Foncer est dans la barre', go(pg, "G.cb.ap[0]===3&&tbAP()===3") and pg.is_visible('#hbar .hb[data-k=dash]'))
     go(pg, "G.enemies.forEach((e,k)=>{const q=freeNear(L.x+40,L.y+(k-1)*34,0,TS);e.x=e.rx=q.x;e.y=e.ry=q.y})")  # les orcs au contact
     hp = go(pg, "G.enemies.map(e=>e.hp).reduce((a,b)=>a+b,0)")
     ac0 = go(pg, "L.ac"); hb = pg.locator('#hbar .hb[data-k=atk]')
-    for _ in range(3): hb.dispatch_event('pointerdown'); pg.wait_for_timeout(500); hb.dispatch_event('pointerup')
-    check('Tour par tour : 2 points d’action, une attaque par appui', go(pg, "L.ac") - ac0 <= 2 and go(pg, "!G.cb||G.cb.ap[0]<2"), [go(pg, "L.ac") - ac0, go(pg, "G.cb&&G.cb.ap[0]")])
+    for _ in range(4): hb.dispatch_event('pointerdown'); pg.wait_for_timeout(500); hb.dispatch_event('pointerup')
+    check('Tour par tour : 3 points d’action au plus, une attaque par appui', go(pg, "L.ac") - ac0 <= 3 and go(pg, "!G.cb||G.cb.ap[0]<3"), [go(pg, "L.ac") - ac0, go(pg, "G.cb&&G.cb.ap[0]")])
     x0 = go(pg, "L.x"); go(pg, "touch.jx=-1"); pg.wait_for_timeout(3000); go(pg, "touch.jx=0")
     mv = (x0 - go(pg, "L.x")) / 32; left = go(pg, "L.tbMv") / 32
     go(pg, "touch.jx=1"); pg.wait_for_timeout(700); go(pg, "touch.jx=0")
@@ -390,7 +407,7 @@ with sync_playwright() as pw:
         if not go(pg, "G.cb"): break
         pg.wait_for_timeout(200)
     check('Tour par tour : fuite à plus de 12 cases, les ennemis rentrent chez eux', not go(pg, "G.cb") and go(pg, "G.enemies.every(e=>e.ret||!e.act)"))
-    go(pg, "G.enemies=[];(()=>{const q=freeNear(L.x+5*TS,L.y,0,TS);spawnEnemy('orc',q.x,q.y,false,false,undefined,1)})()"); pg.wait_for_timeout(300)
+    go(pg, "G.enemies=[];(()=>{const q=freeNear(L.x+5*TS,L.y,0,TS);const e=spawnEnemy('orc',q.x,q.y,false,false,undefined,1);e.hp=e.mhp=400})()")  # assez de vie pour survivre à un coup critique; pg.wait_for_timeout(300)
     sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
     pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
     check('Tour par tour : toucher un ennemi le choisit pour cible (fiche affichée)', go(pg, "L.tbT===G.enemies[0].id") and pg.is_visible('#tgtBox'))
@@ -401,21 +418,30 @@ with sync_playwright() as pw:
     go(pg, "L.pv=null")
     go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-30;L.y=e.y})()")  # on entre dans sa zone : les ennemis jouent, puis c'est à nous
     for _ in range(30):
-        if go(pg, "G.cb&&G.cb.ph==='h'&&G.cb.ap[0]===2"): break
+        if go(pg, "G.cb&&G.cb.ph==='h'&&G.cb.ap[0]===3"): break
         pg.wait_for_timeout(200)
     go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-30;L.y=e.y})()"); pg.wait_for_timeout(100)
     sc = go(pg, "(()=>{const e=G.enemies[0];return[(e.x-camX)*scale+vw/2,(e.y-camY)*scale+vh*focusY()]})()")
     h0 = go(pg, "G.enemies[0].hp"); pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(300); h0b = go(pg, "G.enemies[0].hp")
-    check('Tour par tour : toucher la cible ne frappe pas', h0b == h0 and go(pg, "G.cb.ap[0]") == 2)
+    check('Tour par tour : toucher la cible ne frappe pas', h0b == h0 and go(pg, "G.cb.ap[0]") == 3)
     pg.touchscreen.tap(sc[0], sc[1]); pg.wait_for_timeout(200)
     check('Tour par tour : la cible à portée allume l’attaque dans la barre', go(pg, "document.querySelector('#hbar .hb[data-k=atk]').classList.contains('hot')"))
     pg.screenshot(path=f'{OUT}/f2_cible.png')
     hb.dispatch_event('pointerdown'); pg.wait_for_timeout(300); hb.dispatch_event('pointerup')
-    check('Tour par tour : 1er appui = aperçu de l’attaque, sans frapper', go(pg, "L.pv==='atk'&&G.cb.ap[0]===2") and pg.is_visible('#pvHint'))
+    check('Tour par tour : 1er appui = aperçu de l’attaque, sans frapper', go(pg, "L.pv==='atk'&&G.cb.ap[0]===3") and pg.is_visible('#pvHint'))
     pg.screenshot(path=f'{OUT}/f3_apercu.png')
     hb.dispatch_event('pointerdown'); pg.wait_for_timeout(600); hb.dispatch_event('pointerup')
     h1 = go(pg, "G.enemies[0]?G.enemies[0].hp:0")
-    check('Tour par tour : 2e appui = l’attaque part et vise la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===1"), [h0, h1])
+    check('Tour par tour : 2e appui = l’attaque part et vise la cible', h1 < h0 and go(pg, "!G.cb||G.cb.ap[0]===2"), [h0, h1])
+    if go(pg, "!!G.cb&&tbHero()"):
+        b0 = go(pg, "L.tbBud"); m0 = go(pg, "tbMoveMax()"); pg.locator('#hbar .hb[data-k=dash]').dispatch_event('pointerdown'); pg.wait_for_timeout(150); pg.locator('#hbar .hb[data-k=dash]').dispatch_event('pointerup')
+        check('Tour par tour : Foncer coûte 2 points et ajoute un déplacement complet', go(pg, "G.cb.ap[0]===0") and go(pg, "L.tbMv") > m0 * .9, [b0, m0, go(pg, "L.tbBud"), go(pg, "L.tbMv"), go(pg, "G.cb.ap[0]")])
+        ti = go(pg, "[...document.querySelectorAll('#tbOrd .to.e')].length")
+        pg.locator('#tbOrd .to.e').first.dispatch_event('pointerdown'); pg.wait_for_timeout(500)
+        check('Tour par tour : rester appuyé sur la vignette d’un ennemi ouvre sa fiche détaillée (écran assombri)', ti >= 1 and go(pg, "L.tgtBig&&!!tbTarget()") and pg.is_visible('#tgtVeil') and 'Prochain tour' in pg.inner_text('#tgtBox'))
+        pg.screenshot(path=f'{OUT}/f6_fiche_detaillee.png')
+        pg.locator('#tbOrd .to.e').first.dispatch_event('pointerup'); pg.wait_for_timeout(200)
+        check('Tour par tour : en relâchant, la fiche redevient petite', go(pg, "!L.tgtBig") and pg.is_hidden('#tgtVeil') and pg.is_visible('#tgtBox'))
     for _ in range(30):
         if go(pg, "tbHero()&&!L.tbEnd"): break
         pg.wait_for_timeout(200)
@@ -423,7 +449,9 @@ with sync_playwright() as pw:
     early = go(pg, "!L.tbEnd"); pg.wait_for_timeout(1100)
     check('Tour par tour : plus d’actions ni de déplacement, le tour se finit tout seul après un court délai', early and go(pg, "L.tbEnd||!tbHero()"))
     go(pg, "G.enemies.forEach(e=>killEnemy(e))"); pg.wait_for_timeout(400)
-    check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo'))
+    check('Tour par tour : victoire, retour au temps réel', not go(pg, "G.cb") and pg.is_hidden('#tbInfo') and pg.is_hidden('#tbCol'))
+    go(pg, "L.tbT=0"); pg.wait_for_timeout(250)
+    check('Hors combat sans cible : Sac, Quêtes, Talents, Potion en bas, pas de barre d’attaques', pg.is_hidden('#hbar') and pg.is_visible('#mbar #pPot') and pg.is_visible('#mini') and pg.is_visible('#objTxt'))
     check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])
     ctx.close()
 
@@ -477,7 +505,7 @@ with sync_playwright() as pw:
     check('À deux : l’hôte au combat, le frère reste en temps réel', go(A, "!!G.cb&&G.cb.in[0]&&!G.cb.in[1]") and go(B, "!tbMe()"))
     go(B, "(()=>{const e=G.enemies[0];L.x=e.x+6*TS;L.y=e.y})()"); B.wait_for_timeout(800)
     check('À deux : le frère entre dans la zone de combat et rejoint le tour par tour', go(A, "G.cb.in[1]") and go(B, "tbMe()"))
-    check('À deux : le frère (voleur, plus rapide) prend sa place avant les ennemis, la frise le montre', go(A, "G.cb.q.slice(G.cb.k+1)[0]===-2") and go(B, "document.querySelectorAll('#tbOrd .to.h').length") == 2, go(A, "[G.cb.q,G.cb.k]"))
+    check('À deux : le frère (voleur, plus rapide) prend sa place avant les ennemis, la colonne le montre', go(A, "G.cb.q.slice(G.cb.k+1)[0]===-2") and go(B, "document.querySelectorAll('#tbOrd .to.h').length") == 2, go(A, "[G.cb.q,G.cb.k]"))
     for _ in range(25):
         if go(A, "tbHero()"): break
         A.wait_for_timeout(200)
