@@ -15,7 +15,11 @@
    Les durées (recharges, mana, effets, brûlures, zones) avancent de TB_ROUND secondes à la fin de chaque tour.
    L'hôte décide de tout ; l'invité reçoit l'état (manche, ordre, à qui le tour, qui est au combat, points restants)
    et bride ses commandes. */
-const TB_FIGHT=9,TB_LEAVE=12,TB_ROUND=3,TB_EN=1.6,TB_EN_MAX=4,TB_EN_AFTER=.5,TB_MOVE=5,TB_DMG=2.2,TB_ULT=12,TB_COOP_T=60,TB_PA=2;
+const TB_FIGHT=9,TB_LEAVE=12,TB_ROUND=3,TB_EN=1.6,TB_EN_MAX=4,TB_EN_AFTER=.5,TB_MOVE=5,TB_DMG=2.2,TB_ULT=12,TB_COOP_T=60,TB_PA=2,TB_DASH=2;
+/* points d'action par tour selon la classe : les combattants au contact (guerrier, voleur) en ont 3, les lanceurs de sorts 2.
+   Foncer coûte TB_DASH points et ajoute un déplacement complet (le déplacement du tour est doublé). */
+const TB_PA_CLS={guerrier:3,voleur:3,mage:2,soigneur:2};
+function tbPA(i){const p=G&&G.players[i];return p&&TB_PA_CLS[p.cls]||TB_PA}
 const tbIn=i=>!!(G&&G.cb&&G.cb.in[i]),tbMe=()=>tbIn(myIdx);
 /* tbHero : c'est mon tour ; tbFoe : c'est le tour d'un ennemi ; tbAlly : c'est le tour de mon allié */
 const tbHero=()=>tbMe()&&G.cb.ph==='h'&&G.cb.who===myIdx,tbFoe=()=>tbMe()&&G.cb.ph==='e',tbAlly=()=>tbMe()&&G.cb.ph==='h'&&G.cb.who!==myIdx;
@@ -55,7 +59,7 @@ function tbFoes(){return G.enemies.filter(e=>e.hp>0&&e.act&&!e.ret)}
 function tbClose(p,r){const R=r*TS;for(const e of G.enemies)if(e.hp>0&&e.act&&!e.ret&&Math.hypot(p.x-e.x,p.y-e.y)<R)return true;return false}
 /* ouverture : qui entre au combat (want), qui a frappé le premier (first, −1 si les ennemis ont repéré les héros) */
 function tbStart(first,want){const c=G.cb={ph:'',who:-1,eid:-1,q:[],k:0,r:1,t:0,in:[!!want[0],!!want[1]],
-    rd:[false,false],ap:[TB_PA,TB_PA],po:[false,false],pre:[0,0],lg:[]};
+    rd:[false,false],ap:[tbPA(0),tbPA(1)],po:[false,false],pre:[0,0],lg:[]};
   for(const e of G.enemies){e.kx=e.ky=0;e.tbA=false}
   c.q=tbQueue();
   // embuscade : le héros qui a frappé joue le premier (son coup compte déjà pour 1 point d'action)
@@ -85,7 +89,7 @@ function tbBegin(k){const c=G.cb;
     if(!c.in.some(Boolean)){tbEnd(false);return}
     c.q=tbQueue();c.lg=[];k=0}
   c.k=k;c.t=0;c.tA=-1;const t=c.q[k];
-  if(t<0){const i=-t-1;c.ph='h';c.who=i;c.eid=-1;c.rd[i]=false;c.ap[i]=TB_PA-(c.pre[i]||0);c.pre[i]=0;c.po[i]=false;
+  if(t<0){const i=-t-1;c.ph='h';c.who=i;c.eid=-1;c.rd[i]=false;c.ap[i]=tbPA(i)-(c.pre[i]||0);c.pre[i]=0;c.po[i]=false;
     for(const e of G.enemies){e.mistT=0;e.tele=0;e.chg=0}return}
   const e=G.enemies.find(o=>o.id===t);c.ph='e';c.who=-1;c.eid=t;
   e.tbA=false;e.tbC=false;e.hitCd=0;e.tbSkip=false;if(e.type==='archer')e.cd=.25+Math.random()*.5;
@@ -146,13 +150,18 @@ function tbUnpack(a){if(!Array.isArray(a)||!a.length)return null;const n=v=>Numb
 
 /* ---------- côté joueur (hôte et invité) ---------- */
 /* points d'action restants : ceux de l'hôte, moins ce que l'invité vient de dépenser et que l'hôte n'a pas encore vu */
-function tbAP(){if(!tbMe())return 9;return Math.max(0,Math.min(G.cb.ap[myIdx],TB_PA-(L.tbSpent||0)))}
+function tbAP(){if(!tbMe())return 9;return Math.max(0,Math.min(G.cb.ap[myIdx],tbPA(myIdx)-(L.tbSpent||0)))}
 function tbCanAct(cost){if(!tbMe())return true;return tbHero()&&!L.tbEnd&&tbAP()>=(cost||1)}
 function tbCanPot(){if(!tbMe())return true;return tbHero()&&!G.cb.po[myIdx]&&!L.tbPot&&!L.tbEnd}
 function tbUse(kind,cost){if(!tbMe())return;if(kind==='po'){L.tbPot=true;if(mode!=='guest')G.cb.po[myIdx]=true;return}
   cost=cost||1;tbCommit();L.pv=null;if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-cost);else L.tbSpent=(L.tbSpent||0)+cost}
 function tbWhy(cost){return!tbMe()?'':!tbHero()?'Attends ton tour : '+tbTurnName()+' joue.':L.tbEnd?'Tu as fini ton tour.':(cost||1)>1&&tbAP()>0?'Il faut '+cost+' points d’action.':'Plus de points d’action ce tour. Déplace-toi ou touche « Fin du tour ».'}
 function tbMoveMax(){return TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}
+/* Foncer : TB_DASH points d'action pour un déplacement complet de plus, compté depuis l'endroit où l'on est */
+function tbDash(){if(!tbMe())return;if(!tbCanAct(TB_DASH)){toast(tbWhy(TB_DASH),'tb');return}const me=myP();if(!me||me.down)return;L.pv=null;
+  if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-TB_DASH);else{L.tbSpent=(L.tbSpent||0)+TB_DASH;L.dc=(L.dc||0)+1}
+  if(L.tbReA)L.tbRem+=tbMoveMax();else tbAnchor(Math.max(0,L.tbBud-tbDist(L.x,L.y))+tbMoveMax());
+  L.tbAutoT=0;Snd.play('gate');toast('Tu fonces : déplacement doublé.','tbdash')}
 function endTurn(){if(!tbHero()||L.tbEnd)return;const me=myP();if(!me||me.down)return;L.tbEnd=true;L.pv=null;L.et=G.cb.r;if(mode!=='guest')G.cb.rd[myIdx]=true;Snd.play('key')}
 /* plus de points d'action ni de déplacement : le tour se finit tout seul, 1,2 s après (le temps de voir le dernier coup).
    La potion ne retient pas le tour. */
@@ -182,44 +191,57 @@ function tbLocal(){const c=G.cb,inn=tbMe(),key=inn?c.r+':'+c.k+c.ph+(c.ph==='h'?
   if(tbHero()){tbAnchor(tbMoveMax());L.tbReA=false;L.tbAutoT=0;L.pv=null;L.tbSpent=0;L.tbPot=false;L.tbEnd=false;L.et=0;L.tbOx=L.x;L.tbOy=L.y;Snd.play('gate')}
   else{L.tbMv=0;L.tbF=null;L.pv=null;if(c.ph==='e'&&!wasE)Snd.play('boom');keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false}
   tbPulse()}
-function tbPulse(){const b=$('#tbInfo');if(!b)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse')}
-/* bandeau du tour : ordre des tours, à qui le tour ; pendant SON tour : actions, potion, déplacement */
-function tbHud(){const box=hq('#tbInfo'),be=hq('#bEnd'),c=G.cb,inn=tbMe(),me=myP();setHid(box,!inn);
-  const mine=tbHero(),canEnd=mine&&me&&!me.down;
-  setHid(be,!(canEnd&&!L.tbEnd));
+function tbPulse(){const b=$('#tbCol');if(!b)return;b.classList.remove('pulse');void b.offsetWidth;b.classList.add('pulse')}
+/* Pendant le combat : à gauche la colonne de l'ordre des tours ; en bas, pendant SON tour seulement, la barre d'actions
+   et la ligne « Actions · Déplacement · Potion ». Au tour d'un ennemi ou de l'allié, rien d'autre que la colonne.
+   Les classes posées sur <body> (incb = au combat, tbmine, tgt, tgtbig) décident de ce qui s'affiche (voir le style du HUD). */
+function tbHud(){const box=hq('#tbInfo'),col=hq('#tbCol'),be=hq('#bEnd'),c=G.cb,inn=tbMe(),me=myP(),bd=document.body;
+  const mine=tbHero(),canEnd=mine&&me&&!me.down,on=mine&&!L.tbEnd&&!!me&&!me.down;
+  bd.classList.toggle('incb',inn);bd.classList.toggle('tbmine',on);bd.classList.toggle('tgt',!inn&&!!tbTarget());
+  setHid(be,!(canEnd&&!L.tbEnd));setHid(col,!inn);setHid(box,!on);
   tgtHud();
   if(!inn)return;
-  const ap=tbAP(),pot=!!(c.po[myIdx]||L.tbPot),on=mine&&!L.tbEnd;
-  setTxt(hq('#tbPh'),'Tour '+c.r+' · '+(mine?(me&&me.down?'à terre':L.tbEnd?'tu as fini':'à toi de jouer'):tbTurnName()+' joue'));box.classList.toggle('foe',!mine);box.classList.toggle('en',c.ph==='e');
-  setTxt(hq('#tbAl'),tbAlly()&&c.tl?c.tl+' s':'');
+  const ap=tbAP(),pa=tbPA(myIdx),pot=!!(c.po[myIdx]||L.tbPot);
+  setTxt(hq('#tbRd'),'Tour '+c.r);setTxt(hq('#tbAl'),tbAlly()&&c.tl?tbTurnName()+' · '+c.tl+' s':'');
   tbOrder(hq('#tbOrd'));
-  setTxt(hq('#tbAct'),'Actions '+'●'.repeat(on?ap:0)+'○'.repeat(TB_PA-(on?ap:0)));hq('#tbAct').classList.toggle('off',!on||!ap);
-  hq('#tbPot').classList.toggle('off',pot||!on);
+  setTxt(hq('#tbAct'),'Actions '+'●'.repeat(on?ap:0)+'○'.repeat(Math.max(0,pa-(on?ap:0))));hq('#tbAct').classList.toggle('off',!on||!ap);
+  setTxt(hq('#tbPot'),'Potion '+(pot?'○':'●'));hq('#tbPot').classList.toggle('off',pot||!on);
   const mi=hq('#tbMv');setTxt(mi,on?'Déplacement '+(L.tbMv/TS).toFixed(1).replace('.',',')+' cases':'Déplacement —');mi.classList.toggle('off',!on||L.tbMv<2);
-  // journal : ce que fait l'ennemi qui joue, puis encore 3 s après son tour
-  const id=c.ph==='e'?c.eid:performance.now()-(L.tbLgT||0)<3000?L.tbLgId:null,lg=id==null?[]:c.lg.filter(x=>x.id===id),lgEl=hq('#tbLog');setHid(lgEl,!lg.length);
-  if(lg.length)setTxt(lgEl,tbLogLines(lg).join(' · '));
   be.classList.toggle('glow',mine&&!ap)}
-/* frise de l'ordre des tours : un jeton par acteur (carré = héros, rond = ennemi) ; qui joue est grossi, qui a joué est pâli.
-   Elle n'est reconstruite que quand l'ordre ou le tour change. */
-const TB_ORD_MAX=9;
-function tbOrder(el){if(!el)return;const c=G.cb,live=c.q.map((t,j)=>j>=c.k||t<0?true:G.enemies.some(e=>e.id===t&&e.hp>0)),key=c.r+'|'+c.k+'|'+c.q.join(',')+'|'+live.join('')+'|'+G.players.map(p=>p.down?1:0).join('');
-  if(el.dataset.k===key)return;el.dataset.k=key;el.textContent='';const names=[];let n=0;
-  c.q.forEach((t,j)=>{if(!live[j])return;const done=j<c.k,cur=j===c.k;if(done&&c.k-j>2)return;if(n>=TB_ORD_MAX){n++;return}n++;
-    const tk=document.createElement('i');let col,lt,nm;
-    if(t<0){const i=-t-1,p=G.players[i];if(!p)return;col=CLS[p.cls].col;nm=i===myIdx?'Toi':p.name;lt=(p.name||'?').charAt(0).toUpperCase();tk.className='to h'+(i===myIdx?' me':'')+(p.down?' dn':'')}
-    else{const e=G.enemies.find(o=>o.id===t)||(G.emap&&G.emap.get(t));if(!e)return;nm=enemyName(e);lt=nm.charAt(0).toUpperCase();col=e.type==='boss'?'#f0c95a':e.elite?'#ff9a6a':'#e8823f';tk.className='to e'}
-    if(done)tk.classList.add('done');if(cur)tk.classList.add('cur');tk.style.setProperty('--c',col);tk.textContent=lt;tk.title=nm;el.append(tk);names.push((cur?'à '+nm:nm))});
-  if(n>TB_ORD_MAX){const m=document.createElement('i');m.className='to more';m.textContent='+'+(n-TB_ORD_MAX);el.append(m)}
-  el.setAttribute('aria-label','Ordre des tours : '+names.join(', '))}
+/* colonne de l'ordre des tours : une vignette carrée par acteur (figure, nom, vie). Celui qui joue est bordé d'or (héros)
+   ou de rouge (ennemi), qui a déjà joué est pâli, la cible a un liseré bleu. Toucher la vignette d'un ennemi le choisit pour cible,
+   rester appuyé dessus ouvre sa fiche détaillée. La colonne défile ; elle n'est reconstruite que quand quelque chose change. */
+function tbTokHp(t){if(t<0){const p=G.players[-t-1];return p?clamp(p.hp/p.mhp,0,1):0}const e=G.enemies.find(o=>o.id===t)||(G.emap&&G.emap.get(t));return e?clamp(e.hpP!=null?e.hpP/100:e.hp/e.mhp,0,1):0}
+function tbOrder(ord){if(!ord)return;const c=G.cb,live=c.q.map((t,j)=>j>=c.k||t<0?true:G.enemies.some(e=>e.id===t&&e.hp>0)),
+    key=c.r+'|'+c.k+'|'+c.q.join(',')+'|'+live.join('')+'|'+G.players.map(p=>p.down?1:0).join('')+'|'+(L.tbT||0)+'|'+c.q.map(t=>Math.round(tbTokHp(t)*10)).join('');
+  if(ord.dataset.k===key)return;const moved=ord.dataset.c!==c.r+':'+c.k;ord.dataset.k=key;ord.dataset.c=c.r+':'+c.k;ord.textContent='';let curEl=null;
+  c.q.forEach((t,j)=>{if(!live[j])return;const done=j<c.k,cur=j===c.k;let col,nm,cls;
+    if(t<0){const i=-t-1,p=G.players[i];if(!p)return;col=CLS[p.cls].col;nm=i===myIdx?(cur?'À toi':'Toi'):p.name;cls='to h'+(i===myIdx?' me':'')+(p.down?' dn':'')}
+    else{const e=G.enemies.find(o=>o.id===t)||(G.emap&&G.emap.get(t));if(!e)return;nm=enemyName(e);col=e.type==='boss'?'#f0c95a':e.elite?'#ff9a6a':'#e8823f';cls='to e'+(L.tbT===t?' tg':'')}
+    const tk=el('button',cls+(done?' done':'')+(cur?' cur':''));tk.type='button';tk.style.setProperty('--c',col);
+    const hp=el('span','thp'),hi=el('i');hi.style.width=Math.round(tbTokHp(t)*100)+'%';hp.append(hi);
+    tk.append(el('span','tfig'),el('span','tnm',nm),hp);tk.setAttribute('aria-label',(cur?'Joue : ':done?'A joué : ':'')+nm);tk.setAttribute('role','listitem');
+    if(t>=0)holdable(tk,()=>{L.tbT=L.tbT===t?0:t;Snd.play('key')},on=>{if(on)L.tbT=t;L.tgtBig=on});
+    if(cur)curEl=tk;ord.append(tk)});
+  if(curEl&&moved){const box=ord.parentNode;if(box&&box.scrollHeight>box.clientHeight)box.scrollTop=Math.max(0,curEl.offsetTop-box.clientHeight/3)}}
+/* appui court / appui maintenu (350 ms) sur un élément de l'interface */
+const HOLD_MS=350;
+function holdable(n,tap,hold){let t=null,held=false;
+  n.addEventListener('pointerdown',e=>{e.stopPropagation();held=false;clearTimeout(t);t=setTimeout(()=>{held=true;hold(true)},HOLD_MS)});
+  const up=e=>{clearTimeout(t);if(held){held=false;hold(false)}else if(e&&e.type==='pointerup')tap()};
+  n.addEventListener('pointerup',up);n.addEventListener('pointercancel',up);n.addEventListener('pointerleave',()=>{clearTimeout(t);if(held){held=false;hold(false)}})}
 /* journal des ennemis, compact : actions identiques regroupées (« Adepte tire sur César : −10 ×4 »), 3 lignes au plus */
 function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x.pi],l=x.n+' '+TB_LG[x.k]+(t&&x.k<=3?' '+t.name:'')+(x.d?' : −'+x.d:'');m.set(l,(m.get(l)||0)+1)}
   const out=[...m].map(([l,n])=>n>1?l+' ×'+n:l);return out.length>3?out.slice(0,2).concat('+ '+(out.length-2)+' autres actions'):out}
-function tgtHud(){const t=tbTarget(),box=hq('#tgtBox');setHid(box,!t);if(!t)return;
+/* fiche de la cible : petite (nom, vie, états, portée) ; tant qu'on reste appuyé dessus ou sur sa vignette, détaillée
+   (prochain coup, effets en tours, dégâts estimés de l'attaque) et le reste de l'écran s'assombrit */
+function tgtHud(){const t=tbTarget(),box=hq('#tgtBox'),big=!!(t&&L.tgtBig);setHid(box,!t);box.classList.toggle('big',big);setHid(hq('#tgtVeil'),!big);document.body.classList.toggle('tgtbig',big);if(!t)return;
   setTxt(hq('#tgtName'),enemyName(t)+' · Niv '+(t.lv||G.lv||1));const pct=t.hpP!=null?t.hpP/100:t.hp/t.mhp;setW(hq('#tgtHp'),pct);setTxt(hq('#tgtPv'),t.hpP!=null?t.hpP+' %':Math.ceil(t.hp)+' / '+Math.ceil(t.mhp));
-  const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):'Aucun effet');
-  setTxt(hq('#tgtInt'),tbMe()?'Prochain tour : '+enemyIntent(t):(t.act?'En alerte':'Au repos'));
-  const out=!inReach('atk',t);setTxt(hq('#tgtRg'),out?'Trop loin pour '+CLS[hero.cls].atk.toLowerCase():'À portée');hq('#tgtRg').classList.toggle('far',out)}
+  const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):big?'Aucun effet':'');
+  setTxt(hq('#tgtInt'),big?(tbMe()?'Prochain tour : '+enemyIntent(t):(t.act?'En alerte':'Au repos')):'');
+  const out=!inReach('atk',t);setTxt(hq('#tgtRg'),out?'Trop loin':'À portée');hq('#tgtRg').classList.toggle('far',out);
+  setTxt(hq('#tgtMore'),big?CLS[hero.cls].atk+' sur lui : ~'+Math.round(ST.dmg*(tbMe()?TB_DMG:1))+' dégâts'+(out?' (trop loin)':''):'')}
+if(typeof addEventListener==='function')addEventListener('pointerup',()=>{if(typeof L!=='undefined'&&L&&L.tgtBig)L.tgtBig=false});
 
 /* ---------- déplacement libre dans la zone du tour ----------
    Le tour donne un budget de déplacement compté depuis une place d'ancrage (le départ du tour) : on peut aller et revenir

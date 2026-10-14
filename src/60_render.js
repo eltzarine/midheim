@@ -71,9 +71,11 @@ let loadT=null;function showLoading(t,sub){const b=$('#loadBox');$('#loadTitle')
 
 /* ================= Caméra ================= */
 const cv=$('#cv'),ctx=cv.getContext('2d');const lc=document.createElement('canvas'),lx=lc.getContext('2d');
-let dpr=1,vw=0,vh=0,scale=1,camX=0,camY=0,shake=0;
+let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0;
+/* caméra : CAM_TILES cases sur le côté court de l'écran ; au combat elle recule à CAM_TILES_TB cases, pour voir que le mode change */
+const CAM_TILES=13,CAM_TILES_TB=16;
 function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
-  scale=clamp(Math.min(vw/(TS*13),vh/(TS*13)),.6,1.6)}
+  baseScale=clamp(Math.min(vw/(TS*CAM_TILES),vh/(TS*CAM_TILES)),.6,1.6);scale=baseScale*camZ}
 addEventListener('resize',resize);
 /* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
    On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
@@ -175,6 +177,7 @@ function render(dt){
   for(let i=0;i<G.players.length;i++){const p=G.players[i];if(i===myIdx)continue;if(Math.hypot(p.x-p.rx,p.y-p.ry)>120){p.rx=p.x;p.ry=p.y}else{p.rx+=(p.x-p.rx)*k;p.ry+=(p.y-p.ry)*k}}
   for(const e of G.enemies){if(e.rx==null){e.rx=e.x;e.ry=e.y}if(Math.hypot(e.x-e.rx,e.y-e.ry)>100){e.rx=e.x;e.ry=e.y}else{e.rx+=(e.x-e.rx)*k;e.ry+=(e.y-e.ry)*k}}
   for(const c of G.crates){c.rx+=(c.x-c.rx)*Math.min(1,dt*14);c.ry+=(c.y-c.ry)*Math.min(1,dt*14)}
+  {const zt=!Scene.on&&typeof tbMe==='function'&&tbMe()?CAM_TILES/CAM_TILES_TB:1;camZ+=(zt-camZ)*Math.min(1,dt*3);if(Math.abs(zt-camZ)<.002)camZ=zt;scale=baseScale*camZ}
   const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:L.x;camY=Scene.on?Scene.cam.y:L.y;
   shake=Math.max(0,shake-dt*30);const sh=shake?(Math.random()-.5)*shake:0;
   const S=scale*dpr;ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);

@@ -7,7 +7,7 @@ const Gn={};
 let parts=[],lastFx=-1,lastMsg=-1,saveT=0;
 function newWorld(){return{zd:'',ep:0,time:0,m:null,lv:1,enemies:[],projs:[],drops:[],fx:[],fxId:0,msgs:[],msgId:0,opened:new Set(),wOpened:new Set(),crates:[],platesOn:[],gateOpen:false,key:0,stairsOpen:false,stairsT:0,zones:[],fires:[],traps:[],decoys:[],later:[],xpTot:0,players:[],defT:0,dc:0,eid:1,dropId:1,flow:null,flowT:0,
   gain:{g:[0,0],pt:[0,0],gm:[0,0],sh:[0,0]},guestPeer:null,guestPres:null,coop:false,cool:{},emap:new Map(),q:0,fl:new Set(),night:0,dun:null,camps:[],campT:0,qT:0,reinOn:false,abhOn:false}}
-function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0,tbKey:'',tbR:0,tbMv:0,tbSpent:0,tbPot:false,tbEnd:false,et:0}}
+function newLocal(){return{x:0,y:0,cdA:0,cd:[0,0,0,0],mp:ST.mmp,ult:0,aim:0,face:0,dashT:0,dvx:0,dvy:0,ivT:0,buffT:0,stealthT:0,rageT:0,swing:0,swingA:0,ac:0,sk:[0,0,0,0],pc:0,lu:0,bc:-1,it:0,ia:'',mv:[0,0],reg:'',wpT:0,tbKey:'',tbR:0,tbMv:0,tbSpent:0,tbPot:false,tbEnd:false,et:0,dc:0}}
 function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,rx:0,ry:0,down:false,rev:0,drT:0,mv:[0,0],aim:0,iv:0,ivT:0,spCd:0,ac:null,sk:null,pc:null,lu:null,it:null,
   shield:0,shieldT:0,tauntT:0,criT:0,stealthT:0,stormT:0,stormCd:0,kelCd:0,guardT:0,guardBy:-1,rageT:0,banT:0,blessT:0}}
 
@@ -181,12 +181,14 @@ function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;con
   const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!(tbIn(1)&&!(G.cb.ph==='h'&&G.cb.who===1))){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
   gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
-  if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0}
+  if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0;gp.dc=inp.dc|0}
   let n=0;while(gp.ac<(inp.ac|0)&&n++<4){gp.ac++;if(tbGate(1,'ac',1))hostAttack(1,gp.aim,gp.ac===(inp.bc|0))}gp.ac=Math.max(gp.ac,inp.ac|0);
   const fin=(v,d,hi)=>Number.isFinite(+v)?clamp(+v,0,hi):d;
   const tp=Array.isArray(inp.tp)?{x:fin(inp.tp[0],gp.x,G.m.W*TS),y:fin(inp.tp[1],gp.y,G.m.H*TS)}:null;
   const ks=gp.st&&gp.st.ks||[];for(let s=0;s<4;s++){n=0;while(gp.sk[s]<(sk[s]|0)&&n++<2){gp.sk[s]++;if(ks[s]&&tbGate(1,'ac',tbCost(ks[s])))hostSkill(1,ks[s],gp.aim,tp)}gp.sk[s]=Math.max(gp.sk[s],sk[s]|0)}
   n=0;while(gp.pc<(inp.pc|0)&&n++<2){gp.pc++;if(tbGate(1,'po'))usePotion(1)}gp.pc=Math.max(gp.pc,inp.pc|0);
+  // Foncer : l'invité dépense TB_DASH points d'action (il étend lui-même sa zone de déplacement)
+  n=0;gp.dc=gp.dc|0;while(gp.dc<(inp.dc|0)&&n++<2){gp.dc++;tbGate(1,'ac',TB_DASH)}gp.dc=Math.max(gp.dc,inp.dc|0);
   if(G.cb&&G.cb.ph==='h'&&G.cb.who===1&&!gp.down&&(inp.et|0)===G.cb.r)G.cb.rd[1]=true;   // fin du tour de l'invité
   if(gp.lu<(inp.lu|0)){gp.lu=inp.lu|0;if(!gp.down)gp.hp=gp.mhp}
   if(gp.it<(inp.it|0)){gp.it=inp.it|0;if(typeof inp.ia==='string')hostRequest(inp.ia.slice(0,80),1)}}

@@ -106,21 +106,25 @@ function buildSkillUI(){if(!ST)return;const ks=ST.ks,cc=CLS[hero.cls].col;$('#bA
   if(ST.pa){const s=SK[ST.pa],d=el('div','sk pas');const ic=el('i','ic');ic.innerHTML=iconSvg(ST.pa,'#9ff08a');d.append(el('em',null,'P'),ic,el('span',null,s.court));d.title='Passif · '+s.nom+' : '+s.desc;bar.append(d)}
   const pd=el('div','sk');pd.id='skPot';pd.append(el('em',null,'E'),el('span',null,'Potion'));pd.onclick=()=>{potQ=true};bar.append(pd);buildBar()}
 /* barre de combat : attaque, 3 compétences, ultime, potion ; les compétences partent vers la cible (ou l'ennemi le plus proche) */
-function buildBar(){const bar=$('#hbar');if(!bar)return;bar.textContent='';const ks=ST.ks,cc=CLS[hero.cls].col;
+function buildBar(){const bar=$('#hbar');if(!bar)return;const be=$('#bEnd');bar.textContent='';const ks=ST.ks,cc=CLS[hero.cls].col;
   const mk=(key,label,col,cls)=>{const b=el('button','hb'+(cls?' '+cls:''));b.type='button';b.dataset.k=key;b.append(el('i','ic'),el('b',null,label),el('small',null,''),el('span','cdn',''));if(col)b.style.setProperty('--c',col);bar.append(b);return b},ic=b=>b.querySelector('.ic');
   {const b=mk('atk',CLS[hero.cls].atk,'#c8483c');ic(b).innerHTML=iconSvg('atk_'+hero.cls,'#fff6e8');b.setAttribute('aria-label','Attaque : '+CLS[hero.cls].atk)}
   for(let i=0;i<3;i++){const S=SK[ks[i]];const b=S?mk('s'+i,S.court,cc):mk('s'+i,'—',null,'lock');if(S)ic(b).innerHTML=iconSvg(ks[i],'#fff6e8');b.setAttribute('aria-label',S?S.nom:'Compétence à apprendre')}
   {const S=SK[ks[3]];const b=S?mk('ult',S.court,'#f0c95a','ult'):mk('ult','Ultime',null,'ult lock');if(S)ic(b).innerHTML=iconSvg(ks[3],'#f0c95a');b.setAttribute('aria-label',S?'Ultime : '+S.nom:'Ultime à apprendre')}
   {const b=mk('pot','Potion','#8fb357');ic(b).innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 2h6v2h-1v4.2c3 1 5 3.7 5 6.8a7 7 0 01-14 0c0-3.1 2-5.8 5-6.8V4H9z" fill="#c8e8a0"/></svg>';b.setAttribute('aria-label','Potion')}
+  // au combat seulement : Foncer (2 points d'action, déplacement doublé) ; « Fin du tour » se range au bout de la barre
+  {const b=mk('dash','Foncer','#3c7aa0','cbo');ic(b).innerHTML='<svg viewBox="0 0 26 24" aria-hidden="true"><path d="M3 6l6 6-6 6M11 6l6 6-6 6M19 6l4 6-4 6" fill="none" stroke="#bfe2ff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';b.setAttribute('aria-label','Foncer : 2 actions, déplacement doublé')}
   for(const b of bar.children){const k=b.dataset.k;
     b.addEventListener('pointerdown',e=>{Snd.init();touch.on=true;b.classList.add('on');try{b.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();
-      if(k==='atk'){if(tbMe())atkQ=true;else touch.atk=true}else if(k==='pot')potQ=true;else skQ[k==='ult'?3:+k.slice(1)]=true});
-    const up=()=>{b.classList.remove('on');if(k==='atk')touch.atk=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)}}
+      if(k==='atk'){if(tbMe())atkQ=true;else touch.atk=true}else if(k==='pot')potQ=true;else if(k==='dash')tbDash();else skQ[k==='ult'?3:+k.slice(1)]=true});
+    const up=()=>{b.classList.remove('on');if(k==='atk')touch.atk=false};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up)}
+  if(be)bar.append(be)}
 /* état de chaque bouton : coût, recharge (en tours au combat), portée sur la cible */
 function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;
   {const h=hq('#pvHint'),on=!!(L.pv&&pvOn());setHid(h,!on);if(on){const i=L.pv==='atk'?-1:L.pv==='ult'?3:+L.pv.slice(1),nm=i<0?CLS[hero.cls].atk:(SK[ST.ks[i]]||{}).court||'';setTxt(h,'Aperçu : touche encore « '+nm+' » pour agir · touche ailleurs pour annuler')}}const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
-  for(const b of bar.children){const k=b.dataset.k;let sub='',hot=false,far=false,off=false,cd=0,cdn='';
-    if(k==='atk'){const r=t?inReach('atk',t):false;sub=inTb?'1 action':'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
+  for(const b of bar.children){const k=b.dataset.k;if(!k)continue;let sub='',hot=false,far=false,off=false,cd=0,cdn='';
+    if(k==='dash'){sub=TB_DASH+' actions';off=!tbCanAct(TB_DASH)}
+    else if(k==='atk'){const r=t?inReach('atk',t):false;sub=inTb?'1 action':'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
     else if(k==='pot'){sub='× '+hero.pot;off=hero.pot<=0||inTb&&!tbCanPot()}
     else{const i=k==='ult'?3:+k.slice(1),id=ks[i],S=SK[id];if(!S)continue;
       if(S.t==='u'){const rd=L.ult>=100;b.classList.toggle('ready',rd);sub=rd?(inTb?'2 actions':'prête'):Math.floor(L.ult)+' %';cd=rd?0:1-L.ult/100;off=inTb&&!tbCanAct(2)}
@@ -133,10 +137,16 @@ function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;
 /* pastille heure + météo sous la mini-carte */
 function skyTag(){const t=$('#skyTag'),mi=$('#mini');if(!t||!mi)return;const out=G&&G.m&&G.m.kind==='world';t.hidden=!out;if(!out)return;
   const nt=Sky.isNight(),key=Sky.label()+Sky.weatherName()+Sky.moon+(Sky.hour<5.5||Sky.hour>=21)+nt;if(t.dataset.k!==key){t.dataset.k=key;t.innerHTML=Sky.icon()+'<span>'+Sky.label()+'</span>'+(nt?'<span class="x4">×4</span>':'');t.classList.toggle('danger',nt)}
-  // portrait : la mini-carte se cale sous l'en-tête (elle ne recouvre plus la quête), les messages aussi
-  const hudEl=$('#hud'),top=$('#hud .top');if(innerHeight>innerWidth&&top){const hb=top.offsetTop+top.offsetHeight+8;mi.style.top=hb+'px';hudEl.style.setProperty('--hudB',(hb+4)+'px');hudEl.style.setProperty('--miniR',(innerWidth-mi.getBoundingClientRect().left+8)+'px')}
-  else if(mi.style.top){mi.style.top=''}
-  const l=mi.offsetLeft+mi.offsetWidth/2-t.offsetWidth/2,tp=mi.offsetTop+mi.offsetHeight-12;t.style.left=Math.round(Math.max(4,l))+'px';t.style.top=Math.round(tp)+'px'}
+  // la pastille se pose sur le haut de la mini-carte (placée à droite, sous l'en-tête en portrait) ; les messages restent à sa gauche
+  const hudEl=$('#hud'),hr=hudEl.getBoundingClientRect(),mr=mi.getBoundingClientRect();if(!mr.width)return;hudEl.style.setProperty('--miniR',(hr.right-mr.left+8)+'px');
+  const l=mr.left-hr.left+mr.width/2-t.offsetWidth/2,tp=mr.top-hr.top-8;t.style.left=Math.round(Math.max(4,l))+'px';t.style.top=Math.round(Math.max(2,tp))+'px'}
+/* pastilles des effets sur ton héros (bouclier, rage, disparition, passif) : durée en tours au combat, en secondes sinon */
+function meFx(me){const box=hq('#meFx');if(!box||!me)return;const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),fx=[];
+  if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'']);if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT)]);
+  if(L.stealthT>0)fx.push(['Disparition','#c9a2ff',d(L.stealthT)]);if(L.buffT>0&&hero.cls==='voleur')fx.push(['Prochain coup renforcé','#ffe08a',d(L.buffT)]);
+  if(ST.pa)fx.push(['Passif : '+SK[ST.pa].nom,'#9ff08a','P']);
+  const key=fx.map(f=>f.join(':')).join('|');if(box._k===key)return;box._k=key;box.textContent='';
+  for(const f of fx){const i=el('i','fxc',String(f[2]));i.style.setProperty('--c',f[1]);i.title=f[0]+(f[2]&&f[2]!=='P'?' · '+f[2]+(inTb?' tour'+(f[2]>1?'s':''):' s'):'');i.setAttribute('role','listitem');i.setAttribute('aria-label',i.title);box.append(i)}}
 function skyLine(){const night=Sky.hour<5.5||Sky.hour>=21;
   return'<span>'+Sky.icon()+'<b>Jour '+Sky.day+' · '+Sky.label()+'</b> <span class="dim">'+Sky.clock()+'</span></span>'
     +'<span>'+skyIcon(Sky.rain>.5?(Sky.storm>.5?'orage':'pluie'):Sky.fog>.3?'brume':Sky.cloud>.5?'nuages':'soleil')+Sky.weatherName()+'</span>'
@@ -153,16 +163,21 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   setTxt(hq('#meName'),myName+' · '+CLS[hero.cls].nom);setTxt(hq('#meLvl'),'Niv '+hero.lvl);
   setW(hq('#meHp'),me.hp/me.mhp);setW(hq('#meSh'),(me.sh||me.shield||0)/me.mhp);setW(hq('#meMp'),L.mp/ST.mmp);setW(hq('#meXp'),hero.lvl>=LVL_MAX?1:hero.xp/xpNeed(hero.lvl));
   const oi=myIdx===0?1:0,o=G.players[oi];
-  if(o){setTxt(hq('#alName'),o.name+' · '+CLS[o.cls].nom);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre : va le relever !':Math.round(o.hp)+' / '+o.mhp+' PV'+(G.cb&&G.cb.in[oi]&&!tbMe()?' · au combat':''))}
-  else{setTxt(hq('#alName'),'Joueur 2');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}
+  // l'allié : une petite vignette carrée à droite de ta fiche (comme celles de l'ordre des tours)
+  {const ca=hq('#cAlly');ca.classList.toggle('none',!o);ca.classList.toggle('dn',!!(o&&o.down));ca.classList.toggle('fight',!!(o&&G.cb&&G.cb.in[oi]&&!tbMe()));
+  if(o){setTxt(hq('#alName'),o.name);setCss(hq('#alFig'),'--c',CLS[o.cls].col);setHid(hq('#alBar'),false);setW(hq('#alHp'),o.hp/o.mhp);setTxt(hq('#alSt'),o.down?'À terre':G.cb&&G.cb.in[oi]&&!tbMe()?'Au combat':'');
+    ca.setAttribute('aria-label',o.name+', '+CLS[o.cls].nom+', '+(o.down?'à terre : va le relever':Math.round(o.hp)+' sur '+o.mhp+' PV'))}
+  else{setTxt(hq('#alName'),'');setHid(hq('#alBar'),true);setTxt(hq('#alSt'),room&&netOn?'Place libre':'Seul');ca.setAttribute('aria-label',room&&netOn?'Place libre : un 2ᵉ joueur peut te rejoindre':'Seul dans Midheim')}}
+  meFx(me);
   const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
   else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
   const tq=m.kind==='world'&&!G.reinOn?trackedText():null;
   const ob=tq?tq[0]+' · ':m.kind==='world'?'Quête · ':m.kind==='dun'?DUNGEONS[m.did].nom+' · ':'',os=tq?tq[1]:obj;
   const ot=hq('#objTxt');if(ot._t!==ob+'\n'+os){ot._t=ob+'\n'+os;ot.textContent='';ot.append(el('b',null,ob),document.createTextNode(os))}
-  setTxt(hq('#goldTxt'),hero.gold);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
+  setTxt(hq('#goldTxt'),hero.gold);setTxt(hq('#shTxt'),hero.sh||0);setTxt(hq('#pPotN'),hero.pot);hq('#pPot').classList.toggle('empty',hero.pot<=0);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
   {const n=stonesQ(Math.max(G.q,hero.q));const gp=hq('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
+  {const tp=hq('#hud .top'),hb=hq('#hud');if(tp){const b=Math.round(tp.offsetTop+tp.offsetHeight);if(hb._tb!==b){hb._tb=b;hb.style.setProperty('--topB',b+'px')}}}
   const ks=ST.ks,inTb=tbMe();['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?(inTb?Math.ceil(L.cd[i]/TB_ROUND-.01)+' t':Math.ceil(L.cd[i])):'');b.classList.toggle('used',inTb&&!tbCanAct());setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
   hq('#bAtk').classList.toggle('used',inTb&&!tbCanAct());hq('#bPot').classList.toggle('used',inTb&&!tbCanPot());
   if(ks[3]){const b=hq('#bUlt');b.classList.remove('lock');b.classList.toggle('used',inTb&&!tbCanAct());b.classList.toggle('ready',L.ult>=100);setTxt(b.querySelector('.t'),L.ult>=100?'':Math.floor(L.ult)+'%');setCss(b,'--cd',(1-L.ult/100).toFixed(3))}
@@ -263,7 +278,9 @@ function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(
 
 /* ================= Entrées ================= */
 const isTouch=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window&&navigator.maxTouchPoints>0);
-if(isTouch){document.body.classList.add('touch');touch.on=true;const mb=$('#mbar');for(const id of['pMenu','pBag','pQuest','pTal'])mb.append($('#'+id));$('#pMap').style.display='none'}
+if(isTouch){document.body.classList.add('touch');touch.on=true;const mb=$('#mbar');for(const id of['pBag','pQuest','pTal','pPot'])mb.append($('#'+id));$('#pMap').style.display='none';
+  // le menu (☰) passe en haut à gauche, devant la fiche du héros
+  const pm=$('#pMenu');pm.classList.add('mbtn');$('#hud .top').prepend(pm)}
 const inGame=()=>mode==='solo'||mode==='host'||mode==='guest';
 const anyOverlay=()=>!$('#bagBox').hidden||!$('#mapBox').hidden||!$('#storyBox').hidden||!$('#chronBox').hidden;
 addEventListener('keydown',e=>{if(!inGame())return;if(e.target&&e.target.tagName==='INPUT')return;
@@ -292,7 +309,8 @@ holdBtn($('#bAct'),()=>actQ=true);
 $('#bEnd').addEventListener('click',()=>{Snd.init();endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
-$('#pMenu').onclick=togglePause;$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
+$('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
+holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
 $('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);

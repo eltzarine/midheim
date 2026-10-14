@@ -133,4 +133,4 @@ function netTick(dt){if(!room)return;netT-=dt;
   if(mode==='host'&&netT<=0){netT=.066;pres({g:serialize(),l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='solo'&&netT<=0){netT=3;pres({l:hero.lvl,wh:zoneName(G.m)})}
   if(mode==='guest'&&netT<=0){netT=.05;const r=Math.round;const tp=L.tp||aimPoint();
-    pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0,et:L.et|0}})}}
+    pres({st:guestStats(),l:hero.lvl,i:{z:G.ep,p:[r(L.x),r(L.y)],m:[+L.mv[0].toFixed(2),+L.mv[1].toFixed(2)],a:+L.aim.toFixed(2),ac:L.ac,sk:L.sk,pc:L.pc,lu:L.lu,bc:L.bc,it:L.it,ia:L.ia,tp:[r(tp.x),r(tp.y)],iv:L.ivT>0?1:0,et:L.et|0,dc:L.dc|0}})}}

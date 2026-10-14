@@ -44,7 +44,7 @@ function loadGame() {
   // les let/const du jeu ne sont visibles que dans le même script : on y ajoute l'accès pour les tests
   vm.runInContext(code + `
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
-  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,
+  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,tbPA,TB_DASH,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
@@ -282,7 +282,7 @@ if (!fs.existsSync(BUNDLE)) {
       assert.equal(T.tbGate(1, 'ac', 1), false);
       // le Rejeton finit son tour → César joue, seul
       T.tbUpdate(T.TB_EN + .1);
-      assert.equal(G.cb.ph, 'h'); assert.equal(G.cb.who, 0); assert.equal(G.cb.ap[0], 2);
+      assert.equal(G.cb.ph, 'h'); assert.equal(G.cb.who, 0); assert.equal(G.cb.ap[0], 3);
       assert.equal(T.tbGate(1, 'ac', 1), false);
       // César a fini → au tour de Léo (l'invité), qui peut agir
       G.cb.rd[0] = true; T.tbUpdate(.016);
@@ -302,6 +302,26 @@ if (!fs.existsSync(BUNDLE)) {
       // un héros à terre passe son tour ; un ennemi mort disparaît de l'ordre
       G = fresh(); G.players[0].down = true; G.enemies[1].hp = 0; T.setG(G); T.tbStart(-1, [true, true]);
       assert.equal(G.cb.who, 1);
+    } finally { T.setG(old); }
+  });
+
+  test('Combat : points d’action selon la classe, Foncer coûte 2 points', () => {
+    const old = T.getG();
+    const G = { time: 5, tbBy: null, cb: null, coop: true, projs: [], later: [], fires: [], zones: [], traps: [], decoys: [], emap: new Map(), msgs: [], msgId: 0, cool: {}, fx: [], fxId: 0,
+      players: [{ name: 'César', cls: 'guerrier', st: { spd: 100 }, x: 0, y: 0, down: false }, { name: 'Léo', cls: 'mage', st: { spd: 200 }, x: 0, y: 0, down: false }],
+      enemies: [{ id: 9, type: 'slime', x: 2 * T.TS, y: 0, r: 12, hp: 20, mhp: 20, act: true, ret: false, kx: 0, ky: 0 }] };
+    try {
+      T.setG(G);
+      assert.deepEqual([0, 1].map(T.tbPA), [3, 2]);
+      G.players[1].cls = 'voleur'; assert.equal(T.tbPA(1), 3); G.players[1].cls = 'soigneur'; assert.equal(T.tbPA(1), 2); G.players[1].cls = 'mage';
+      // Léo (le plus rapide) ouvre la manche avec 2 points : Foncer les prend tous, plus rien ensuite
+      T.tbStart(-1, [true, true]);
+      assert.equal(G.cb.who, 1); assert.equal(G.cb.ap[1], 2); assert.equal(T.TB_DASH, 2);
+      assert.equal(T.tbGate(1, 'ac', T.TB_DASH), true); assert.equal(G.cb.ap[1], 0);
+      assert.equal(T.tbGate(1, 'ac', T.TB_DASH), false); assert.equal(T.tbGate(1, 'ac', 1), false);
+      // César : 3 points, Foncer puis une attaque
+      G.cb.rd[1] = true; T.tbUpdate(.016);
+      assert.equal(G.cb.who, 0); assert.equal(G.cb.ap[0], 3);
     } finally { T.setG(old); }
   });
 
