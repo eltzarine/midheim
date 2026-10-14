@@ -235,13 +235,13 @@ function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x
   const out=[...m].map(([l,n])=>n>1?l+' ×'+n:l);return out.length>3?out.slice(0,2).concat('+ '+(out.length-2)+' autres actions'):out}
 /* fiche de la cible : petite (nom, vie, états, portée) ; tant qu'on reste appuyé dessus ou sur sa vignette, détaillée
    (prochain coup, effets en tours, dégâts estimés de l'attaque) et le reste de l'écran s'assombrit */
-function tgtHud(){const t=tbTarget(),box=hq('#tgtBox'),big=!!(t&&L.tgtBig);setHid(box,!t);box.classList.toggle('big',big);setHid(hq('#tgtVeil'),!big);document.body.classList.toggle('tgtbig',big);if(!t)return;
+function tgtHud(){const t=tbTarget(),box=hq('#tgtBox'),big=!!(t&&L.tgtBig);setHid(box,!t);box.classList.toggle('big',big);setHid(hq('#tgtVeil'),!big&&!(L.meBig));document.body.classList.toggle('tgtbig',big);if(!t)return;
   setTxt(hq('#tgtName'),enemyName(t)+' · Niv '+(t.lv||G.lv||1));const pct=t.hpP!=null?t.hpP/100:t.hp/t.mhp;setW(hq('#tgtHp'),pct);setTxt(hq('#tgtPv'),t.hpP!=null?t.hpP+' %':Math.ceil(t.hp)+' / '+Math.ceil(t.mhp));
   const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):big?'Aucun effet':'');
   setTxt(hq('#tgtInt'),big?(tbMe()?'Prochain tour : '+enemyIntent(t):(t.act?'En alerte':'Au repos')):'');
   const out=!inReach('atk',t);setTxt(hq('#tgtRg'),out?'Trop loin':'À portée');hq('#tgtRg').classList.toggle('far',out);
   setTxt(hq('#tgtMore'),big?CLS[hero.cls].atk+' sur lui : ~'+Math.round(ST.dmg*(tbMe()?TB_DMG:1))+' dégâts'+(out?' (trop loin)':''):'')}
-if(typeof addEventListener==='function')addEventListener('pointerup',()=>{if(typeof L!=='undefined'&&L&&L.tgtBig)L.tgtBig=false});
+if(typeof addEventListener==='function')addEventListener('pointerup',()=>{if(typeof L!=='undefined'&&L){L.tgtBig=false;L.meBig=false}});
 
 /* ---------- déplacement libre dans la zone du tour ----------
    Le tour donne un budget de déplacement compté depuis une place d'ancrage (le départ du tour) : on peut aller et revenir
