@@ -175,7 +175,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   const tq=m.kind==='world'&&!G.reinOn?trackedText():null;
   const ob=tq?tq[0]+' · ':m.kind==='world'?'Quête · ':m.kind==='dun'?DUNGEONS[m.did].nom+' · ':'',os=tq?tq[1]:obj;
   const ot=hq('#objTxt');if(ot._t!==ob+'\n'+os){ot._t=ob+'\n'+os;ot.textContent='';ot.append(el('b',null,ob),document.createTextNode(os))}
-  setTxt(hq('#goldTxt'),hero.gold);setTxt(hq('#shTxt'),hero.sh||0);setTxt(hq('#pPotN'),hero.pot);hq('#pPot').classList.toggle('empty',hero.pot<=0);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
+  setTxt(hq('#goldTxt'),hero.gold);setTxt(hq('#pPotN'),hero.pot);hq('#pPot').classList.toggle('empty',hero.pot<=0);const pts=treePts(hero);setHid(hq('#ptsB'),pts<=0);setTxt(hq('#ptsB'),pts);setHid(hq('#bagB'),!UI.newItems);
   {const n=stonesQ(Math.max(G.q,hero.q));const gp=hq('#gemPill');if(gp.dataset.n!==String(n)){gp.dataset.n=n;gp.textContent='';for(let k=0;k<4;k++){const i=el('i','gm'+(k<n?' on':''));i.style.setProperty('--c',STONES[k][1]);gp.append(i)}}}
   {const tp=hq('#hud .top'),hb=hq('#hud');if(tp){const b=Math.round(tp.offsetTop+tp.offsetHeight);if(hb._tb!==b){hb._tb=b;hb.style.setProperty('--topB',b+'px')}}}
   const ks=ST.ks,inTb=tbMe();['bS1','bS2','bS3'].forEach((id,i)=>{const S=SK[ks[i]];if(!S)return;const b=hq('#'+id);b.classList.remove('lock');setTxt(b.querySelector('.t'),L.cd[i]>0?(inTb?Math.ceil(L.cd[i]/TB_ROUND-.01)+' t':Math.ceil(L.cd[i])):'');b.classList.toggle('used',inTb&&!tbCanAct());setCss(b,'--cd',clamp(L.cd[i]/(S.cd*ST.cdm),0,1).toFixed(3));b.classList.toggle('nomp',L.mp<S.mp)});
@@ -278,7 +278,7 @@ function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(
 
 /* ================= Entrées ================= */
 const isTouch=matchMedia('(pointer:coarse)').matches||('ontouchstart' in window&&navigator.maxTouchPoints>0);
-if(isTouch){document.body.classList.add('touch');touch.on=true;const mb=$('#mbar');for(const id of['pBag','pQuest','pTal','pPot'])mb.append($('#'+id));$('#pMap').style.display='none';
+if(isTouch){document.body.classList.add('touch');touch.on=true;const mb=$('#mbar');for(const id of['pGold','pBag','pQuest','pTal','pPot'])mb.append($('#'+id));$('#pMap').style.display='none';
   // le menu (☰) passe en haut à gauche, devant la fiche du héros
   const pm=$('#pMenu');pm.classList.add('mbtn');$('#hud .top').prepend(pm)}
 const inGame=()=>mode==='solo'||mode==='host'||mode==='guest';
@@ -308,7 +308,7 @@ const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();t
 holdBtn($('#bAct'),()=>actQ=true);
 $('#bEnd').addEventListener('click',()=>{Snd.init();endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
-$('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
+$('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#objTxt').addEventListener('click',e=>{if(e.target&&e.target.tagName==='B'&&inGame())openQuests()});$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
 holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
 $('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};

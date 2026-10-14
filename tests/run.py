@@ -288,7 +288,8 @@ with sync_playwright() as pw:
     check('Sceaux de la prison : quatre sceaux activés', go(pg, "G.stairsOpen&&G.m.style==='sceaux'"))
     go(pg, "hostEnter('w',WORLD.start,{heal:true});G.dun=null"); pg.wait_for_timeout(400)
     # journal de quêtes
-    pg.click('#pQuest'); pg.wait_for_timeout(200)
+    check('Quêtes : plus de bouton dans le menu du bas, l’or y est affiché', pg.is_hidden('#pQuest') and pg.is_visible('#mbar #pGold') and go(pg, "$('#goldTxt').textContent==String(hero.gold)") and not pg.query_selector('#shTxt'))
+    pg.click('#objTxt b'); pg.wait_for_timeout(200)
     check('Journal de quêtes : histoire et sous-quêtes', pg.is_visible('#questBox') and pg.locator('#questList .qcard').count() >= 6)
     pg.screenshot(path=f'{OUT}/c0_quetes.png')
     pg.locator('#questList .qcard', has_text='Feux de camp ennemis').click(); pg.wait_for_timeout(150)
@@ -341,7 +342,7 @@ with sync_playwright() as pw:
     check('Paysage : la carte ronde s’ouvre au toucher', pg.is_visible('#mapBox'))
     go(pg, "$('#mapBox').hidden=true;paused=false"); pg.wait_for_timeout(100)
     go(pg, "L.tbT=0"); pg.wait_for_timeout(250)
-    check('Paysage : barre de menus sans Carte (Sac, Quêtes, Talents, Potion), ☰ en haut à gauche', go(pg, "[...document.querySelectorAll('#mbar .pill')].filter(e=>e.offsetParent).length") == 4 and go(pg, "$('#pMenu').getBoundingClientRect().left<40&&$('#pMenu').getBoundingClientRect().top<40"))
+    check('Paysage : barre de menus sans Carte (Or, Sac, Talents, Potion), ☰ en haut à gauche ; carte et fiche alignées sur la fiche du héros', go(pg, "Math.abs($('#mini').getBoundingClientRect().top-$('#cMe').getBoundingClientRect().top)<=1") and go(pg, "[...document.querySelectorAll('#mbar .pill')].filter(e=>e.offsetParent).length") == 4 and go(pg, "$('#pMenu').getBoundingClientRect().left<40&&$('#pMenu').getBoundingClientRect().top<40"))
     go(pg, "(()=>{G.enemies=[];for(let k=0;k<6;k++){const q=freeNear(L.x+(3+k%3)*TS,L.y+(k<3?-1:1)*TS,0,TS);spawnEnemy(k%2?'orc':'slime',q.x,q.y,false,false,undefined,1)}})()")
     for _ in range(40):
         if go(pg, "!!G.cb&&tbHero()"): break
