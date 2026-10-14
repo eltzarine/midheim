@@ -182,7 +182,7 @@ const setCss=(e,k,v)=>{v=String(v);const m=e&&(e._c||(e._c={}));if(e&&m[k]!==v){
 const setW=(e,f)=>setCss(e,'width',(clamp(f,0,1)*100).toFixed(1)+'%');
 const setHid=(e,h)=>{h=!!h;if(e&&e.hidden!==h)e.hidden=h};
 function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if(hudT>0)return;hudT=.1;const me=myP();if(!me)return;
-  setTxt(hq('#meName'),myName+' · '+CLS[hero.cls].nom);setTxt(hq('#meLvl'),'Niv '+hero.lvl);
+  setTxt(hq('#meName'),myName);hq('#cMe').title=myName+' · '+CLS[hero.cls].nom;setTxt(hq('#meLvl'),'Niv '+hero.lvl);
   setW(hq('#meHp'),me.hp/me.mhp);setW(hq('#meSh'),(me.sh||me.shield||0)/me.mhp);setW(hq('#meMp'),L.mp/ST.mmp);setW(hq('#meXp'),hero.lvl>=LVL_MAX?1:hero.xp/xpNeed(hero.lvl));
   const oi=myIdx===0?1:0,o=G.players[oi];
   // l'allié : une petite vignette carrée à droite de ta fiche (comme celles de l'ordre des tours)
