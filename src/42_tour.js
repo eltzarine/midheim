@@ -328,6 +328,17 @@ function pvGray(fn){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createE
   g.globalCompositeOperation='saturation';g.fillStyle='#808080';g.fillRect(0,0,w,h);   // plus de couleur (le fond transparent devient gris)
   g.globalCompositeOperation='destination-in';g.drawImage(PV_C2,0,0);g.globalCompositeOperation='source-over';   // on ne garde que la forme
   real.save();real.setTransform(1,0,0,1,0,0);real.globalAlpha=1;real.drawImage(PV_C,0,0);real.restore()}
+/* contour seul : la silhouette de ce que dessine fn, décalée tout autour, moins la silhouette elle-même ; trait gris clair */
+function pvOutline(fn,al){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
+  for(const c of[PV_C,PV_C2])if(c.width!==w||c.height!==h){c.width=w;c.height=h}
+  const g=PV_C.getContext('2d'),g2=PV_C2.getContext('2d'),real=ctx,m=real.getTransform(),k=Math.max(1.5,Math.min(3,Math.hypot(m.a,m.b)*.7));
+  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);g.imageSmoothingEnabled=real.imageSmoothingEnabled;
+  ctx=g;try{g.setTransform(m);g.globalAlpha=1;fn()}finally{ctx=real}
+  g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.globalCompositeOperation='source-in';g.fillStyle='#eeeeee';g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';   // silhouette
+  g2.setTransform(1,0,0,1,0,0);g2.globalAlpha=1;g2.globalCompositeOperation='source-over';g2.clearRect(0,0,w,h);
+  for(let a=0;a<8;a++)g2.drawImage(PV_C,Math.round(Math.cos(a*.785)*k),Math.round(Math.sin(a*.785)*k));
+  g2.globalCompositeOperation='destination-out';g2.drawImage(PV_C,0,0);g2.globalCompositeOperation='source-over';   // on creuse : il reste le bord
+  real.save();real.setTransform(1,0,0,1,0,0);real.globalAlpha=al;real.drawImage(PV_C2,0,0);real.restore()}
 const PV_LINE='rgba(236,236,236,.95)',PV_FILL='rgba(220,220,220,.14)';
 function pvMark(n0){for(let i=n0;i<parts.length;i++)parts[i].pv=1}
 function pvFx(k,x,y,v){const sp=Snd.play,sh=shake,n0=parts.length;Snd.play=()=>{};try{fxShow({k,x,y,v:v||0,o:-1},true)}finally{Snd.play=sp;shake=sh;pvMark(n0)}}
@@ -424,14 +435,14 @@ function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=
   while(S.done<S.ev.length&&S.ev[S.done][0]<=u){S.ev[S.done][1]();S.done++}
   pvProjs(S,dt);
   const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1));
-  drawPvFoot(S,T);
+  if(S.k==='atk')drawPvFoot(S,T);   // compétences : pas de marquage au sol
   const n0=parts.length;
   pvGray(()=>{
     ctx.globalAlpha=fade*.7;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true);
     ctx.globalAlpha=fade;for(const p of S.projs)drawProj2(p);
-    const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18,al:.28};
-    ctx.globalAlpha=g.al;drawPlayer(me,g.x,g.y,true,T);
     if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true)}});
+  // héros fantôme : transparent, seulement ses contours
+  {const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18};pvOutline(()=>drawPlayer(me,g.x,g.y,true,T),act?.9:.45)}
   pvMark(n0);   // étincelles laissées par les projectiles de l'aperçu : grises aussi
   // étiquettes : l'action et sa cible, puis la fourchette de dégâts et la chance de toucher
   let lab,sub='';if(L.pv==='atk'){lab=CLS[hero.cls].atk+(t?' → '+enemyName(t):'');if(t)sub=rangeTxt(dmgRange(1,t))+' dégâts · '+pct(myHit(t))+' de toucher'}
