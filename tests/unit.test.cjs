@@ -46,7 +46,7 @@ function loadGame() {
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
   applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,tbPA,TB_DASH,
   tacFlees,tacPack,tacUnpack,patPos,patLen,reinTurns,TB_LG,hitChance,HIT_BASE,HIT_FAR,tbNoteSpend,tbAdmit,
-  setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
+  SPR,SHEET_HD,SHEET_NINJA,STEP_PX,setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
 
@@ -55,6 +55,33 @@ if (!fs.existsSync(BUNDLE)) {
 } else {
   const T = loadGame();
   const hero = (cls, lvl, tr = []) => Object.assign(T.newHero(cls), { lvl, tr });
+
+
+  /* ---------- Planches de personnage ---------- */
+  test('Planches : 8 directions, angle -> ligne de la planche', () => {
+    const m = T.SHEET_HD, d = a => T.SPR.pick(m, a * Math.PI / 180).d;
+    assert.deepEqual([0, 45, 90, 135, 180, -135, -90, -45, 20, 60].map(d), ['E', 'SE', 'S', 'SW', 'W', 'NW', 'N', 'NE', 'E', 'SE']);
+    assert.equal(T.SPR.pick(m, Math.PI / 2).i, 0);   // bas = 1re ligne
+  });
+  test('Planches : miroir quand la planche n’a que le côté droit', () => {
+    const m = Object.assign({}, T.SHEET_HD, { order: ['S', 'SE', 'E', 'NE', 'N'], mirror: true });
+    const p = T.SPR.pick(m, Math.PI);
+    assert.equal(p.flip, true); assert.equal(m.order[p.i], 'E');
+  });
+  test('Planches : le pack garde ses 4 directions (bas, haut, gauche, droite)', () => {
+    const m = T.SHEET_NINJA, c = a => T.SPR.pick(m, a).i;
+    assert.deepEqual([Math.PI / 2, -Math.PI / 2, Math.PI, 0].map(c), [0, 1, 2, 3]);
+  });
+  test('Planches : la course avance avec la distance, l’attaque avec le coup', () => {
+    const m = Object.assign({}, T.SHEET_HD, { walk: [1, 2, 3, 4, 5, 6, 7, 8], stride: 64, atk: [9, 10, 11, 12] });
+    assert.equal(T.SPR.frame(m, 'walk', 0, 0), 1);
+    assert.equal(T.SPR.frame(m, 'walk', 8, 0), 2);
+    assert.equal(T.SPR.frame(m, 'walk', 64, 0), 1);
+    assert.equal(T.SPR.frame(m, 'atk', 0, 0), 9);
+    assert.equal(T.SPR.frame(m, 'atk', .99, 0), 12);
+    // pack : même cadence qu'avant (une image tous les STEP_PX)
+    assert.equal(T.SPR.frame(T.SHEET_NINJA, 'walk', T.STEP_PX * 3, 0), 3);
+  });
 
   /* ---------- Progression ---------- */
   test('XP : 96 pour le niveau 2, puis ×1,5 par niveau, ~7 200 jusqu’au niveau 10', () => {

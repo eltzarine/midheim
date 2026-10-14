@@ -75,6 +75,21 @@ def pack():
     return {f[:-4]: b64(os.path.join('assets', 'pack', f), 'image/png') for f in sorted(os.listdir(d)) if f.endswith('.png')}
 
 
+def hd():
+    """Planches de personnage haute définition : assets/hd/<nom>.png (+ <nom>.json facultatif) -> ({h_nom: data-URI}, {nom: fiche})."""
+    d = os.path.join(ROOT, 'assets', 'hd')
+    if not os.path.isdir(d):
+        return {}, {}
+    imgs, meta = {}, {}
+    for f in sorted(os.listdir(d)):
+        n = f[:-5] if f.endswith('.json') else f[:-4]
+        if f.endswith('.png'):
+            imgs['h_' + n] = b64(os.path.join('assets', 'hd', f), 'image/png')
+        elif f.endswith('.json'):
+            meta[n] = json.load(open(os.path.join(d, f)))
+    return imgs, meta
+
+
 def build(target):
     clips, times, lines = voices()
     world = json.load(open(os.path.join(ROOT, 'data', 'world.json')))
@@ -82,7 +97,8 @@ def build(target):
     for m in MODULES:
         js = read('src', m)
         if m == '13_sprites.js':
-            js = js.replace('@@PACK@@', json.dumps(pack()))
+            hi, hm = hd()
+            js = js.replace('@@PACK@@', json.dumps({**pack(), **hi})).replace('@@HDMETA@@', json.dumps(hm))
         if m == '20_lore.js':
             js = js.replace('@@WORLD@@', json.dumps(world, separators=(',', ':')))
         if m == '65_cine.js':
