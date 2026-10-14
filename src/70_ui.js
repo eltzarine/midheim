@@ -271,7 +271,7 @@ addEventListener('keydown',e=>{if(!inGame())return;if(e.target&&e.target.tagName
   if(e.code==='KeyI'){$('#bagBox').hidden?openBag():closeBag();return}if(e.code==='KeyO'){$('#questBox').hidden?openQuests():closeQuests();return}if(e.code==='KeyM'){$('#mapBox').hidden?openMap():($('#mapBox').hidden=true,paused=false);return}
   if(anyOverlay())return;keys.add(e.code);
   if(e.code==='Space'||e.code==='Digit1'||e.code==='KeyK'){skQ[0]=true;e.preventDefault()}if(e.code==='Digit2'||e.code==='KeyL')skQ[1]=true;if(e.code==='Digit3')skQ[2]=true;if(e.code==='KeyR')skQ[3]=true;
-  if(e.code==='KeyE')potQ=true;if(e.code==='KeyF')actQ=true;if(e.code==='KeyT')toggleTalents();if(e.code==='Enter'||e.code==='KeyN'){e.preventDefault();L.tbEnd?cancelEnd():endTurn()}
+  if(e.code==='KeyE')potQ=true;if(e.code==='KeyF')actQ=true;if(e.code==='KeyT')toggleTalents();if(e.code==='Enter'||e.code==='KeyN'){e.preventDefault();endTurn()}
   if(e.code.startsWith('Arrow'))e.preventDefault()});
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();mouse.down=false;touch.atk=false});
@@ -289,7 +289,7 @@ cv.addEventListener('contextmenu',e=>e.preventDefault());
     if(e.type==='pointerup'&&!far&&performance.now()-t0<350){const r=cv.getBoundingClientRect();tapEnemy(cx-r.left,cy-r.top,true)}};zone.addEventListener('pointerup',end);zone.addEventListener('pointercancel',end)})();
 const holdBtn=(elx,on,off)=>{elx.addEventListener('pointerdown',e=>{Snd.init();try{elx.setPointerCapture(e.pointerId)}catch(_){}elx.classList.add('on');touch.on=true;on();e.preventDefault()});const up=()=>{elx.classList.remove('on');off&&off()};elx.addEventListener('pointerup',up);elx.addEventListener('pointercancel',up)};
 holdBtn($('#bAct'),()=>actQ=true);
-$('#bEnd').addEventListener('click',()=>{Snd.init();L&&L.tbEnd?cancelEnd():endTurn()});
+$('#bEnd').addEventListener('click',()=>{Snd.init();endTurn()});
 document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();

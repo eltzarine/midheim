@@ -265,7 +265,7 @@ function render(dt){
   if(Scene.on)Scene.drawFx(Scene.time);
   if(!hideP)G.players.forEach((p,i)=>{const w=wpos(i);label(p.name,w.x,w.y-38,i===myIdx?'#ffe9c2':'#cfe8ff');
     ctx.fillStyle='#071014';ctx.fillRect(w.x-15,w.y+17,30,4);ctx.fillStyle=p.down?'#666':'#d24a3f';ctx.fillRect(w.x-15,w.y+17,30*clamp(p.hp/p.mhp,0,1),4);if(p.shield>0){ctx.fillStyle='#ffe9a0';ctx.fillRect(w.x-15,w.y+15,30*clamp((p.sh||p.shield)/p.mhp,0,1),2)}
-    if(i!==myIdx&&G.cb&&G.cb.ph==='h'&&G.cb.in[i]&&G.cb.rd[i]&&!p.down)label('prêt ✓',w.x,w.y-52,'#9ff08a',11);
+    if(i!==myIdx&&tbMe()&&G.cb.ph==='h'&&G.cb.who===i&&!p.down)label('à son tour',w.x,w.y-52,'#9ff08a',11);
     if(p.down)label(i===myIdx?(G.players.length>1?'Attends ton allié':'À terre'):'Viens me relever !',w.x,w.y-50,'#ffb3a8',11)});
   drawEnemyTags(vis);
   if(isW){for(const bd of m.builds){if(!bd.label||(bd.act&&(bd.act.startsWith('house:')||bd.act==='talents')))continue;   // maisons : l'enseigne remplace le nom
@@ -287,7 +287,8 @@ function render(dt){
 /* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
 function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
-    if(e.act){ctx.strokeStyle='rgba(240,120,110,.9)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,e.r+6,(e.r+6)*.45,0,0,6.28);ctx.stroke();continue}
+    if(e.act){const now=G.cb&&G.cb.ph==='e'&&G.cb.eid===e.id,pu=now?1+.1*Math.sin(T*8):1;   // l'ennemi qui joue : anneau épais et pulsé
+      ctx.strokeStyle=now?'#ffb36a':'rgba(240,120,110,.9)';ctx.lineWidth=now?4:2;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,(e.r+6)*pu,(e.r+6)*.45*pu,0,0,6.28);ctx.stroke();continue}
     if(e.type==='boss'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
     ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}
   // zone de combat : visible par le héros resté dehors, elle englobe tous les ennemis en combat
@@ -297,7 +298,7 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   const t=tbTarget();if(t){const tx=t.rx??t.x,ty=t.ry??t.y,pu=1+.08*Math.sin(T*6);ctx.strokeStyle='#f0c95a';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(tx,ty+t.r*.6,(t.r+9)*pu,(t.r+9)*.45*pu,0,0,6.28);ctx.stroke();
     ctx.fillStyle='#f0c95a';ctx.beginPath();ctx.moveTo(tx,ty-t.r-10);ctx.lineTo(tx-6,ty-t.r-20);ctx.lineTo(tx+6,ty-t.r-20);ctx.closePath();ctx.fill()}
   if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){drawMoveZone(T);ctx.save();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();ctx.restore()}}}
-/* au-dessus des ennemis : ce qu'ils viennent de faire (tour des ennemis, puis 4 s), sinon leurs états */
+/* au-dessus des ennemis : ce qu'ils ont fait cette manche (pendant les tours des ennemis, puis 4 s), sinon leurs états */
 const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume'];
 function pill(t,x,y,col,bg){ctx.font='700 11px "Alegreya Sans",system-ui,sans-serif';const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-8,w,16,8);else ctx.rect(x-w/2,y-8,w,16);ctx.fill();ctx.stroke();ctx.fillStyle=col;ctx.fillText(t,x,y+.5)}
 function drawEnemyTags(vis){const c=G.cb,recent=c&&c.lg&&c.lg.length&&(c.ph==='e'||performance.now()-(L.tbLgT||0)<4000);

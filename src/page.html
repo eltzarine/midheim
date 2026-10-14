@@ -393,7 +393,15 @@ body.touch .tb.nomp,body.touch .tb.empty{opacity:.28}
 .tbinfo.foe .tblog{border-top:0;padding-top:0;color:#ffe0d8;font-weight:700}
 .tbinfo .tbh{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .tbinfo .tbh b{font-family:var(--f-title);font-weight:400;font-size:16px;color:var(--gold)}
-.tbinfo.foe .tbh b{color:#ff9a8a}
+.tbinfo.en .tbh b{color:#ff9a8a}
+/* frise de l'ordre des tours : carré = héros, rond = ennemi ; qui joue est grossi, qui a joué est pâli */
+.tbo{display:flex;align-items:center;gap:4px;min-height:30px}
+.tbo .to{--c:#8ec5e8;flex:none;width:22px;height:22px;display:grid;place-items:center;font:700 11px/1 var(--f-ui);font-style:normal;color:#fff6e8;text-shadow:0 1px 1px #000;
+  background:color-mix(in srgb,var(--c) 30%,#141014);border:2px solid var(--c);border-radius:50%;transition:width .2s,height .2s}
+.tbo .to.h{border-radius:6px;background:color-mix(in srgb,var(--c) 65%,#141014)}
+.tbo .to.cur{width:30px;height:30px;font-size:14px;margin:0 3px;box-shadow:0 0 0 2px #13252c,0 0 0 4px var(--c)}
+.tbo .to.done{opacity:.35}.tbo .to.dn{filter:grayscale(1)}
+.tbo .to.more{width:auto;border:0;background:none;color:var(--dim)}
 .tbinfo .tbh span{font-size:12.5px;font-weight:700;color:#9ff08a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbinfo .tbp{display:flex;gap:6px;flex-wrap:wrap}
 .tbinfo .tbp i{font-style:normal;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;border:1.5px solid}
@@ -656,7 +664,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
         </div>
         <div class="obj" id="objTxt">—</div>
         <div class="boss" id="bossBox" hidden><b id="bossName">Boss</b><div class="bar"><i id="bossHp"></i></div></div>
-        <div class="tbinfo" id="tbInfo" hidden><div class="tbh"><b id="tbPh">Tour 1</b><span id="tbAl"></span></div><div class="tbp"><i id="tbAct">Actions</i><i id="tbPot">Potion</i><i id="tbMv">Déplacement</i></div><div class="tblog" id="tbLog" hidden></div></div>
+        <div class="tbinfo" id="tbInfo" hidden><div class="tbh"><b id="tbPh">Tour 1</b><span id="tbAl"></span></div><div class="tbo" id="tbOrd" role="img" aria-label="Ordre des tours"></div><div class="tbp"><i id="tbAct">Actions</i><i id="tbPot">Potion</i><i id="tbMv">Déplacement</i></div><div class="tblog" id="tbLog" hidden></div></div>
         <div class="tgt" id="tgtBox" hidden><div class="tgh"><b id="tgtName">Ennemi</b><span id="tgtPv"></span></div><div class="bar hp"><i id="tgtHp"></i></div><div class="tgs" id="tgtSt"></div><div class="tgi"><span id="tgtInt"></span><span id="tgtRg"></span></div></div>
         <div id="toasts"></div>
       </div>
