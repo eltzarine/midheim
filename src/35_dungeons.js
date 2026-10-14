@@ -191,7 +191,7 @@ function genDungeon2(did,idx,seed,lv){const spec=DUNGEONS[did],key=did+idx;const
 /* ================= Objectifs (hôte) ================= */
 function goalInit(){const m=G.m;G.gp=(m.marks||[]).map(()=>0);G.wave=0;G.waveT=0}
 function goalUpdate(dt){const m=G.m;if(m.kind!=='dun'||!m.goal||G.stairsOpen)return;const gl=m.goal;
-  if(gl.type==='marks'&&!tbHero()){let done=0;   // au combat, les leviers n'avancent pas pendant le tour des héros
+  if(gl.type==='marks'&&!(tbMe()&&G.cb.ph==='h')){let done=0;   // au combat, les leviers n'avancent pas pendant le tour d'un héros
 m.marks.forEach((mk,i)=>{const x=(mk.x+.5)*TS,y=(mk.y+.5)*TS;if(G.gp[i]>=1){done++;return}
       const on=G.players.some(p=>!p.down&&Math.hypot(p.x-x,p.y-y)<38);
       if(on){G.gp[i]=Math.min(1,G.gp[i]+dt/1.8);if(G.gp[i]>=1){done++;fx(37,x,y,70);Snd.play('key');msg(gl.one.replace('{n}',G.gp.filter(v=>v>=1).length).replace('{m}',m.marks.length));

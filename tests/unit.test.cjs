@@ -44,7 +44,7 @@ function loadGame() {
   // les let/const du jeu ne sont visibles que dans le même script : on y ajoute l'accès pour les tests
   vm.runInContext(code + `
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
-  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,
+  applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
@@ -263,6 +263,45 @@ if (!fs.existsSync(BUNDLE)) {
       G.enemies = [foe(8 * S)]; assert.equal(T.tbClose(p, 9), true);
       G.enemies = [foe(8 * S, { act: false }), foe(8 * S, { ret: true }), foe(8 * S, { hp: 0 }), foe(10 * S)];
       assert.equal(T.tbClose(p, 9), false);
+    } finally { T.setG(old); }
+  });
+
+  test('Combat : ordre des tours selon la vitesse, héros et ennemis mêlés, un seul acteur à la fois', () => {
+    const old = T.getG(), S = T.TS;
+    const foe = (id, type, x, o = {}) => Object.assign({ id, type, x, y: 0, r: 12, hp: 20, mhp: 20, act: true, ret: false, kx: 0, ky: 0 }, o);
+    const fresh = () => ({ time: 5, tbBy: null, cb: null, coop: true, projs: [], later: [], fires: [], zones: [], traps: [], decoys: [], emap: new Map(),
+      msgs: [], msgId: 0, cool: {}, fx: [], fxId: 0,
+      players: [{ name: 'César', cls: 'guerrier', st: { spd: 150 }, x: 0, y: 0, down: false }, { name: 'Léo', cls: 'mage', st: { spd: 146 }, x: 0, y: S, down: false }],
+      enemies: [foe(5, 'slime', 2 * S), foe(6, 'bat', 3 * S), foe(7, 'orc', 2 * S, { elite: true }), foe(8, 'archer', 4 * S)] });
+    try {
+      // vitesse : Rejeton 13, héros 12 (le 1er joueur d'abord), Chef orc 9+1, Adepte 10, Marionnette 7 ; à égalité les héros d'abord
+      let G = fresh(); T.setG(G); T.tbStart(-1, [true, true]);
+      assert.deepEqual([...G.cb.q], [6, -1, -2, 7, 8, 5]);
+      assert.equal(G.cb.ph, 'e'); assert.equal(G.cb.eid, 6);
+      // l'invité ne peut rien faire hors de son tour
+      assert.equal(T.tbGate(1, 'ac', 1), false);
+      // le Rejeton finit son tour → César joue, seul
+      T.tbUpdate(T.TB_EN + .1);
+      assert.equal(G.cb.ph, 'h'); assert.equal(G.cb.who, 0); assert.equal(G.cb.ap[0], 2);
+      assert.equal(T.tbGate(1, 'ac', 1), false);
+      // César a fini → au tour de Léo (l'invité), qui peut agir
+      G.cb.rd[0] = true; T.tbUpdate(.016);
+      assert.equal(G.cb.who, 1); assert.equal(T.tbGate(1, 'ac', 1), true); assert.equal(G.cb.ap[1], 1);
+      // Léo a fini → les ennemis restants, un par un : Chef orc, Adepte, Marionnette, puis manche 2
+      G.cb.rd[1] = true; T.tbUpdate(.016);
+      assert.equal(G.cb.ph, 'e'); assert.equal(G.cb.eid, 7);
+      T.tbUpdate(T.TB_EN + .1); assert.equal(G.cb.eid, 8);
+      T.tbUpdate(T.TB_EN + .1); assert.equal(G.cb.eid, 5);
+      T.tbUpdate(T.TB_EN + .1); assert.equal(G.cb.r, 2); assert.equal(G.cb.k, 0); assert.equal(G.cb.eid, 6);
+      // l'invité reçoit l'ordre et sait à qui est le tour
+      const g = T.tbUnpack(JSON.parse(JSON.stringify(T.tbPack())));
+      assert.deepEqual(g.q, [6, -1, -2, 7, 8, 5]); assert.equal(g.ph, 'e'); assert.equal(g.eid, 6); assert.equal(g.who, -1);
+      // embuscade : le héros qui frappe le premier ouvre la manche, avec un point d'action déjà dépensé
+      G = fresh(); T.setG(G); T.tbStart(1, [true, true]);
+      assert.equal(G.cb.q[0], -2); assert.equal(G.cb.who, 1); assert.equal(G.cb.ap[1], 1);
+      // un héros à terre passe son tour ; un ennemi mort disparaît de l'ordre
+      G = fresh(); G.players[0].down = true; G.enemies[1].hp = 0; T.setG(G); T.tbStart(-1, [true, true]);
+      assert.equal(G.cb.who, 1);
     } finally { T.setG(old); }
   });
 
