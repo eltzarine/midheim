@@ -442,7 +442,7 @@ function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=
     ctx.globalAlpha=fade;for(const p of S.projs)drawProj2(p);
     if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true)}});
   // héros fantôme : transparent, seulement ses contours
-  {const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18};pvOutline(()=>drawPlayer(me,g.x,g.y,true,T),act?.9:.45)}
+  {const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18};pvOutline(()=>drawPlayer(me,g.x,g.y,true,T,true),act?.9:.45)}
   pvMark(n0);   // étincelles laissées par les projectiles de l'aperçu : grises aussi
   // étiquettes : l'action et sa cible, puis la fourchette de dégâts et la chance de toucher
   let lab,sub='';if(L.pv==='atk'){lab=CLS[hero.cls].atk+(t?' → '+enemyName(t):'');if(t)sub=rangeTxt(dmgRange(1,t))+' dégâts · '+pct(myHit(t))+' de toucher'}

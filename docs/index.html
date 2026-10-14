@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3bXWf09YekVx3xJX1hUMQMJ3WulL/f+wDdPO+r7VmVc=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kwfjIy0VCWYaRAJThv+jF54erQY+e30l7ZU8TF1vk4c=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -874,7 +874,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='c45046a8';
+const BUILD='79c9d4cb';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -1246,8 +1246,9 @@ function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const name=
   g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.35)';g.beginPath();g.ellipse(x,y+13,10,3.5,0,0,6.28);g.fill();
   if(o.down){g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.cell(g,sheet,0,0,0,8,sc);g.restore();return true}
-  const ax=Math.cos(aim),ay=Math.sin(aim),col=SPR.dir(ax,ay);
-  const sw=typeof _hsw!=='undefined'&&_hsw;const row=sw?4:moving?Math.floor(t*8)%4:0;const fy=y+14-(moving||sw?0:Math.round(Math.sin(t*2.2)*.6));
+  const sw=typeof _hsw!=='undefined'&&_hsw;const ba=moving&&!sw&&o.mf!=null?o.mf:aim;   // en marche, le corps regarde où l'on va ; l'arme garde la visée
+  const col=SPR.dir(Math.cos(ba),Math.sin(ba));
+  const row=sw?4:moving?(Math.floor(o.ph!=null?o.ph:t*8)%4+4)%4:0;const fy=y+14-(moving||sw?0:Math.round(Math.sin(t*2.2)*.6));
   const wk=HERO_WPN[cls]||HERO_WPN.guerrier,wname=wk[L2.wb];
   const weapon=()=>{const wh=RAR_HUE[L2.wr];g.save();
     let a=aim+(sw?sw.off||0:0);const hx=x+Math.cos(a)*9,hy=y-2+Math.sin(a)*6;g.translate(hx,hy);
@@ -3592,7 +3593,7 @@ function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=
     ctx.globalAlpha=fade;for(const p of S.projs)drawProj2(p);
     if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true)}});
   // héros fantôme : transparent, seulement ses contours
-  {const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18};pvOutline(()=>drawPlayer(me,g.x,g.y,true,T),act?.9:.45)}
+  {const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18};pvOutline(()=>drawPlayer(me,g.x,g.y,true,T,true),act?.9:.45)}
   pvMark(n0);   // étincelles laissées par les projectiles de l'aperçu : grises aussi
   // étiquettes : l'action et sa cible, puis la fourchette de dégâts et la chance de toucher
   let lab,sub='';if(L.pv==='atk'){lab=CLS[hero.cls].atk+(t?' → '+enemyName(t):'');if(t)sub=rangeTxt(dmgRange(1,t))+' dégâts · '+pct(myHit(t))+' de toucher'}
@@ -4586,7 +4587,7 @@ function lookOf(eq){if(!eq)return 0;const w=eq.arme,a=eq.armure,tl=eq.talisman;
 function unLook(n){n=Math.max(0,n|0);return{wb:n%3,ab:Math.floor(n/3)%3,wr:Math.floor(n/9)%4,ar:Math.floor(n/36)%4,tr:Math.floor(n/144)%5-1,we:Math.floor(n/720)%5,wu:Math.floor(n/3600)%6,ae:Math.floor(n/21600)%5}}
 const METAL=['#c9ccd6','#9cc4ff','#cfa6ff','#f0c95a'],CLOAK=['#6b5a48','#2f5e9e','#6b3a9e','#b8862a'],ENC_COL=[null,'#ffe9a0','#ff7a3a','#9fd0ff','#b98cff'];
 function drawHero2(g,cls,x,y,aim,t,moving,o){o=o||{};if(drawHeroPix(g,cls,x,y,aim,t,moving,o))return;drawHero2Vec(g,cls,x,y,aim,t,moving,o)}
-function drawHero2Vec(g,cls,x,y,aim,t,moving,o){o=o||{};const L2=unLook(o.lk);const face=Math.cos(aim)<0?-1:1;const wk=moving?Math.sin(t*11):0;const bob=moving?Math.abs(Math.sin(t*11))*1.8:Math.sin(t*2.2)*.6;
+function drawHero2Vec(g,cls,x,y,aim,t,moving,o){o=o||{};const L2=unLook(o.lk);const face=Math.cos(o.mf??aim)<0?-1:1;const wp=o.ph!=null?o.ph*Math.PI/2:t*11;const wk=moving?Math.sin(wp):0;const bob=moving?Math.abs(Math.sin(wp))*1.8:Math.sin(t*2.2)*.6;
   const ca=Math.cos(aim),sa=Math.sin(aim),back=sa<-.4;const metal=METAL[L2.wr],am=METAL[L2.ar],ck=CLOAK[L2.ar];const skin='#f0c49a';
   g.save();g.translate(x,y);g.scale(1.12,1.12);
   dshadow(g,0,12,12,4.2,.32);
@@ -4670,14 +4671,21 @@ function heroWeapon(g,cls,L2,hand,aim,face,t,metal){g.save();g.translate(hand.x,
   g.restore();
   if(en&&Math.random()<.25&&typeof parts!=='undefined'&&parts.length<400){/* étincelles d'enchantement, ajoutées par drawPlayer */}}
 // remplace le rendu des joueurs : l'équipement se voit sur le personnage
-function drawPlayer(p,x,y,mine,T){const lk=mine?lookOf(hero.eq):(p.lk|0);
+/* marche : le corps regarde où l'on va et les pas avancent avec la distance parcourue (plus de glissade) */
+const STEP_PX=11;   // distance (px du monde) par image de marche : 4 images = une foulée de ~44 px
+function walkTrack(p,x,y){const T=performance.now()/1000;let dx=x-(p._px??x),dy=y-(p._py??y),d=Math.hypot(dx,dy);p._px=x;p._py=y;
+  if(d>60)d=0;   // téléportation, changement de zone
+  if(d>.04){p._st=((p._st||0)+d)%(STEP_PX*400);p._mt=T;if(d>.25)p._mf=Math.atan2(dy,dx)}
+  const moving=T-(p._mt??-9)<.1;if(!moving)p._st=0;   // à l'arrêt, on repart du pied d'appui
+  return{moving,ph:(p._st||0)/STEP_PX,mf:moving?p._mf:null}}
+function drawPlayer(p,x,y,mine,T,ghost){const lk=mine?lookOf(hero.eq):(p.lk|0);
   if(p.down){drawHero2(ctx,p.cls,x,y,0,T,false,{down:true,lk});if(p.rev>0){ctx.strokeStyle='#7fe07a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,20,-1.57,-1.57+6.283*p.rev);ctx.stroke()}return}
   const a=mine?L.aim:(p.aim!=null?p.aim:0);
-  let moving;if(mine)moving=Math.abs(L.mv[0])+Math.abs(L.mv[1])>.1;else{moving=Math.hypot(x-(p._px??x),y-(p._py??y))>.3;p._px=x;p._py=y}
+  const wt=ghost?{moving:false}:walkTrack(p,x,y),moving=wt.moving;
   if((mine&&L.stealthT>0)||(!mine&&p.stealthT>0))ctx.globalAlpha=.28;else if(mine&&L.ivT>0)ctx.globalAlpha=.45;
   if(p.drT>0){ctx.strokeStyle='rgba(255,122,92,'+(.5+.3*Math.sin(T*10))+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,19,0,6.28);ctx.stroke()}
   const sp=swingProg(p,mine);_hsw=sp!=null?{p:sp,off:swingOff(p.cls,sp)}:null;const aa=sp!=null&&(p.cls==='guerrier'||p.cls==='voleur')?swingAngle(p,mine):a;
-  drawHero2(ctx,p.cls,x,y,aa,T,moving,{lk});_hsw=null;ctx.globalAlpha=1;if(sp!=null&&(p.cls==='mage'||p.cls==='soigneur'))drawCastRune(x,y,a,sp,p.cls);
+  drawHero2(ctx,p.cls,x,y,aa,T,moving,{lk,ph:wt.ph,mf:sp!=null?null:wt.mf});_hsw=null;ctx.globalAlpha=1;if(sp!=null&&(p.cls==='mage'||p.cls==='soigneur'))drawCastRune(x,y,a,sp,p.cls);
   const we=unLook(lk).we;if(we&&Math.random()<.18&&parts.length<500){const c=ENC_COL[we];parts.push({k:'sp',x:x+Math.cos(a)*18+(Math.random()-.5)*8,y:y+Math.sin(a)*14-6,vx:(Math.random()-.5)*20,vy:-30,life:.5,max:.5,col:c})}
   if(mine){ctx.strokeStyle='rgba(255,233,194,.35)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x+Math.cos(a)*42,y+Math.sin(a)*42,3,0,6.28);ctx.stroke()}}
 function drawPlayerTo(g,p,x,y){g.save();g.translate(x,y);g.scale(1.3,1.3);drawHero2(g,p.cls,0,2,.35,0,false,{lk:p.lk||0});g.restore()}
