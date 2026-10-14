@@ -26,7 +26,7 @@ function lookOf(eq){if(!eq)return 0;const w=eq.arme,a=eq.armure,tl=eq.talisman;
 function unLook(n){n=Math.max(0,n|0);return{wb:n%3,ab:Math.floor(n/3)%3,wr:Math.floor(n/9)%4,ar:Math.floor(n/36)%4,tr:Math.floor(n/144)%5-1,we:Math.floor(n/720)%5,wu:Math.floor(n/3600)%6,ae:Math.floor(n/21600)%5}}
 const METAL=['#c9ccd6','#9cc4ff','#cfa6ff','#f0c95a'],CLOAK=['#6b5a48','#2f5e9e','#6b3a9e','#b8862a'],ENC_COL=[null,'#ffe9a0','#ff7a3a','#9fd0ff','#b98cff'];
 function drawHero2(g,cls,x,y,aim,t,moving,o){o=o||{};if(drawHeroPix(g,cls,x,y,aim,t,moving,o))return;drawHero2Vec(g,cls,x,y,aim,t,moving,o)}
-function drawHero2Vec(g,cls,x,y,aim,t,moving,o){o=o||{};const L2=unLook(o.lk);const face=Math.cos(o.mf??aim)<0?-1:1;const wp=o.ph!=null?o.ph*Math.PI/2:t*11;const wk=moving?Math.sin(wp):0;const bob=moving?Math.abs(Math.sin(wp))*1.8:Math.sin(t*2.2)*.6;
+function drawHero2Vec(g,cls,x,y,aim,t,moving,o){o=o||{};const L2=unLook(o.lk);const face=Math.cos(o.mf??aim)<0?-1:1;const wp=o.dist!=null?o.dist/STEP_PX*Math.PI/2:t*11;const wk=moving?Math.sin(wp):0;const bob=moving?Math.abs(Math.sin(wp))*1.8:Math.sin(t*2.2)*.6;
   const ca=Math.cos(aim),sa=Math.sin(aim),back=sa<-.4;const metal=METAL[L2.wr],am=METAL[L2.ar],ck=CLOAK[L2.ar];const skin='#f0c49a';
   g.save();g.translate(x,y);g.scale(1.12,1.12);
   dshadow(g,0,12,12,4.2,.32);
@@ -111,12 +111,11 @@ function heroWeapon(g,cls,L2,hand,aim,face,t,metal){g.save();g.translate(hand.x,
   if(en&&Math.random()<.25&&typeof parts!=='undefined'&&parts.length<400){/* étincelles d'enchantement, ajoutées par drawPlayer */}}
 // remplace le rendu des joueurs : l'équipement se voit sur le personnage
 /* marche : le corps regarde où l'on va et les pas avancent avec la distance parcourue (plus de glissade) */
-const STEP_PX=11;   // distance (px du monde) par image de marche : 4 images = une foulée de ~44 px
 function walkTrack(p,x,y){const T=performance.now()/1000;let dx=x-(p._px??x),dy=y-(p._py??y),d=Math.hypot(dx,dy);p._px=x;p._py=y;
   if(d>60)d=0;   // téléportation, changement de zone
-  if(d>.04){p._st=((p._st||0)+d)%(STEP_PX*400);p._mt=T;if(d>.25)p._mf=Math.atan2(dy,dx)}
+  if(d>.04){p._st=((p._st||0)+d)%1e6;p._mt=T;if(d>.25)p._mf=Math.atan2(dy,dx)}
   const moving=T-(p._mt??-9)<.1;if(!moving)p._st=0;   // à l'arrêt, on repart du pied d'appui
-  return{moving,ph:(p._st||0)/STEP_PX,mf:moving?p._mf:null}}
+  return{moving,dist:p._st||0,mf:moving?p._mf:null}}
 function drawPlayer(p,x,y,mine,T,ghost){const lk=mine?lookOf(hero.eq):(p.lk|0);
   if(p.down){drawHero2(ctx,p.cls,x,y,0,T,false,{down:true,lk});if(p.rev>0){ctx.strokeStyle='#7fe07a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x,y,20,-1.57,-1.57+6.283*p.rev);ctx.stroke()}return}
   const a=mine?L.aim:(p.aim!=null?p.aim:0);
@@ -124,7 +123,7 @@ function drawPlayer(p,x,y,mine,T,ghost){const lk=mine?lookOf(hero.eq):(p.lk|0);
   if((mine&&L.stealthT>0)||(!mine&&p.stealthT>0))ctx.globalAlpha=.28;else if(mine&&L.ivT>0)ctx.globalAlpha=.45;
   if(p.drT>0){ctx.strokeStyle='rgba(255,122,92,'+(.5+.3*Math.sin(T*10))+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y,19,0,6.28);ctx.stroke()}
   const sp=swingProg(p,mine);_hsw=sp!=null?{p:sp,off:swingOff(p.cls,sp)}:null;const aa=sp!=null&&(p.cls==='guerrier'||p.cls==='voleur')?swingAngle(p,mine):a;
-  drawHero2(ctx,p.cls,x,y,aa,T,moving,{lk,ph:wt.ph,mf:sp!=null?null:wt.mf});_hsw=null;ctx.globalAlpha=1;if(sp!=null&&(p.cls==='mage'||p.cls==='soigneur'))drawCastRune(x,y,a,sp,p.cls);
+  drawHero2(ctx,p.cls,x,y,aa,T,moving,{lk,dist:wt.dist,mf:sp!=null?null:wt.mf});_hsw=null;ctx.globalAlpha=1;if(sp!=null&&(p.cls==='mage'||p.cls==='soigneur'))drawCastRune(x,y,a,sp,p.cls);
   const we=unLook(lk).we;if(we&&Math.random()<.18&&parts.length<500){const c=ENC_COL[we];parts.push({k:'sp',x:x+Math.cos(a)*18+(Math.random()-.5)*8,y:y+Math.sin(a)*14-6,vx:(Math.random()-.5)*20,vy:-30,life:.5,max:.5,col:c})}
   if(mine){ctx.strokeStyle='rgba(255,233,194,.35)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x+Math.cos(a)*42,y+Math.sin(a)*42,3,0,6.28);ctx.stroke()}}
 function drawPlayerTo(g,p,x,y){g.save();g.translate(x,y);g.scale(1.3,1.3);drawHero2(g,p.cls,0,2,.35,0,false,{lk:p.lk||0});g.restore()}

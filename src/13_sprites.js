@@ -3,15 +3,27 @@
    Planches de personnages 64×112 : colonnes = bas, haut, gauche, droite ; lignes 0-3 marche, 4 attaque.
    Tant qu'une image n'est pas chargée, les fonctions renvoient false et l'ancien dessin vectoriel prend le relais. */
 const PACK_SRC=@@PACK@@;
+/* ---- format des planches de personnage ----
+   Chaque planche est décrite par une fiche ; sans fiche, c'est le format Ninja Adventure (16 px, 4 directions).
+   Les planches haute définition sont dans assets/hd/<nom>.png (clé h_<nom>), avec une fiche facultative
+   assets/hd/<nom>.json qui complète SHEET_HD. Une planche nommée comme une classe (guerrier, mage, voleur,
+   soigneur) remplace le personnage du pack pour cette classe. Mode d'emploi : assets/hd/LISEZMOI.md. */
+const HD_META=@@HDMETA@@;
+const DIR_ANG={E:0,SE:45,S:90,SW:135,W:180,NW:-135,N:-90,NE:-45};
+const DIR_MIR={E:'W',W:'E',NE:'NW',NW:'NE',SE:'SW',SW:'SE',N:'N',S:'S'};
+const STEP_PX=11;   // distance (px du monde) par image de marche du pack : 4 images = une foulée de ~44 px
+const SHEET_NINJA={cs:16,dirs:4,axis:'col',order:['S','N','W','E'],idle:[0],walk:[0,1,2,3],atk:[4],foot:16,h:16,wh:36,stride:44,weapon:true,smooth:false};
+const SHEET_HD={cs:64,dirs:8,axis:'row',order:['S','SE','E','NE','N','NW','W','SW'],idle:[0],walk:[1,2,3,4,5,6,7,8],atk:[9,10,11,12],
+  foot:60,h:50,wh:46,stride:64,idleFps:4,weapon:false,smooth:null,mirror:false};
 const SPR={im:{},_t:new Map(),_o:new Map(),
   load(){for(const k in PACK_SRC){const i=new Image();i.onload=()=>{i._ok=1;if(k[0]==='t'&&typeof WORLD!=='undefined'&&WORLD&&WORLD.chunks)WORLD.chunks.clear()};i.src=PACK_SRC[k];this.im[k]=i}},
   ok(k){const i=this.im[k];return !!(i&&i._ok)},
   /* recolore l'équipement (métal, tissu) vers une teinte de rareté ; garde peau, contour et yeux.
      headY : lignes du haut de chaque case laissées intactes (visage et cheveux du mage, du soigneur) */
-  tint(k,hue,headY){if(hue==null)return this.im[k];const key=k+'|'+hue+'|'+(headY|0);let c=this._t.get(key);if(c)return c;
+  tint(k,hue,headY){if(hue==null)return this.im[k];const cs=this.meta(k).cs;const key=k+'|'+hue+'|'+(headY|0);let c=this._t.get(key);if(c)return c;
     const im=this.im[k];c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.drawImage(im,0,0);
     const d=g.getImageData(0,0,c.width,c.height),p=d.data;
-    for(let i=0;i<p.length;i+=4){if(p[i+3]<10)continue;const y=(i>>2)/c.width|0;if(headY&&(y%16)<headY)continue;
+    for(let i=0;i<p.length;i+=4){if(p[i+3]<10)continue;const y=(i>>2)/c.width|0;if(headY&&(y%cs)<headY)continue;
       const r=p[i]/255,gg=p[i+1]/255,b=p[i+2]/255,mx=Math.max(r,gg,b),mn=Math.min(r,gg,b),v=mx,s=mx?(mx-mn)/mx:0;
       let h=0;if(mx!==mn){h=mx===r?(gg-b)/(mx-mn)%6:mx===gg?(b-r)/(mx-mn)+2:(r-gg)/(mx-mn)+4;h=(h/6+1)%1}
       if(!headY&&(h<.12||h>.94)&&s>.15&&s<.8&&v>.5)continue;           // peau
@@ -25,7 +37,29 @@ const SPR={im:{},_t:new Map(),_o:new Map(),
     this._o.set(key,c);return c},
   /* dessine la case (col,row) avec les pieds en (x,y) */
   cell(g,src,col,row,x,y,sc){g.drawImage(src,col*16,row*16,16,16,Math.round(x-8*sc),Math.round(y-16*sc),16*sc,16*sc)},
-  dir(ax,ay){return Math.abs(ax)>Math.abs(ay)*1.15?(ax<0?2:3):(ay<0?1:0)}};
+  dir(ax,ay){return Math.abs(ax)>Math.abs(ay)*1.15?(ax<0?2:3):(ay<0?1:0)},
+  /* fiche d'une planche (format Ninja Adventure par défaut) */
+  meta(k){if(k[0]!=='h')return SHEET_NINJA;const n=k.slice(2);return this._m[n]||(this._m[n]=Object.assign({},SHEET_HD,HD_META[n]||{}))},_m:{},
+  /* direction à afficher pour un angle : indice dans la planche, et miroir si la planche n'a qu'un côté */
+  pick(m,a){let d;
+    if(m.dirs===8){const k=Math.round(a/(Math.PI/4));d=['E','SE','S','SW','W','NW','N','NE'][((k%8)+8)%8]}
+    else{const ax=Math.cos(a),ay=Math.sin(a);d=Math.abs(ax)>Math.abs(ay)*1.15?(ax<0?'W':'E'):(ay<0?'N':'S')}
+    let i=m.order.indexOf(d);if(i>=0)return{i,flip:false,d};
+    const r=DIR_MIR[d];i=m.order.indexOf(r);if(i>=0&&m.mirror!==false)return{i,flip:true,d};
+    // direction absente : la plus proche disponible
+    let best=0,bd=9;m.order.forEach((n,j)=>{let x=Math.abs(DIR_ANG[n]-DIR_ANG[d])%360;x=Math.min(x,360-x);if(x<bd){bd=x;best=j}});return{i:best,flip:false,d}},
+  /* image d'animation : à l'arrêt (respiration), en marche (selon la distance), en attaque (selon l'avancée du coup) */
+  frame(m,st,v,t){const L=st==='atk'?m.atk:st==='walk'?m.walk:m.idle;if(!L||!L.length)return 0;
+    if(st==='atk')return L[Math.min(L.length-1,Math.max(0,Math.floor(v*L.length)))];
+    if(st==='walk')return L[((Math.floor(v/m.stride*L.length)%L.length)+L.length)%L.length];
+    return L.length>1?L[Math.floor(t*(m.idleFps||4))%L.length]:L[0]},
+  /* dessine une case, pieds en (x,y) */
+  draw(g,src,m,i,f,flip,x,y){const sc=m.wh/m.h,cs=m.cs,col=m.axis==='row'?f:i,row=m.axis==='row'?i:f,w=cs*sc;
+    const sm=m.smooth!=null?m.smooth:(g.getTransform?g.getTransform().a*sc<1.5:false);g.imageSmoothingEnabled=!!sm;if(sm&&'imageSmoothingQuality'in g)g.imageSmoothingQuality='high';
+    const left=flip?-w/2:x-w/2,top=Math.round(y-m.foot*sc);
+    if(flip){g.save();g.translate(x,0);g.scale(-1,1)}
+    g.drawImage(src,col*cs,row*cs,cs,cs,flip?left:Math.round(left),top,w,w);
+    if(flip)g.restore();g.imageSmoothingEnabled=false}};
 SPR.load();
 /* halo chaud pré-calculé (évite de recréer un dégradé à chaque image) */
 let _glow=null;
@@ -39,27 +73,35 @@ const HERO_HEAD={mage:11,soigneur:9};
 const HERO_WPN={guerrier:['Sword','Axe','Hammer'],mage:['Stick',null,'Book'],voleur:['Sai','Ninjaku','Katana'],soigneur:['Club','MagicWand','Stick']};
 const RAR_HUE=[null,215,280,42,172];
 /* héros en pixel art ; false si les images ne sont pas encore prêtes */
-function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const name=(HERO_SPR[cls]||HERO_SPR.guerrier)[L2.ab]||'Knight';
-  if(!SPR.ok('c_'+name))return false;
-  const hue=RAR_HUE[L2.ar],sheet=SPR.tint('c_'+name,hue,HERO_HEAD[cls]||0);const sc=PIX;
+/* planche du héros : haute définition si assets/hd/<classe>.png existe, sinon le pack */
+function heroSheet(cls,L2){if(SPR.ok('h_'+cls))return{key:'h_'+cls,head:(SPR.meta('h_'+cls).head|0)};
+  const name=(HERO_SPR[cls]||HERO_SPR.guerrier)[L2.ab]||'Knight';return{key:'c_'+name,head:HERO_HEAD[cls]||0}}
+function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const hs=heroSheet(cls,L2);
+  if(!SPR.ok(hs.key))return false;const m=SPR.meta(hs.key);
+  const hue=m.tint===false?null:RAR_HUE[L2.ar],sheet=SPR.tint(hs.key,hue,hs.head);
   g.save();g.imageSmoothingEnabled=false;
-  g.fillStyle='rgba(20,12,30,.35)';g.beginPath();g.ellipse(x,y+13,10,3.5,0,0,6.28);g.fill();
-  if(o.down){g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.cell(g,sheet,0,0,0,8,sc);g.restore();return true}
+  g.fillStyle='rgba(20,12,30,.35)';g.beginPath();g.ellipse(x,y+13,10*m.wh/36,3.5*m.wh/36,0,0,6.28);g.fill();
+  if(o.down){const pk=SPR.pick(m,Math.PI/2);g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.draw(g,sheet,m,pk.i,SPR.frame(m,'idle',0,0),pk.flip,0,8);g.restore();return true}
   const sw=typeof _hsw!=='undefined'&&_hsw;const ba=moving&&!sw&&o.mf!=null?o.mf:aim;   // en marche, le corps regarde où l'on va ; l'arme garde la visée
-  const col=SPR.dir(Math.cos(ba),Math.sin(ba));
-  const row=sw?4:moving?(Math.floor(o.ph!=null?o.ph:t*8)%4+4)%4:0;const fy=y+14-(moving||sw?0:Math.round(Math.sin(t*2.2)*.6));
+  const pk=SPR.pick(m,ba),back=pk.d==='N'||pk.d==='NE'||pk.d==='NW';
+  // attaque : planche de la direction si elle existe, sinon la direction voisine (≤ 45°), sinon la pose de repos
+  let aki=pk.i,akf=pk.flip,hasAtk=!!sw;if(sw&&m.atkDirs&&!m.atkDirs.includes(pk.d)){hasAtk=false;
+    for(const n of m.atkDirs){let x=Math.abs(DIR_ANG[n]-DIR_ANG[pk.d])%360;x=Math.min(x,360-x);if(x<=45){aki=m.order.indexOf(n);akf=false;hasAtk=true;break}}}
+  if(hasAtk){pk.i=aki;pk.flip=akf}
+  const f=sw?(hasAtk?SPR.frame(m,'atk',sw.p,t):SPR.frame(m,'idle',0,t)):moving?SPR.frame(m,'walk',o.dist!=null?o.dist:t*8*STEP_PX,t):SPR.frame(m,'idle',0,t);
+  const fy=y+14-(moving||sw?0:Math.round(Math.sin(t*2.2)*.6));
   const wk=HERO_WPN[cls]||HERO_WPN.guerrier,wname=wk[L2.wb];
-  const weapon=()=>{const wh=RAR_HUE[L2.wr];g.save();
+  const weapon=()=>{if(!m.weapon)return;const wh=RAR_HUE[L2.wr];g.save();
     let a=aim+(sw?sw.off||0:0);const hx=x+Math.cos(a)*9,hy=y-2+Math.sin(a)*6;g.translate(hx,hy);
     if(wname===null){const pu=.6+.4*Math.sin(t*5);g.fillStyle='#141b1b';g.beginPath();g.arc(0,-2,5,0,6.28);g.fill();
       g.fillStyle=wh!=null?'hsl('+wh+',85%,62%)':'#71ddee';g.beginPath();g.arc(0,-2,3.8,0,6.28);g.fill();g.fillStyle='rgba(242,234,241,'+pu+')';g.fillRect(-2,-5,2,2);g.restore();return}
     const wi=SPR.ok('w_'+wname)?(L2.wr>=1?SPR.tint('w_'+wname,wh,0):SPR.im['w_'+wname]):null;if(!wi){g.restore();return}
     g.rotate(a+Math.PI/2);const ws=1.6;g.drawImage(wi,Math.round(-wi.width*ws/2),Math.round(-wi.height*ws+4),wi.width*ws,wi.height*ws);g.restore()};
-  if(col===1)weapon();
-  if(L2.ar>=1){const rc=RAR[L2.ar].col,ol=SPR.outline(sheet,rc,'c_'+name+'|'+hue+'|'+(HERO_HEAD[cls]||0));
-    g.save();g.globalAlpha*=.55+.35*Math.sin(t*3);SPR.cell(g,ol,col,row,x,fy,sc);g.restore()}
-  SPR.cell(g,sheet,col,row,x,fy,sc);
-  if(col!==1)weapon();
+  if(back)weapon();
+  if(L2.ar>=1){const rc=RAR[L2.ar].col,ol=SPR.outline(sheet,rc,hs.key+'|'+hue+'|'+hs.head);
+    g.save();g.globalAlpha*=.55+.35*Math.sin(t*3);SPR.draw(g,ol,m,pk.i,f,pk.flip,x,fy);g.restore()}
+  SPR.draw(g,sheet,m,pk.i,f,pk.flip,x,fy);
+  if(!back)weapon();
   if(L2.ar>=3&&Math.random()<.12&&typeof parts!=='undefined'&&parts.length<500)parts.push({k:'sp',x:x+(Math.random()-.5)*20,y:y-8+(Math.random()-.5)*20,vx:0,vy:-18,life:.6,max:.6,col:RAR[L2.ar].col});
   g.restore();return true}
 /* ennemis : type -> personnage du pack */
