@@ -61,6 +61,7 @@ function fxShow(f,mine){fxExtra(f,mine);
     case 40:{const tx=Math.floor(f.v/10000),ty=f.v%10000;parts.push({k:'bolt',x:f.x,y:f.y,x2:tx,y2:ty,life:.25,max:.25});Snd.play('crit');break}
     case 45:{const FXC=['#c9a27c','#c27bff','#9fd0ff','#ff7a3a','#f0c95a','#86cc70','#e0644c'];ring(f.x,f.y,6,Math.max(8,Math.floor(f.v/10)),.5,FXC[f.v%10]||'#fff',3);break}
     case 46:addText(f.x,f.y,'Étourdi','#9fd0ff',1.1,12);break;
+    case 47:addText(f.x,f.y,'Raté','#d6d6d6',1.1,15);break;
     case 41:addText(f.x+(Math.random()*10-5),f.y,String(f.v),'#ff9b3d',.6,11);break;
   }}
 function processMsgs(list){for(const m of list){if(m[0]<=lastMsg)continue;lastMsg=m[0];toast(String(m[1]).slice(0,140))}}
@@ -225,7 +226,7 @@ function render(dt){
   Z.sort((a,b)=>a[0]-b[0]);for(const z of Z)z[1]();
   for(const p of G.projs){if(!vis(p.x,p.y))continue;drawProj2(p)}
   drawPreview(T);
-  for(const q of parts){const al=clamp(q.life/q.max,0,1);
+  const drawPart=q=>{const al=clamp(q.life/q.max,0,1);
     if(q.k==='sp'){ctx.globalAlpha=al;ctx.fillStyle=q.col;ctx.fillRect(q.x-1.5,q.y-1.5,3,3)}
     else if(q.k==='ember'){ctx.globalAlpha=al;ctx.fillStyle='#ffb347';ctx.fillRect(q.x-1,q.y-1,2,2)}
     else if(q.k==='mote'){ctx.globalAlpha=Math.sin(Math.PI*q.life/q.max)*.35;ctx.fillStyle=isW?'#fffbe8':'#fff3d6';ctx.fillRect(q.x,q.y,1.6,1.6)}
@@ -237,7 +238,9 @@ function render(dt){
     else if(q.k==='bolt'){ctx.globalAlpha=al;ctx.strokeStyle='#cfe8ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(q.x,q.y);const n=5;for(let i=1;i<=n;i++){const t2=i/n;ctx.lineTo(q.x+(q.x2-q.x)*t2+(i<n?(Math.random()-.5)*14:0),q.y+(q.y2-q.y)*t2+(i<n?(Math.random()-.5)*14:0))}ctx.stroke()}
     else if(q.k==='beam'){ctx.globalAlpha=al;const gr=ctx.createLinearGradient(q.x,q.y-120,q.x,q.y);gr.addColorStop(0,'rgba(255,243,192,0)');gr.addColorStop(1,'rgba(255,243,192,.8)');ctx.fillStyle=gr;ctx.fillRect(q.x-5,q.y-120,10,120)}
     else if(q.k==='slash'&&G.players[q.o]){const w=wpos(q.o);drawSlash(w.x,w.y,q.a,1-al,G.players[q.o].cls)}
-    else if(FX2[q.k])FX2[q.k](q,al)}
+    else if(FX2[q.k])FX2[q.k](q,al)};
+  for(const q of parts)if(!q.pv)drawPart(q);
+  pvGray(()=>{for(const q of parts)if(q.pv)drawPart(q)});   // effets de l'aperçu : en gris
   ctx.globalAlpha=1;
   if(L.swing>0)drawSlash(L.x,L.y,L.swingA,1-L.swing/SWD,hero.cls,true);
   // guide de visée au doigt

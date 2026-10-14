@@ -88,7 +88,27 @@ function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0||e.ret)return;   // qu
   dmg/=Sky.mul();if(e.markT>0)dmg*=1.15;dmg=tacAbsorb(e,dmg);e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
-function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);const held=e.frz>0;let d=r.d*mult*(p.criT>0?1.25:1)*(p.rageT>0?1.5:1)*(p.banT>0?1.3:1)*(p.blessT>0?1.25:1)*(held&&st.pa==='fracas'?2:1)*(held&&st.pa==='oppor'?1.3:1);
+/* chance de toucher de l'attaque de base (testée) : au contact HIT_BASE ; à distance, HIT_BASE jusqu'à HIT_NEAR cases puis de moins
+   en moins jusqu'à HIT_FAR à la portée maximale (HIT_MAX px) ; cible étourdie ou gelée : touchée à coup sûr ; cible marquée : +10 %.
+   Les compétences, elles, touchent toujours. */
+const HIT_BASE=.92,HIT_FAR=.6,HIT_NEAR=5,HIT_MAX=300;
+function hitChance(cls,d,held,marked){if(held)return 1;let h=HIT_BASE;
+  if(cls==='mage'||cls==='soigneur'){const n=HIT_NEAR*TS;if(d>n)h-=(HIT_BASE-HIT_FAR)*clamp((d-n)/(HIT_MAX-n),0,1)}
+  if(marked)h+=.1;return clamp(h,.05,1)}
+/* périmètre : des dégâts infligés par un héros dans la zone d'alerte d'un ennemi (même un coup raté) le font entrer au combat,
+   qu'il ait vu le héros ou non : impossible d'abattre un ennemi de loin sans réveiller ceux qui l'entourent. La Mimique dort. */
+function perimAlert(x,y){let n=0;for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='mimic'&&Math.hypot(o.x-x,o.y-y)<aggroR(o)*TS&&los(o.x,o.y,x,y)){o.act=true;o.tbA=false;n++;if(o.elite||o.type==='boss'||Math.random()<.3)sayE(o)}
+  if(n&&G.cb)msg(n>1?n+' ennemis alentour rejoignent le combat.':'Un ennemi alentour rejoint le combat.','perim',3);return n}
+/* sorts et attaques lancés juste avant d'entrer au combat : ils comptent sur les points d'action du premier tour */
+const TB_PRE_T=3;
+function tbNoteSpend(i,cost){if(!G||tbIn(i))return;const a=G.preSp||(G.preSp=[{n:0,t:-9},{n:0,t:-9}]),s=a[i];if(!s)return;if(G.time-s.t>TB_PRE_T)s.n=0;s.n+=cost||1;s.t=G.time}
+function tbPreSpent(i){const s=G.preSp&&G.preSp[i];if(!s)return 0;const n=G.time-s.t>TB_PRE_T?0:Math.min(tbPA(i),s.n);s.n=0;return n}
+function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;
+  perimAlert(e.x,e.y);
+  // attaque de base : elle peut rater (plus souvent de loin)
+  if(o.atk&&!o.forced&&Math.random()>=hitChance(p.cls,Math.hypot(e.x-p.x,e.y-p.y),e.frz>0,e.markT>0)){
+    e.act=true;e.flash=.08;if(!tbIn(pi))G.tbBy={pi,t:G.time};fx(47,e.x,e.y-e.r,0);return false}
+  const r=rollDmg(st,o.forced);const held=e.frz>0;let d=r.d*mult*(p.criT>0?1.25:1)*(p.rageT>0?1.5:1)*(p.banT>0?1.3:1)*(p.blessT>0?1.25:1)*(held&&st.pa==='fracas'?2:1)*(held&&st.pa==='oppor'?1.3:1);
   if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(tbIn(pi))d*=TB_DMG*tacProvMul(pi,e);else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);tacHitBy(pi,e);
   if(!o.noEnch&&e.hp>0){if(st.pa==='froid')e.slowT=1.5;else if(st.pa==='embras'||st.pa==='saignee'){e.burn=3;e.burnD=Math.max(e.burnD||0,st.dmg*(st.pa==='saignee'?.3:.25));e.burnP=pi}else if(st.pa==='chatiment')e.markT=4}
   if(!o.noEnch){if(st.we==='lath'&&Math.random()<.12)healP(p,p.mhp*.04,true);if(st.we==='feu'){e.burn=3;e.burnD=st.dmg*.35;e.burnP=pi}
@@ -114,14 +134,14 @@ function addDrop(k,x,y,v,r,l){const a=Math.random()*6.28,s=60+Math.random()*90;G
 
 /* ================= Attaques et compétences (exécutées par l'hôte) ================= */
 function melee(i,a,range,half,mult,forced){const p=G.players[i];for(const e of G.enemies){if(e.hp<=0)continue;const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy);if(d>range+e.r)continue;
-  let da=Math.atan2(dy,dx)-a;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;if(Math.abs(da)>half&&d>e.r+8)continue;pDmg(i,e,mult,{forced,kx:dx/(d||1)*160,ky:dy/(d||1)*160});tacProvoke(i,e)}}
-function hostAttack(i,a,buffed){const p=G.players[i];if(!p||p.down)return;const c=p.cls;p.stealthT=0;
+  let da=Math.atan2(dy,dx)-a;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;if(Math.abs(da)>half&&d>e.r+8)continue;pDmg(i,e,mult,{forced,atk:1,kx:dx/(d||1)*160,ky:dy/(d||1)*160});tacProvoke(i,e)}}
+function hostAttack(i,a,buffed){const p=G.players[i];if(!p||p.down)return;const c=p.cls;p.stealthT=0;tbNoteSpend(i,1);
   if(c==='guerrier'){melee(i,a,58,1,1,false);fx(4,p.x,p.y,a*100,i)}
   else if(c==='voleur'){melee(i,a,48,.75,1,buffed);fx(4,p.x,p.y,a*100,i)}
-  else if(c==='mage'){G.projs.push({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*420,vy:Math.sin(a)*420,r:7,from:'p',k:1,life:1.1,pi:i,splash:46})}
-  else{G.projs.push({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:7,from:'p',k:2,life:1.1,pi:i,healed:false})}}
+  else if(c==='mage'){G.projs.push({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*420,vy:Math.sin(a)*420,r:7,from:'p',k:1,life:1.1,pi:i,splash:46,atk:1})}
+  else{G.projs.push({x:p.x+Math.cos(a)*14,y:p.y+Math.sin(a)*14,vx:Math.cos(a)*380,vy:Math.sin(a)*380,r:7,from:'p',k:2,life:1.1,pi:i,healed:false,atk:1})}}
 function segDist(px,py,ax,ay,bx,by){const vx=bx-ax,vy=by-ay,l=vx*vx+vy*vy||1;const t=clamp(((px-ax)*vx+(py-ay)*vy)/l,0,1);return Math.hypot(px-ax-vx*t,py-ay-vy*t)}
-function hostSkill(i,id,a,tp){const p=G.players[i];if(!p||p.down)return;const ax=Math.cos(a),ay=Math.sin(a);tp=tp||{x:p.x+ax*170,y:p.y+ay*170};
+function hostSkill(i,id,a,tp){const p=G.players[i];if(!p||p.down)return;tbNoteSpend(i,tbCost(id));const ax=Math.cos(a),ay=Math.sin(a);tp=tp||{x:p.x+ax*170,y:p.y+ay*170};
   const around=(r,f)=>{for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.hypot(e.x-p.x,e.y-p.y);if(d<r+e.r)f(e,d)}};
   switch(id){
     case'charge':{const bx=p.x+ax*190,by=p.y+ay*190;for(const e of G.enemies){if(e.hp<=0)continue;if(segDist(e.x,e.y,p.x-ax*190,p.y-ay*190,bx,by)<e.r+26){pDmg(i,e,1.4,{kx:ax*300,ky:ay*300});e.frz=Math.max(e.frz,e.type==='boss'?.4:1.2)}}fx(28,p.x,p.y,Math.round(a*100),i);break}
@@ -358,7 +378,7 @@ function updProjs(dt){
       if(p.k===2&&!p.healed){for(const q of G.players){if(q!==ow&&!q.down&&Math.hypot(q.x-p.x,q.y-p.y)<16){healP(q,q.mhp*.06,true);p.healed=true}}}
       if(p.boom&&!p.back&&p.life<.5){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy}
       if(p.pierce){if(ow)for(const e of G.enemies){if(e.hp<=0||p.hit.has(e.id))continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){p.hit.add(e.id);pDmg(p.pi,e,p.mult||1,{kx:p.vx*.2,ky:p.vy*.2})}}continue}
-      for(const e of G.enemies){if(e.hp<=0)continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){if(!ow){p.life=0;break}pDmg(p.pi,e,p.mult||1,{kx:p.vx*.25,ky:p.vy*.25});p.life=0;if(p.splash){p.hitIds=new Set([e.id]);explode(p)}break}}}
+      for(const e of G.enemies){if(e.hp<=0)continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){if(!ow){p.life=0;break}const hr=pDmg(p.pi,e,p.mult||1,{atk:p.atk,kx:p.vx*.25,ky:p.vy*.25});p.life=0;if(p.splash&&hr!==false){p.hitIds=new Set([e.id]);explode(p)}break}}}
     else{for(let i=0;i<G.players.length;i++){const q=G.players[i];if(q.down||pInv(i))continue;if(Math.hypot(q.x-p.x,q.y-p.y)<11+p.r){const h0=q.hp;hurt(q,p.dmg*(G.cb?tacDmgMul(p.src,i):1));if(p.src){const it=G.cb&&G.cb.lg.find(x=>x.id===p.src.id);if(it){it.d+=Math.round(Math.max(0,h0-q.hp));if(it.pi<0)it.pi=i}}p.life=0;break}}}}
   G.projs=G.projs.filter(p=>p.life>0)}
 function updDrops(dt){

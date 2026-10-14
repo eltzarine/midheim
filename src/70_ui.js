@@ -124,13 +124,14 @@ function barHud(){const bar=hq('#hbar');if(!bar||!bar.children.length)return;
   {const h=hq('#pvHint'),on=!!(L.pv&&pvOn());setHid(h,!on);if(on){const i=L.pv==='atk'?-1:L.pv==='ult'?3:+L.pv.slice(1),nm=i<0?CLS[hero.cls].atk:(SK[ST.ks[i]]||{}).court||'';setTxt(h,'Aperçu : touche encore « '+nm+' » pour agir · touche ailleurs pour annuler')}}const inTb=tbMe(),t=tbAimAt(),ks=ST.ks;
   for(const b of bar.children){const k=b.dataset.k;if(!k)continue;let sub='',hot=false,far=false,off=false,cd=0,cdn='';
     if(k==='dash'){sub=TB_DASH+' actions';off=!tbCanAct(TB_DASH)}
-    else if(k==='atk'){const r=t?inReach('atk',t):false;sub=inTb?'1 action':'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
+    else if(k==='atk'){const r=t?inReach('atk',t):false,am=CLS[hero.cls].atkMp;sub=inTb?(am?'● · '+am+' mana':'1 action'):'';if(t&&!r){far=true;sub='trop loin'}hot=!!(t&&r);off=inTb&&!tbCanAct()}
     else if(k==='pot'){sub='× '+hero.pot;off=hero.pot<=0||inTb&&!tbCanPot()}
     else{const i=k==='ult'?3:+k.slice(1),id=ks[i],S=SK[id];if(!S)continue;
       if(S.t==='u'){const rd=L.ult>=100;b.classList.toggle('ready',rd);sub=rd?(inTb?'2 actions':'prête'):Math.floor(L.ult)+' %';cd=rd?0:1-L.ult/100;off=inTb&&!tbCanAct(2)}
       else if(L.cd[i]>0){cd=clamp(L.cd[i]/(S.cd*ST.cdm),0,1);cdn=inTb?String(tbTurns(L.cd[i])):String(Math.ceil(L.cd[i]));sub=inTb?'tour'+(tbTurns(L.cd[i])>1?'s':''):'s'}
       else if(L.mp<S.mp){sub='mana';off=true}
-      else{sub=S.mp+' mana';off=inTb&&!tbCanAct(1)}
+      else{sub=inTb?'● · '+S.mp+' mana':S.mp+' mana';   // ● = 1 point d'action, comme dans la ligne du tour
+      off=inTb&&!tbCanAct(1)}
       if(!cdn&&(S.t!=='u'||L.ult>=100)){const r=inReach(id,t);if(r===false){far=true;sub='trop loin'}else if(r===true)hot=true}}
     const pv=L.pv===k;if(pv)sub='Valider';b.classList.toggle('pv',pv);
     b.classList.toggle('hot',hot&&!off);b.classList.toggle('far',far);b.classList.toggle('off',off);setTxt(b.querySelector('small'),sub);setTxt(b.querySelector('.cdn'),cdn);setCss(b,'--cd',cd.toFixed(3))}}

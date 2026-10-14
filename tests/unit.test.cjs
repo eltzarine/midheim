@@ -45,7 +45,7 @@ function loadGame() {
   vm.runInContext(code + `
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
   applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,tbPA,TB_DASH,
-  tacFlees,tacPack,tacUnpack,patPos,patLen,reinTurns,TB_LG,
+  tacFlees,tacPack,tacUnpack,patPos,patLen,reinTurns,TB_LG,hitChance,HIT_BASE,HIT_FAR,tbNoteSpend,tbAdmit,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
@@ -368,6 +368,43 @@ if (!fs.existsSync(BUNDLE)) {
       const bad = T.tbUnpack([1, 4, 0, 0, [], [], 0, 7, 99, 'x', ['a', 2, 3]]);
       assert.deepEqual([bad.mk && bad.mk.pi, bad.gr, bad.rf], [1, 0, null]);
       assert.equal(T.TB_LG.length, 16);
+    } finally { T.setG(old); }
+  });
+
+  /* ---------- Retours de jeu du 14/10 ---------- */
+  test('Combat : chance de toucher de l’attaque de base (contact, distance, cible étourdie ou marquée)', () => {
+    const S = T.TS;
+    assert.equal(T.hitChance('guerrier', 40, false, false), T.HIT_BASE);
+    assert.equal(T.hitChance('voleur', 40, true, false), 1);                         // cible étourdie : touchée à coup sûr
+    assert.equal(T.hitChance('mage', 3 * S, false, false), T.HIT_BASE);              // de près
+    assert.ok(Math.abs(T.hitChance('mage', 300, false, false) - T.HIT_FAR) < 1e-9);  // à la portée maximale
+    const mid = T.hitChance('soigneur', 230, false, false);
+    assert.ok(mid < T.HIT_BASE && mid > T.HIT_FAR, String(mid));
+    assert.ok(Math.abs(T.hitChance('mage', 300, false, true) - (T.HIT_FAR + .1)) < 1e-9);   // cible marquée : +10 %
+  });
+
+  test('Combat : ce qu’on lance juste avant d’entrer au combat compte sur le 1er tour ; un ennemi alerté en cours de manche prend sa place', () => {
+    const old = T.getG(), S = T.TS;
+    const foe = (id, type, x, o = {}) => Object.assign({ id, type, x, y: 0, r: 12, hp: 20, mhp: 20, act: true, ret: false, kx: 0, ky: 0 }, o);
+    const fresh = () => ({ time: 5, tbBy: null, cb: null, coop: true, projs: [], later: [], fires: [], zones: [], traps: [], decoys: [], emap: new Map(),
+      msgs: [], msgId: 0, cool: {}, fx: [], fxId: 0,
+      players: [{ name: 'César', cls: 'guerrier', st: { spd: 150 }, x: 0, y: 0, down: false }, { name: 'Léo', cls: 'mage', st: { spd: 146 }, x: 0, y: S, down: false }],
+      enemies: [foe(5, 'slime', 2 * S), foe(8, 'archer', 3 * S)] });
+    try {
+      // Léo lance un ultime (2 actions) puis entre au combat : il n'a plus de point d'action à son 1er tour
+      let G = fresh(); T.setG(G); T.tbNoteSpend(1, 2); G.time = 6; T.tbStart(1, [true, true]);
+      assert.equal(G.cb.who, 1); assert.equal(G.cb.ap[1], 0);
+      // trop ancien (plus de 3 s) : rien n'est décompté ; un tir isolé compte pour 1 point (embuscade)
+      G = fresh(); T.setG(G); T.tbNoteSpend(0, 2); G.time = 9; T.tbStart(0, [true, false]);
+      assert.equal(G.cb.who, 0); assert.equal(G.cb.ap[0], 2);
+      // une fois au combat, rien n'est plus noté
+      T.tbNoteSpend(0, 1); assert.equal(G.preSp[0].n, 0);
+      // un Rejeton (initiative 13) réveillé en cours de manche joue avant ceux qui n'ont pas encore joué et sont plus lents
+      G = fresh(); T.setG(G); T.tbStart(-1, [true, true]);
+      assert.deepEqual([...G.cb.q], [-1, -2, 8, 5]);
+      G.enemies.push(foe(9, 'bat', 4 * S)); T.tbAdmit();
+      assert.deepEqual([...G.cb.q], [-1, 9, -2, 8, 5]);
+      T.tbAdmit(); assert.equal(G.cb.q.length, 5);   // une seule fois
     } finally { T.setG(old); }
   });
 

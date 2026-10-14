@@ -13,6 +13,9 @@
    en entrant dans la zone ou en frappant. À plus de TB_LEAVE cases de tout ennemi à la fin d'un tour, on quitte le combat ;
    quand plus aucun héros n'y est, les ennemis rentrent chez eux.
    Les durées (recharges, mana, effets, brûlures, zones) avancent de TB_ROUND secondes à la fin de chaque tour.
+   Périmètre : des dégâts infligés par un héros dans la zone d'alerte d'un ennemi l'entraînent au combat (perimAlert) ; un ennemi
+   qui entre en alerte en cours de manche prend sa place dans l'ordre parmi ceux qui n'ont pas encore joué (tbAdmit).
+   Ce qu'un héros lance dans les TB_PRE_T secondes avant d'entrer au combat (attaques et sorts) est décompté de son premier tour.
    L'hôte décide de tout ; l'invité reçoit l'état (manche, ordre, à qui le tour, qui est au combat, points restants)
    et bride ses commandes. */
 const TB_FIGHT=9,TB_LEAVE=12,TB_ROUND=3,TB_EN=1.6,TB_EN_MAX=4,TB_EN_AFTER=.5,TB_MOVE=5,TB_DMG=2.2,TB_ULT=12,TB_COOP_T=60,TB_PA=2,TB_DASH=2;
@@ -64,7 +67,8 @@ function tbStart(first,want){const c=G.cb={ph:'',who:-1,eid:-1,q:[],k:0,r:1,t:0,
   for(const e of G.enemies){e.kx=e.ky=0;e.tbA=false}
   c.q=tbQueue();tacStart(c);
   // embuscade : le héros qui a frappé joue le premier (son coup compte déjà pour 1 point d'action)
-  if(first>=0&&c.in[first]){const t=tbTok(first);c.q=[t].concat(c.q.filter(x=>x!==t));c.pre[first]=1}
+  c.pre=[0,1].map(i=>c.in[i]?tbPreSpent(i):0);
+  if(first>=0&&c.in[first]){const t=tbTok(first);c.q=[t].concat(c.q.filter(x=>x!==t));c.pre[first]=Math.max(1,c.pre[first])}
   Log.ev('combat','début, '+tbFoes().length+' ennemi(s), ordre '+c.q.map(tbTokName).join(' > '));
   msg(first>=0?'Initiative ! '+G.players[first].name+' frappe le premier.':'Combat ! Chacun son tour, du plus rapide au plus lent.');
   tbBegin(0)}
@@ -72,9 +76,12 @@ function tbStart(first,want){const c=G.cb={ph:'',who:-1,eid:-1,q:[],k:0,r:1,t:0,
 function tbQueue(){const c=G.cb,q=[];G.players.forEach((p,i)=>{if(c.in[i])q.push(tbTok(i))});for(const e of tbFoes())q.push(e.id);return q.sort(tbRank)}
 function tbTokName(t){if(t<0){const p=G.players[-t-1];return p?p.name:'?'}const e=G.enemies.find(o=>o.id===t);return e?enemyName(e):'?'}
 /* un héros rejoint un combat en cours : il prend sa place parmi ceux qui n'ont pas encore joué cette manche */
-function tbJoin(i,by){const c=G.cb,p=G.players[i],t=tbTok(i);c.in[i]=true;c.pre[i]=by?1:0;
+function tbJoin(i,by){const c=G.cb,p=G.players[i],t=tbTok(i);c.in[i]=true;c.pre[i]=Math.max(by?1:0,tbPreSpent(i));
   if(c.q[c.k]!==t&&!c.q.slice(c.k+1).includes(t)){let j=c.k+1;while(j<c.q.length&&tbRank(c.q[j],t)<0)j++;c.q.splice(j,0,t)}
   if(c.in.filter(Boolean).length>1)msg(p.name+' entre dans le combat.')}
+/* un ennemi qui entre en alerte en cours de manche (coup dans son périmètre, renforts, os relevés) prend sa place
+   parmi ceux qui n'ont pas encore joué, selon son initiative */
+function tbAdmit(){const c=G.cb;for(const e of tbFoes()){if(c.q.includes(e.id))continue;let j=c.k+1;while(j<c.q.length&&tbRank(c.q[j],e.id)<0)j++;c.q.splice(j,0,e.id)}}
 function tbEnd(win){Log.ev('combat','fin, tour '+G.cb.r,win?'victoire':'fuite');G.cb=null;tacEnd();
   for(const e of G.enemies){e.tbA=false;e.tbSkip=false;
     // fuite : les ennemis abandonnent et rentrent à leur poste
@@ -119,7 +126,7 @@ function tbUpdate(dt){
   const want=G.players.map((p,i)=>!p.down&&!tbIn(i)&&(i===by||tbClose(p,TB_FIGHT)));
   if(!G.cb){if(!want.some(Boolean))return;if(!tbFoes().length){G.tbBy=null;return}G.tbBy=null;tbStart(by,want);if(!G.cb)return}
   else{want.forEach((w,i)=>{if(w)tbJoin(i,i===by)});if(by>=0)G.tbBy=null}
-  const c=G.cb;c.t+=dt;tacTick();
+  const c=G.cb;c.t+=dt;tacTick();tbAdmit();
   if(!tbFoes().length){tbEnd(true);return}
   if(!c.in.some(Boolean)){tbEnd(false);return}
   if(!tbLive(c.q[c.k])){tbNext();return}
@@ -246,8 +253,16 @@ function tgtHud(){const t=tbTarget(),box=hq('#tgtBox'),big=!!(t&&L.tgtBig);setHi
   const st=enemyStates(t);setTxt(hq('#tgtSt'),st.length?st.map(s=>s[0]+' · '+s[2]+' tour'+(s[2]>1?'s':'')).join('   '):big?'Aucun effet':'');
   setTxt(hq('#tgtInt'),big?(tbMe()?'Prochain tour : '+enemyIntent(t):(t.act?'En alerte':'Au repos')):'');
   const out=!inReach('atk',t);setTxt(hq('#tgtRg'),out?'Trop loin':'À portée');hq('#tgtRg').classList.toggle('far',out);
-  setTxt(hq('#tgtMore'),big?CLS[hero.cls].atk+' sur lui : ~'+Math.round(ST.dmg*(tbMe()?TB_DMG:1))+' dégâts'+(out?' (trop loin)':''):'')}
+  setTxt(hq('#tgtMore'),big?CLS[hero.cls].atk+' sur lui : '+rangeTxt(dmgRange(1,t))+' dégâts · '+pct(myHit(t))+' de toucher'+(out?' (trop loin)':''):'')}
 if(typeof addEventListener==='function')addEventListener('pointerup',()=>{if(typeof L!=='undefined'&&L){L.tgtBig=false;L.meBig=false}});
+
+/* ---------- estimation d'un coup du héros local (aperçu, fiche de la cible) ----------
+   fourchette : du coup le plus faible sans critique (×0,9) au plus fort avec critique (×1,1 ×2) ; chance de toucher : hitChance */
+const tgtHas=(e,n)=>!!e&&enemyStates(e).some(s=>s[0]===n);
+function dmgRange(mult,e){let k=mult*(tbMe()?TB_DMG:1)*(L.rageT>0?1.5:1)/Math.max(.1,Sky.mul());if(tgtHas(e,'Marqué'))k*=1.15;
+  const lo=Math.max(1,Math.round(ST.dmg*.9*k));return[lo,Math.max(lo,Math.round(ST.dmg*1.1*k*(ST.crit>0?2:1)))]}
+const rangeTxt=r=>r[0]===r[1]?String(r[0]):r[0]+'–'+r[1],pct=v=>Math.round(v*100)+' %';
+function myHit(e){return e?hitChance(hero.cls,Math.hypot((e.rx??e.x)-L.x,(e.ry??e.y)-L.y),tgtHas(e,'Étourdi'),tgtHas(e,'Marqué')):1}
 
 /* ---------- déplacement libre dans la zone du tour ----------
    Le tour donne un budget de déplacement compté depuis une place d'ancrage (le départ du tour) : on peut aller et revenir
@@ -276,7 +291,14 @@ function tbCommit(){if(!tbMe())return;L.tbRem=Math.max(0,L.tbBud-tbDist(L.x,L.y)
 function tbReanchor(){if(L.tbReA&&L.dashT<=0){L.tbReA=false;tbAnchor(L.tbRem)}}
 /* zone atteignable : cases à portée, avec leur bord */
 function drawMoveZone(T){const P=L.tbPoly;if(!P||P.length<3)return;ctx.save();ctx.beginPath();P.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();
-  ctx.fillStyle='rgba(142,197,232,.12)';ctx.fill();ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.stroke();ctx.restore()}
+  ctx.fillStyle='rgba(142,197,232,.12)';ctx.fill();ctx.strokeStyle='rgba(142,197,232,.9)';ctx.lineWidth=3;ctx.setLineDash([9,7]);ctx.lineDashOffset=-T*12;ctx.stroke();ctx.restore();
+  drawMoveTrace()}
+/* quand on se déplace : trait fin du centre de la place de départ (l'ancre) jusqu'à soi, et le déplacement déjà utilisé */
+function drawMoveTrace(){if(L.tbReA||!L.tbF)return;const used=tbDist(L.x,L.y);if(used<6)return;const ax=L.tbAx,ay=L.tbAy;
+  ctx.save();ctx.strokeStyle='rgba(239,230,207,.9)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(L.x,L.y);ctx.stroke();
+  ctx.fillStyle='rgba(239,230,207,.95)';ctx.beginPath();ctx.arc(ax,ay,3,0,6.28);ctx.fill();
+  const c=v=>(v/TS).toFixed(1).replace('.',',');ctx.textAlign='center';ctx.textBaseline='middle';
+  pill(c(used)+' / '+c(L.tbBud)+' cases',ax,ay+(L.y>ay?-18:22),'#efe6cf','rgba(19,37,44,.88)');ctx.restore()}
 
 /* ---------- aperçu d'une action : 1er appui = aperçu en boucle, 2e appui sur le même bouton = on agit ----------
    au combat pendant son tour, et hors combat quand un ennemi est sélectionné */
@@ -292,15 +314,24 @@ const PV_GAP=1;
 const pvX=e=>e.rx??e.x,pvY=e=>e.ry??e.y;
 function pvFoes(){return G.enemies.filter(e=>e.hp>0)}
 function pvNear(cx,cy,r){return pvFoes().filter(e=>Math.hypot(pvX(e)-cx,pvY(e)-cy)<r+e.r)}
-function pvFx(k,x,y,v){const sp=Snd.play,sh=shake;Snd.play=()=>{};try{fxShow({k,x,y,v:v||0,o:-1},true)}finally{Snd.play=sp;shake=sh}}
-function pvHit(e,mult,st){const x=pvX(e),y=pvY(e);parts.push({k:'imp',x,y:y+8,life:.25,max:.25,rot:Math.random()*6,big:mult>=2?1:0});
-  if(mult)addText(x,y-(e.r||12),'−'+Math.round(ST.dmg*mult*(tbMe()?TB_DMG:1)),'#ffd27a',1,14);if(st)addText(x,y-(e.r||12)-16,st,'#9fd0ff',1,12)}
+/* l'aperçu se dessine en gris : tracés gris, fond transparent (filtre du canevas quand il existe, sinon couleurs grises) */
+let PV_FILT=null;
+function pvFilter(){if(PV_FILT===null){try{const c=document.createElement('canvas').getContext('2d');c.filter='grayscale(1)';PV_FILT=c.filter==='grayscale(1)'}catch(_){PV_FILT=false}}return PV_FILT}
+function pvGray(fn){ctx.save();if(pvFilter())ctx.filter='grayscale(1) brightness(1.3)';try{fn()}finally{ctx.restore()}}
+const PV_LINE='rgba(236,236,236,.95)',PV_FILL='rgba(220,220,220,.14)';
+function pvMark(n0){for(let i=n0;i<parts.length;i++){const q=parts[i];q.pv=1;if(!pvFilter()&&q.col)q.col='#d2d2d2'}}
+function pvFx(k,x,y,v){const sp=Snd.play,sh=shake,n0=parts.length;Snd.play=()=>{};try{fxShow({k,x,y,v:v||0,o:-1},true)}finally{Snd.play=sp;shake=sh;pvMark(n0)}}
+function pvHit(e,mult,st){const x=pvX(e),y=pvY(e),n0=parts.length,S=L.pvS;parts.push({k:'imp',x,y:y+8,life:.25,max:.25,rot:Math.random()*6,big:mult>=2?1:0});
+  if(mult){addText(x,y-(e.r||12),rangeTxt(dmgRange(mult,e)),'#ececec',1,14);
+    // plus fort coefficient sur la cible (sur n'importe qui sans cible), gardé d'une boucle à l'autre pour l'étiquette
+    if(S&&(!S.tg||e===S.tg)){if(!L.pvMm||L.pvMm.k!==L.pvK)L.pvMm={k:L.pvK,v:0};L.pvMm.v=Math.max(L.pvMm.v,mult)}}
+  if(st)addText(x,y-(e.r||12)-16,st,'#dcdcdc',1,12);pvMark(n0)}
 function pvRay(x,y,a,d){let s=0;while(s<d&&!hits(x+Math.cos(a)*(s+6),y+Math.sin(a)*(s+6),10))s+=6;return Math.min(s,d)}
 function pvAlly(){const o=G.players.find((q,j)=>j!==myIdx&&!q.down);return o?{x:o.rx??o.x,y:o.ry??o.y}:{x:L.x,y:L.y}}
 /* prépare une boucle d'aperçu : D = durée jusqu'au dernier impact, ev = effets datés, pos = place du héros fantôme */
 function pvBuild(k,t){const x0=L.x,y0=L.y,a=t?Math.atan2(pvY(t)-y0,pvX(t)-x0):L.aim,ca=Math.cos(a),sa=Math.sin(a),d=t?Math.hypot(pvX(t)-x0,pvY(t)-y0):0;
   const tp=t?{x:pvX(t),y:pvY(t)}:{x:x0+ca*170,y:y0+sa*170};
-  const S={D:.6,ev:[],zones:[],fires:[],traps:[],decoys:[],projs:[],a,pos:()=>({x:x0+ca*18,y:y0+sa*18,al:.5})},at=(tt,fn)=>S.ev.push([tt,fn]);
+  const S={D:.6,ev:[],zones:[],fires:[],traps:[],decoys:[],projs:[],a,k,tg:t||null,tp,pos:()=>({x:x0+ca*18,y:y0+sa*18,al:.5})},at=(tt,fn)=>S.ev.push([tt,fn]);
   const dash=(dist,dur)=>{const s=pvRay(x0,y0,a,dist);S.pos=u=>{const q=eio(u/dur);return{x:x0+ca*s*q,y:y0+sa*s*q,al:.5}};return s};
   const shot=(o)=>{S.projs.push(Object.assign({x:x0+ca*14,y:y0+sa*14,r:7,life:1,hit:new Set()},o))};
   if(k==='atk'){const melee={guerrier:1,voleur:1}[hero.cls];
@@ -366,18 +397,34 @@ function pvProjs(S,dt){for(const p of S.projs){if(p.life<=0)continue;p.x+=p.vx*d
     if(shotBlock(Math.floor(p.x/TS),Math.floor(p.y/TS))){if(p.boom&&!p.back){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy;continue}p.life=0;if(p.splash)pvFx(5,p.x,p.y,p.splash);continue}
     for(const e of pvFoes()){if(p.hit.has(e))continue;if(Math.hypot(pvX(e)-p.x,pvY(e)-p.y)<e.r+p.r){p.hit.add(e);pvHit(e,p.mult||0);if(p.splash){pvFx(5,p.x,p.y,p.splash);for(const o of pvNear(p.x,p.y,p.splash))if(o!==e)pvHit(o,.6)}if(!p.pierce){p.life=0;break}}}}
   S.projs=S.projs.filter(p=>p.life>0)}
+/* empreinte de l'action : trait gris vers la cible, zone touchée en tracé gris sur fond transparent */
+function drawPvFoot(S,T){const t=S.tg,x0=L.x,y0=L.y,ca=Math.cos(S.a),sa=Math.sin(S.a);
+  ctx.save();ctx.strokeStyle=PV_LINE;ctx.fillStyle=PV_FILL;ctx.lineWidth=2.5;ctx.setLineDash([7,6]);ctx.lineDashOffset=-T*14;
+  const circ=(x,y,r)=>{ctx.beginPath();ctx.arc(x,y,r,0,6.28);ctx.fill();ctx.stroke()};
+  if(S.k==='atk'){const ex=t?pvX(t):x0+ca*120,ey=t?pvY(t):y0+sa*120;ctx.beginPath();ctx.moveTo(x0+ca*16,y0+sa*16);ctx.lineTo(ex,ey);ctx.stroke();
+    if(t)circ(ex,ey,(t.r||12)+8);if(t&&hero.cls==='mage')circ(ex,ey,46)}
+  else{const A=SK_AREA[ST.ks[S.k==='ult'?3:+String(S.k).slice(1)]];
+    if(A&&A[0]==='me')circ(x0,y0,A[1]);else if(A&&A[0]==='tg'){ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(S.tp.x,S.tp.y);ctx.stroke();circ(S.tp.x,S.tp.y,A[1])}
+    else if(A&&A[0]==='line'){const w=26,l=A[1],nx=-sa*w,ny=ca*w;ctx.beginPath();ctx.moveTo(x0+nx,y0+ny);ctx.lineTo(x0+ca*l+nx,y0+sa*l+ny);ctx.lineTo(x0+ca*l-nx,y0+sa*l-ny);ctx.lineTo(x0-nx,y0-ny);ctx.closePath();ctx.fill();ctx.stroke()}}
+  ctx.restore()}
 function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=myP();if(!me||me.down)return;
   const t=tbAimAt();let S=L.pvS;
   if(!S||L.pvK!==L.pv||T-L.pvC0>=S.D+PV_GAP){if(L.pv!=='atk'&&!SK[ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)]]){L.pv=null;return}S=L.pvS=pvBuild(L.pv,t);L.pvK=L.pv;L.pvC0=T;L.pvLT=T;S.done=0}
   const u=T-L.pvC0,act=u<S.D,dt=clamp(T-(L.pvLT||T),0,.05);L.pvLT=T;
   while(S.done<S.ev.length&&S.ev[S.done][0]<=u){S.ev[S.done][1]();S.done++}
   pvProjs(S,dt);
-  const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1));
-  ctx.save();ctx.globalAlpha=fade;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true);ctx.restore();
-  ctx.save();ctx.globalAlpha=fade;for(const p of S.projs)drawProj2(p);ctx.restore();
-  const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18,al:.28};
-  ctx.save();ctx.globalAlpha=g.al;drawPlayer(me,g.x,g.y,true,T);ctx.restore();
-  if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.save();ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true);ctx.restore()}
-  let lab;if(L.pv==='atk'){const dm=Math.round(ST.dmg*(tbMe()?TB_DMG:1));lab=CLS[hero.cls].atk+(t?' → '+enemyName(t)+' · ~'+dm+' dégâts':'')}
-  else{const id=ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)],A=SK_AREA[id];lab=SK[id].nom+(t&&A&&A[0]!=='me'?' → '+enemyName(t):'')}
-  ctx.textAlign='center';ctx.textBaseline='middle';pill(lab,L.x,L.y-58,'#ffe9a0','rgba(90,26,20,.92)')}
+  const fade=act?.8:.8*(1-clamp((u-S.D)/PV_GAP,0,1)),gf=pvFilter();
+  drawPvFoot(S,T);
+  const n0=parts.length;
+  pvGray(()=>{
+    if(gf){ctx.globalAlpha=fade*.7;drawGroundFx(S.zones,S.fires,S.traps,S.decoys,T,()=>true)}
+    ctx.globalAlpha=fade;for(const p of S.projs){if(gf)drawProj2(p);else{ctx.strokeStyle=PV_LINE;ctx.fillStyle=PV_FILL;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,p.r+2,0,6.28);ctx.fill();ctx.stroke()}}
+    const g=act?S.pos(u):{x:L.x+Math.cos(S.a)*18,y:L.y+Math.sin(S.a)*18,al:.28};
+    ctx.globalAlpha=g.al*(gf?1:.7);drawPlayer(me,g.x,g.y,true,T);
+    if(S.slash&&act&&u>=S.slash.t0&&u<S.slash.t0+.45){ctx.globalAlpha=.8;drawSlash(g.x,g.y,S.a,(u-S.slash.t0)/.45,hero.cls,true)}});
+  pvMark(n0);   // étincelles laissées par les projectiles de l'aperçu : grises aussi
+  // étiquettes : l'action et sa cible, puis la fourchette de dégâts et la chance de toucher
+  let lab,sub='';if(L.pv==='atk'){lab=CLS[hero.cls].atk+(t?' → '+enemyName(t):'');if(t)sub=rangeTxt(dmgRange(1,t))+' dégâts · '+pct(myHit(t))+' de toucher'}
+  else{const id=ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)],A=SK_AREA[id];lab=SK[id].nom+(t&&A&&A[0]!=='me'?' → '+enemyName(t):'');
+    const m=L.pvMm&&L.pvMm.k===L.pv?L.pvMm.v:0;if(m)sub=rangeTxt(dmgRange(m,t))+' dégâts · touche à coup sûr'}
+  ctx.textAlign='center';ctx.textBaseline='middle';pill(lab,L.x,L.y-(sub?76:58),'#ececec','rgba(38,38,42,.92)');if(sub)pill(sub,L.x,L.y-58,'#ececec','rgba(38,38,42,.92)')}
