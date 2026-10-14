@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kSJO458K3MaIOAb8rmeSfLmriLRrSbb5W6ENv6WdNkA=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Mf/w07EiIBuSPPP7W0PxSM89+HoGXbqfrMEGytJgC/g=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -874,7 +874,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='394ffa62';
+const BUILD='87f4b847';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -2681,11 +2681,11 @@ function hurt(p,dmg,src,fromGuard){const i=G.players.indexOf(p);if(p.down||i<0||
   if(p.hp<=0){p.hp=0;p.down=true;p.rev=0;p.shield=0;msg(pickL(MJ.down).replace('{n}',p.name)+(G.players.length>1?' Va le relever.':''))}}
 function healP(p,v,show){if(p.down)return;const before=p.hp;p.hp=Math.min(p.mhp,p.hp+v);if(p.hp>p.mhp*.5)p.lowSaid=false;if(show&&p.hp-before>=1)fx(3,p.x,p.y-16,Math.round(p.hp-before))}
 function hitEnemy(e,dmg,crit,kx,ky){if(e.hp<=0||e.mistT>0||e.ret)return;   // qui rentre à son poste esquive
-  dmg/=Sky.mul();if(e.markT>0)dmg*=1.15;e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
+  dmg/=Sky.mul();if(e.markT>0)dmg*=1.15;dmg=tacAbsorb(e,dmg);e.hp-=dmg;e.flash=.12;e.act=true;fx(crit?2:1,e.x,e.y-e.r,Math.round(dmg));if(e.type!=='boss'){e.kx+=kx||0;e.ky+=ky||0}if(e.hp<=0)killEnemy(e)}
 function rollDmg(st,forced){let m=1,crit=false;if(forced){m=3;crit=true}else if(Math.random()<st.crit){m=2;crit=true}return{d:st.dmg*m*(.9+Math.random()*.2),crit}}
 /* toute attaque d'un joueur passe ici : critiques, enchantements, vol de vie */
 function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;const st=p.st;const r=rollDmg(st,o.forced);const held=e.frz>0;let d=r.d*mult*(p.criT>0?1.25:1)*(p.rageT>0?1.5:1)*(p.banT>0?1.3:1)*(p.blessT>0?1.25:1)*(held&&st.pa==='fracas'?2:1)*(held&&st.pa==='oppor'?1.3:1);
-  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(tbIn(pi))d*=TB_DMG;else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);
+  if(st.we==='kel'&&e.hp<e.mhp*.3)d*=1.3;if(tbIn(pi))d*=TB_DMG*tacProvMul(pi,e);else G.tbBy={pi,t:G.time};hitEnemy(e,d,r.crit,o.kx,o.ky);tacHitBy(pi,e);
   if(!o.noEnch&&e.hp>0){if(st.pa==='froid')e.slowT=1.5;else if(st.pa==='embras'||st.pa==='saignee'){e.burn=3;e.burnD=Math.max(e.burnD||0,st.dmg*(st.pa==='saignee'?.3:.25));e.burnP=pi}else if(st.pa==='chatiment')e.markT=4}
   if(!o.noEnch){if(st.we==='lath'&&Math.random()<.12)healP(p,p.mhp*.04,true);if(st.we==='feu'){e.burn=3;e.burnD=st.dmg*.35;e.burnP=pi}
     if(st.we==='talos'&&Math.random()<.15){let n=0;for(const o2 of G.enemies){if(o2===e||o2.hp<=0||n>=2)continue;if(Math.hypot(o2.x-e.x,o2.y-e.y)<140){n++;fx(40,e.x,e.y,Math.round(o2.x)*10000+Math.round(o2.y));hitEnemy(o2,d*.5,false)}}}}
@@ -2693,7 +2693,7 @@ function pDmg(pi,e,mult,o){o=o||{};const p=G.players[pi];if(!p||e.hp<=0)return;c
   if(r.crit&&Math.random()<.15)sayP(pi,'crit');return r}
 function reinMist(e){const tp=G.players.filter(p=>!p.down)[0]||G.players[0];for(let k=0;k<30;k++){const a=Math.random()*6.28,d=(3+Math.random()*3)*TS,x=tp.x+Math.cos(a)*d,y=tp.y+Math.sin(a)*d;if(!hits(x,y,e.r*.75)&&los(tp.x,tp.y,x,y)){fx(12,e.x,e.y,30);e.x=e.rx=x;e.y=e.ry=y;break}}e.mistT=1.1;e.chg=0;e.tele=0}
 function lootItem(x,y,lv,minR){const R=Math.random;let r=R()<.05?2:R()<.3?1:0;if(lv>=6&&R()<.012)r=3;r=Math.max(r,minR||0);addDrop(6,x,y,1+Math.floor(R()*99999),r,lv)}
-function killEnemy(e){
+function killEnemy(e){tacOnKill(e);
   if(e.type==='boss'&&e.bv===5){if(!e.misted){e.misted=true;e.hp=e.mhp*.35;reinMist(e);sayE(e,'mist');msg('Reinald se change en brouillard… et se reforme !');return}
     e.hp=0;G.xpTot+=e.xp;fx(12,e.x,e.y,30);fx(23,e.x,e.y,0);for(let k=0;k<6;k++)addDrop(1,e.x,e.y,6+e.lv*3);addDrop(2,e.x,e.y);lootItem(e.x,e.y,e.lv,2);addDrop(7,e.x,e.y,4);
     msg(BOSSES[5].win);for(const o of G.enemies)if(o.minion&&o.hp>0)killEnemy(o);G.night=0;G.reinOn=false;G.fl.add('rein');if(mode!=='guest'&&!hero.fl.includes('rein'))hero.fl.push('rein');return}
@@ -2710,7 +2710,7 @@ function addDrop(k,x,y,v,r,l){const a=Math.random()*6.28,s=60+Math.random()*90;G
 
 /* ================= Attaques et compétences (exécutées par l'hôte) ================= */
 function melee(i,a,range,half,mult,forced){const p=G.players[i];for(const e of G.enemies){if(e.hp<=0)continue;const dx=e.x-p.x,dy=e.y-p.y,d=Math.hypot(dx,dy);if(d>range+e.r)continue;
-  let da=Math.atan2(dy,dx)-a;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;if(Math.abs(da)>half&&d>e.r+8)continue;pDmg(i,e,mult,{forced,kx:dx/(d||1)*160,ky:dy/(d||1)*160})}}
+  let da=Math.atan2(dy,dx)-a;while(da>Math.PI)da-=6.283;while(da<-Math.PI)da+=6.283;if(Math.abs(da)>half&&d>e.r+8)continue;pDmg(i,e,mult,{forced,kx:dx/(d||1)*160,ky:dy/(d||1)*160});tacProvoke(i,e)}}
 function hostAttack(i,a,buffed){const p=G.players[i];if(!p||p.down)return;const c=p.cls;p.stealthT=0;
   if(c==='guerrier'){melee(i,a,58,1,1,false);fx(4,p.x,p.y,a*100,i)}
   else if(c==='voleur'){melee(i,a,48,.75,1,buffed);fx(4,p.x,p.y,a*100,i)}
@@ -2774,7 +2774,8 @@ function explode(pr){for(const e of G.enemies){if(e.hp<=0)continue;const d=Math.
 function applyGuestInput(){const gp=G.players[1];if(!gp||!G.guestPres)return;const pr=G.guestPres,inp=pr.i;
   if(pr.st)applyGuestStats(gp,pr.st);gp.lvl=clamp(pr.l|0,1,99);
   if(!inp||!Array.isArray(inp.p))return;if(inp.z!==G.ep)return; // positions d'une autre zone : ignorées
-  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!(tbIn(1)&&!(G.cb.ph==='h'&&G.cb.who===1))){gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
+  const nx=+inp.p[0],ny=+inp.p[1];if(isFinite(nx)&&isFinite(ny)&&!gp.down&&G.m&&!(tbIn(1)&&!(G.cb.ph==='h'&&G.cb.who===1))&&!tacGripped(1)){   // agrippé : sa position ne bouge plus
+gp.x=clamp(nx,0,G.m.W*TS);gp.y=clamp(ny,0,G.m.H*TS)}
   gp.mv=Array.isArray(inp.m)?[clamp(+inp.m[0]||0,-1,1),clamp(+inp.m[1]||0,-1,1)]:[0,0];gp.aim=Number.isFinite(+inp.a)?clamp(+inp.a,-7,7):0;gp.iv=inp.iv?1:0;
   const sk=Array.isArray(inp.sk)?inp.sk.map(v=>v|0):[0,0,0,0];
   if(gp.ac==null){gp.ac=inp.ac|0;gp.sk=sk.slice();gp.pc=inp.pc|0;gp.lu=inp.lu|0;gp.it=inp.it|0;gp.dc=inp.dc|0}
@@ -2818,7 +2819,7 @@ function hostUpdate(dt){
     if(G.stairsOpen){if(alive.length&&alive.every(p=>Math.hypot(p.x-sx,p.y-sy)<36)){G.stairsT+=dt;if(G.stairsT>.7)dunNext()}else{G.stairsT=0;if(alive.some(p=>Math.hypot(p.x-sx,p.y-sy)<36)&&G.players.length>1)msg('Attendez-vous : les deux héros doivent être sur la sortie.','stw',5)}}
     else if(alive.some(p=>Math.hypot(p.x-sx,p.y-sy)<40))msg(goalHint(),'sts',5)}
   if(G.m.kind==='house'){const dy=(G.m.H-1)*TS;if(alive.some(p=>p.y>dy-4))hostRequest('exit',0)}
-  if(G.m.kind==='world'){G.campT-=dt;if(G.campT<=0){G.campT=.5;updCamps();checkQuest()}}
+  if(G.m.kind==='world'){tacPatrols();G.campT-=dt;if(G.campT<=0){G.campT=.5;updCamps();checkQuest()}}
   if(G.players.length&&G.players.every(p=>p.down)){G.defT+=dt;if(G.defT>2.5){G.dc++;defeat()}}else G.defT=0;
   applyGains({xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,ep:G.ep,q:G.q});
   processFx(G.fx);processMsgs(G.msgs)}
@@ -2864,20 +2865,25 @@ function checkQuest(){const q=G.q,pl=G.players.filter(p=>!p.down);if(!pl.length)
   if(q===4&&near(placePx('antre'),9))storyEvent('ch3')}
 /* camps : les ennemis apparaissent quand on s'approche, disparaissent quand on s'éloigne */
 function updCamps(){const pl=G.players.filter(p=>!p.down);if(!pl.length)return;
-  WORLD.camps.forEach((c,i)=>{const s=G.camps[i];const cx=(c.x+.5)*TS,cy=(c.y+.5)*TS;let dm=1e9;for(const p of G.players){const d=Math.hypot(p.x-cx,p.y-cy);if(d<dm)dm=d}
-    if(s.state==='idle'&&dm<CAMP_WAKE*TS&&dm>7*TS){const lv=Math.max(c.lv,partyLv()-2);for(const t of c.mobs){const q=freeNear(cx,cy,0,2.5*TS);const e=spawnEnemy(t,q.x,q.y,false,false,undefined,lv);e.camp=i}
-      if(c.elite){const q=freeNear(cx,cy,0,2*TS);const e=spawnEnemy(c.lv>=6?'orc':c.mobs[0],q.x,q.y,true,false,undefined,lv);e.camp=i}s.state='live'}
+  // patrouille (s.pt) : on mesure la distance à la tête de la ronde, pas au camp
+  WORLD.camps.forEach((c,i)=>{const s=G.camps[i];const pt=s.state==='idle'?tacPatKind(c,i):(s.pt||0),lp=pt?tacLead(c):null;const cx=lp?lp.x:(c.x+.5)*TS,cy=lp?lp.y:(c.y+.5)*TS;let dm=1e9;for(const p of G.players){const d=Math.hypot(p.x-cx,p.y-cy);if(d<dm)dm=d}
+    if(s.state==='idle'&&dm<CAMP_WAKE*TS&&dm>7*TS){const lv=Math.max(c.lv,partyLv()-2);s.pt=pt;const mobs=pt===2?['bat','bat'].concat(c.lv>=4?['bat']:[]):c.mobs;
+      for(const t of mobs){const q=freeNear(cx,cy,0,2.5*TS);const e=spawnEnemy(t,q.x,q.y,false,false,undefined,lv);e.camp=i;if(pt)e.pat=i}
+      if(c.elite&&pt!==2){const q=freeNear(cx,cy,0,2*TS);const e=spawnEnemy(c.lv>=6?'orc':c.mobs[0],q.x,q.y,true,false,undefined,lv);e.camp=i;if(pt)e.pat=i}
+      if(pt)tacFormation(i);s.state='live'}
     else if(s.state==='live'){const al=G.enemies.some(e=>e.camp===i&&e.hp>0);if(!al){s.state='cleared';s.t=150;fx(42,cx,cy,i)}else if(dm>36*TS){G.enemies=G.enemies.filter(e=>e.camp!==i);s.state='idle'}}
     else if(s.state==='cleared'){s.t-=.5;if(s.t<=0&&dm>30*TS)s.state='idle'}})}
 
+/* rayon de repérage : boss 7 cases, Mimique endormie au contact, sinon la zone d'alerte */
+const aggroR=e=>e.type==='boss'?7:e.type==='mimic'?TAC_MIMIC:AGGRO;
 /* réaction en chaîne : chaque ennemi alerté réveille ceux dont la zone touche la sienne */
-function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='boss'&&Math.hypot(o.x-s.x,o.y-s.y)<2*AGGRO*TS&&los(s.x,s.y,o.x,o.y)){o.act=true;q.push(o)}}}
+function alertChain(e0){const q=[e0];while(q.length){const s=q.pop();for(const o of G.enemies)if(!o.act&&!o.ret&&o.hp>0&&o.type!=='boss'&&o.type!=='mimic'&&Math.hypot(o.x-s.x,o.y-s.y)<2*AGGRO*TS&&los(s.x,s.y,o.x,o.y)){o.act=true;q.push(o)}}}
 /* Ennemis. Hors combat, ils repèrent les héros et les poursuivent, sans attaquer.
    Au tour par tour (G.cb) : figés hors de leur tour (seul le recul des coups les déplace) ;
    pendant SON tour (G.cb.eid), l'ennemi bouge et attaque une fois (e.tbA) ; étourdi, il passe son tour (e.tbSkip). */
 /* ennemi figé (au combat, hors de son tour) : seul le recul des coups le déplace ; un ennemi au repos peut encore repérer un héros */
 function tbFrozen(e,all,dt){if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
-  if(!e.act&&!e.ret&&e.blind<=0)for(const p of all){if(Math.hypot(p.x-e.x,p.y-e.y)<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,p.x,p.y)){e.act=true;e.tbA=false;sayE(e);alertChain(e);break}}}
+  if(!e.act&&!e.ret&&e.blind<=0)for(const p of all){if(Math.hypot(p.x-e.x,p.y-e.y)<aggroR(e)*TS&&los(e.x,e.y,p.x,p.y)){e.act=true;e.tbA=false;sayE(e);alertChain(e);break}}}
 function updEnemies(dt){
   const ph=G.cb?G.cb.ph:'',cur=ph==='e'?G.cb.eid:-1;
   const all=G.players.filter(p=>!p.down&&!(p.stealthT>0)),alive=ph?all.filter(p=>tbIn(G.players.indexOf(p))):all;   // au combat, les ennemis ne visent que les héros au combat
@@ -2891,15 +2897,18 @@ function updEnemies(dt){
       else moveBody(e,hx/hd*e.spd*1.15*dt,hy/hd*e.spd*1.15*dt,e.r*.75);continue}
     let tp=null,td=1e9;if(e.taunt>0&&G.players[e.tauntP]&&!G.players[e.tauntP].down){tp=G.players[e.tauntP];td=Math.hypot(tp.x-e.x,tp.y-e.y)}
     else{for(const p of alive){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}
+      if(ph){const t2=tacTarget(e,alive);if(t2){tp=t2;td=Math.hypot(tp.x-e.x,tp.y-e.y)}}
       for(const d of G.decoys){const dd=Math.hypot(d.x-e.x,d.y-e.y);if(dd<7*TS&&dd<td+3*TS){td=dd;tp=d}}}
     if(!e.act&&ph){tp=null;td=1e9;for(const p of all){const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<td){td=d;tp=p}}}   // repérage : tous les héros
     if(!tp||e.blind>0)continue;
-    if(!e.act){if(td<(e.type==='boss'?7:AGGRO)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;e.tbA=false;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
+    if(!e.act){if(td<aggroR(e)*TS&&los(e.x,e.y,tp.x,tp.y)){e.act=true;e.tbA=false;if(e.type==='boss'||e.elite||Math.random()<.3)sayE(e);alertChain(e)}else continue}
     if(td>22*TS&&e.type!=='boss'){e.act=false;continue}
     if(!ph&&e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null&&(Math.hypot(e.x-e.hx,e.y-e.hy)>LEASH*TS||td>LEASH_P*TS)){e.act=false;e.ret=true;e.retT=0}
     if(Math.abs(e.kx)+Math.abs(e.ky)>2){moveBody(e,e.kx*dt,e.ky*dt,e.r*.75);const k=Math.pow(.002,dt);e.kx*=k;e.ky*=k}
     if(e.frz>0){if(!ph)e.frz-=dt;continue}
     if(turn&&e.tbSkip)continue;
+    if(turn&&(e.flee||e.backT>0)){tacFleeMove(e,dt);continue}   // fuite (moral) ou recul du Rejeton après sa morsure
+    if(turn&&e.guard&&e.tbA){tacGuardMove(e,dt);continue}   // la Marionnette qui protège rejoint son protégé, sans frapper
     const can=turn&&!e.tbA;   // une attaque par ennemi et par tour, jamais hors combat
     let vx=0,vy=0,sp=e.spd;const dx=tp.x-e.x,dy=tp.y-e.y;const see=td<10*TS&&los(e.x,e.y,tp.x,tp.y);
     for(const z of G.zones)if((z.smoke||z.slow)&&Math.hypot(z.x-e.x,z.y-e.y)<z.r)sp*=z.slow?.35:.4;if(e.slowT>0)sp*=.6;
@@ -2923,7 +2932,7 @@ function updEnemies(dt){
         break}}
     if(stay&&e.chg<=0){vx=vy=0}
     const len=Math.hypot(vx,vy);if(len>0){const bl=moveBody(e,vx/len*sp*dt,vy/len*sp*dt,e.r*.75);if(bl&&e.chg>0)e.chg=0}
-    if(can)for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){const h0=p.hp,k=e.chg>0?2:1;hurt(p,e.dmg*(e.chg>0?1.6:1),e);tbLog(e,k,G.players.indexOf(p),Math.max(0,h0-p.hp));e.hitCd=.8;e.tbA=true;e.chg=0;break}}}
+    if(can)for(const p of alive){if(Math.hypot(p.x-e.x,p.y-e.y)<e.r+11&&e.hitCd<=0){const h0=p.hp,k=e.chg>0?2:1,pi=G.players.indexOf(p);hurt(p,e.dmg*(e.chg>0?1.6:1)*tacDmgMul(e,pi),e);tbLog(e,k,pi,Math.max(0,h0-p.hp));tacBite(e,pi,Math.max(0,h0-p.hp));e.hitCd=.8;e.tbA=true;e.chg=0;break}}}
   const A=G.enemies.filter(e=>e.hp>0&&e.act);
   for(let i=0;i<A.length;i++)for(let j=i+1;j<A.length;j++){const a=A[i],b=A[j],dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy),m=a.r+b.r;if(d>0&&d<m){const p=(m-d)/2/d;if(a.type!=='boss'&&(!ph||a.id===cur))moveBody(a,-dx*p,-dy*p,a.r*.75);if(b.type!=='boss'&&(!ph||b.id===cur))moveBody(b,dx*p,dy*p,b.r*.75)}}   // au combat, seul l'ennemi qui joue se décale
   G.enemies=G.enemies.filter(e=>e.hp>0)}
@@ -2946,7 +2955,7 @@ function updProjs(dt){
       if(p.boom&&!p.back&&p.life<.5){p.back=true;p.hit=new Set();p.vx=-p.vx;p.vy=-p.vy}
       if(p.pierce){if(ow)for(const e of G.enemies){if(e.hp<=0||p.hit.has(e.id))continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){p.hit.add(e.id);pDmg(p.pi,e,p.mult||1,{kx:p.vx*.2,ky:p.vy*.2})}}continue}
       for(const e of G.enemies){if(e.hp<=0)continue;if(Math.hypot(e.x-p.x,e.y-p.y)<e.r+p.r){if(!ow){p.life=0;break}pDmg(p.pi,e,p.mult||1,{kx:p.vx*.25,ky:p.vy*.25});p.life=0;if(p.splash){p.hitIds=new Set([e.id]);explode(p)}break}}}
-    else{for(let i=0;i<G.players.length;i++){const q=G.players[i];if(q.down||pInv(i))continue;if(Math.hypot(q.x-p.x,q.y-p.y)<11+p.r){const h0=q.hp;hurt(q,p.dmg);if(p.src){const it=G.cb&&G.cb.lg.find(x=>x.id===p.src.id);if(it){it.d+=Math.round(Math.max(0,h0-q.hp));if(it.pi<0)it.pi=i}}p.life=0;break}}}}
+    else{for(let i=0;i<G.players.length;i++){const q=G.players[i];if(q.down||pInv(i))continue;if(Math.hypot(q.x-p.x,q.y-p.y)<11+p.r){const h0=q.hp;hurt(q,p.dmg*(G.cb?tacDmgMul(p.src,i):1));if(p.src){const it=G.cb&&G.cb.lg.find(x=>x.id===p.src.id);if(it){it.d+=Math.round(Math.max(0,h0-q.hp));if(it.pi<0)it.pi=i}}p.life=0;break}}}}
   G.projs=G.projs.filter(p=>p.life>0)}
 function updDrops(dt){
   for(const d of G.drops){d.t+=dt;if(d.vx||d.vy){moveBody(d,d.vx*dt,d.vy*dt,4);const k=Math.pow(.01,dt);d.vx*=k;d.vy*=k;if(Math.abs(d.vx)+Math.abs(d.vy)<4)d.vx=d.vy=0}
@@ -3025,6 +3034,7 @@ function aimPoint(){const t=!touch.aimOn&&tbAimAt();if(t)return{x:t.rx??t.x,y:t.
 function trySkill(slot){const id=ST.ks[slot],S=SK[id];const me=myP();if(!me||me.down)return;
   if(!S){toast(slot===3?'Ultime : à apprendre auprès du maître des talents (cran doré).':'Compétence à apprendre auprès du maître des talents, dans une ville.','lk'+slot);return}
   const cost=tbCost(id);if(!tbCanAct(cost)){toast(tbWhy(cost),'tb');return}
+  if(tacGripped(myIdx)&&TAC_MOVE_SK.includes(id)){toast('Agrippé : impossible de te déplacer avec cette compétence. Frappe la Mimique pour te libérer.','tbgr');return}
   if(S.t==='u'){if(L.ult<100){toast('L’ultime se charge en combattant.','ult');return}}
   else{if(L.cd[slot]>0)return;if(L.mp<S.mp){toast('Pas assez de mana.','mana');return}}
   if(tbPreview(slot===3?'ult':'s'+slot))return;   // au combat : 1er appui = aperçu, 2e appui = on lance
@@ -3149,7 +3159,7 @@ const tbHero=()=>tbMe()&&G.cb.ph==='h'&&G.cb.who===myIdx,tbFoe=()=>tbMe()&&G.cb.
 const TB_INI={slime:7,bat:13,archer:10,orc:9,mimic:11,boss:10};
 function heroSpd(i){const p=G.players[i];if(!p)return 150;if(i===myIdx&&mode!=='guest'&&typeof ST!=='undefined'&&ST&&ST.spd)return ST.spd;return p.st&&p.st.spd||CLS[p.cls].spd}
 function tbIni(tok){if(tok<0)return Math.round(heroSpd(-tok-1)/12.5);const e=G.enemies.find(o=>o.id===tok);if(!e)return 0;
-  return(TB_INI[e.type]||8)+(e.elite?1:0)-(e.slowT>0?3:0)}
+  return(TB_INI[e.type]||8)+(e.elite?1:0)+(tacAura(e)?1:0)-(e.slowT>0?3:0)}   // un Chef proche donne +1
 /* rang dans la manche : initiative décroissante, héros d'abord à égalité, puis par numéro */
 function tbRank(a,b){return tbIni(b)-tbIni(a)||(b<0)-(a<0)||(a<0?b-a:a-b)}
 /* jeton d'un acteur : un héros i vaut −(i+1), un ennemi vaut son numéro */
@@ -3161,7 +3171,7 @@ function enemyName(e){if(e.type==='boss'){const c=(BOSSES[e.bv??0]||BOSSES[0]).c
   if(e.elite)return'Chef';return({slime:'Marionnette',bat:'Rejeton',archer:'Adepte',orc:G.m&&G.m.soldat?'Veilleur':'Orc',mimic:'Mimique'})[e.type]||'Ennemi'}
 const tbTurns=s=>Math.max(1,Math.ceil(s/TB_ROUND-.01));
 /* états d'un ennemi : [libellé, couleur, tours] ; chez l'invité, ils arrivent tout faits (e.st) */
-function enemyStates(e){if(e.st)return e.st;const r=[];
+function enemyStates(e){if(e.st)return e.st;const r=tacStates(e);
   if(e.frz>0)r.push(['Étourdi','#9fd0ff',tbTurns(e.frz)]);if(e.burn>0)r.push(['Brûle','#ffb36a',tbTurns(e.burn)]);
   if(e.slowT>0)r.push(['Ralenti','#c9a2ff',tbTurns(e.slowT)]);if(e.markT>0)r.push(['Marqué','#ffe08a',tbTurns(e.markT)]);
   if(e.taunt>0)r.push(['Provoqué','#ff9a8a',tbTurns(e.taunt)]);if(e.blind>0)r.push(['Aveuglé','#c9c2e0',tbTurns(e.blind)]);return r}
@@ -3170,10 +3180,11 @@ function enemyStateUnpack(v){v=v|0;const r=[],L2=[['Étourdi','#9fd0ff'],['Brûl
   L2.forEach((s,k)=>{const n=v>>(k*4)&15;if(n)r.push([s[0],s[1],n])});return r}
 /* ce que l'ennemi fera à son prochain tour */
 function enemyIntent(e){const st=enemyStates(e);if(st.some(s=>s[0]==='Étourdi'))return'passe son tour (étourdi)';if(st.some(s=>s[0]==='Aveuglé'))return'ne voit plus personne';
-  if(e.type==='archer')return'va tirer';if(e.type==='boss')return'attaque spéciale possible';if(e.type==='orc')return'va charger ou frapper';return'va s’approcher et frapper'}
+  if(e.type==='boss')return'attaque spéciale possible';return tacIntent(e)}
 /* ---------- journal du tour des ennemis ---------- */
-const TB_LG=['','frappe','charge','tire sur','est étourdi et passe son tour','lance une salve','appelle des renforts','disparaît dans la brume'];
-function tbLog(e,k,pi,d){const c=G.cb;if(!c||c.ph!=='e'||!e)return;let it=c.lg.find(x=>x.id===e.id&&x.k===k);if(!it){if(c.lg.length>=24)return;it={id:e.id,k,pi:pi==null?-1:pi,d:0,n:enemyName(e)};c.lg.push(it)}if(d)it.d+=Math.round(d)}
+const TB_LG=['','frappe','charge','tire sur','est étourdi et passe son tour','lance une salve','appelle des renforts','disparaît dans la brume',
+  'protège','relève les os de','protège d’un bouclier','pousse un cri de guerre','marque','ordonne de rejouer à','agrippe','s’enfuit'];
+function tbLog(e,k,pi,d,o){const c=G.cb;if(!c||c.ph!=='e'||!e)return;let it=c.lg.find(x=>x.id===e.id&&x.k===k);if(!it){if(c.lg.length>=24)return;it={id:e.id,k,pi:pi==null?-1:pi,d:0,n:enemyName(e),o:o==null?-1:o};c.lg.push(it)}if(d)it.d+=Math.round(d)}
 /* ---------- côté hôte ---------- */
 function tbFoes(){return G.enemies.filter(e=>e.hp>0&&e.act&&!e.ret)}
 function tbClose(p,r){const R=r*TS;for(const e of G.enemies)if(e.hp>0&&e.act&&!e.ret&&Math.hypot(p.x-e.x,p.y-e.y)<R)return true;return false}
@@ -3181,7 +3192,7 @@ function tbClose(p,r){const R=r*TS;for(const e of G.enemies)if(e.hp>0&&e.act&&!e
 function tbStart(first,want){const c=G.cb={ph:'',who:-1,eid:-1,q:[],k:0,r:1,t:0,in:[!!want[0],!!want[1]],
     rd:[false,false],ap:[tbPA(0),tbPA(1)],po:[false,false],pre:[0,0],lg:[]};
   for(const e of G.enemies){e.kx=e.ky=0;e.tbA=false}
-  c.q=tbQueue();
+  c.q=tbQueue();tacStart(c);
   // embuscade : le héros qui a frappé joue le premier (son coup compte déjà pour 1 point d'action)
   if(first>=0&&c.in[first]){const t=tbTok(first);c.q=[t].concat(c.q.filter(x=>x!==t));c.pre[first]=1}
   Log.ev('combat','début, '+tbFoes().length+' ennemi(s), ordre '+c.q.map(tbTokName).join(' > '));
@@ -3194,7 +3205,7 @@ function tbTokName(t){if(t<0){const p=G.players[-t-1];return p?p.name:'?'}const 
 function tbJoin(i,by){const c=G.cb,p=G.players[i],t=tbTok(i);c.in[i]=true;c.pre[i]=by?1:0;
   if(c.q[c.k]!==t&&!c.q.slice(c.k+1).includes(t)){let j=c.k+1;while(j<c.q.length&&tbRank(c.q[j],t)<0)j++;c.q.splice(j,0,t)}
   if(c.in.filter(Boolean).length>1)msg(p.name+' entre dans le combat.')}
-function tbEnd(win){Log.ev('combat','fin, tour '+G.cb.r,win?'victoire':'fuite');G.cb=null;
+function tbEnd(win){Log.ev('combat','fin, tour '+G.cb.r,win?'victoire':'fuite');G.cb=null;tacEnd();
   for(const e of G.enemies){e.tbA=false;e.tbSkip=false;
     // fuite : les ennemis abandonnent et rentrent à leur poste
     if(!win&&e.hp>0&&e.act&&e.type!=='boss'&&!e.minion&&!e.wv&&e.hx!=null){e.act=false;e.ret=true;e.retT=0}}
@@ -3209,18 +3220,19 @@ function tbBegin(k){const c=G.cb;
     if(!c.in.some(Boolean)){tbEnd(false);return}
     c.q=tbQueue();c.lg=[];k=0}
   c.k=k;c.t=0;c.tA=-1;const t=c.q[k];
-  if(t<0){const i=-t-1;c.ph='h';c.who=i;c.eid=-1;c.rd[i]=false;c.ap[i]=tbPA(i)-(c.pre[i]||0);c.pre[i]=0;c.po[i]=false;
+  if(t<0){const i=-t-1;c.ph='h';c.who=i;c.eid=-1;c.rd[i]=false;c.ap[i]=tbPA(i)-(c.pre[i]||0);c.pre[i]=0;c.po[i]=false;tacHeroTurn(i);
     for(const e of G.enemies){e.mistT=0;e.tele=0;e.chg=0}return}
   const e=G.enemies.find(o=>o.id===t);c.ph='e';c.who=-1;c.eid=t;
   e.tbA=false;e.tbC=false;e.hitCd=0;e.tbSkip=false;if(e.type==='archer')e.cd=.25+Math.random()*.5;
-  if(e.frz>0){if(e.type==='boss'&&e.frz<1)e.frz=0;else{e.tbSkip=true;fx(46,e.x,e.y-e.r-6,0);tbLog(e,4)}}}
-const tbNext=()=>tbBegin(G.cb.k+1);
+  if(e.frz>0){if(e.type==='boss'&&e.frz<1)e.frz=0;else{e.tbSkip=true;fx(46,e.x,e.y-e.r-6,0);tbLog(e,4)}}
+  if(!e.tbSkip)tacTurn(e)}
+const tbNext=()=>{tacTurnOver(G.cb.q[G.cb.k]);tbBegin(G.cb.k+1)};
 /* zones posées par les héros : le feu brûle et le cercle soigne une fois par manche, pour la durée d'une manche */
 function tbAreas(){const S=TB_ROUND;
   for(const f of G.fires){const n=Math.max(1,Math.round(Math.min(f.t,S)/.5));for(const e of G.enemies)if(e.hp>0&&Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r)pDmg(f.pi,e,.6*n,{noEnch:true})}
   for(const z of G.zones){if(z.smoke||z.slow)continue;for(const p of G.players)if(!p.down&&Math.hypot(p.x-z.x,p.y-z.y)<z.r)healP(p,p.mhp*.09*Math.min(z.t,S),true)}}
 /* fin d'une manche : toutes les durées avancent de TB_ROUND secondes (héros au combat et ennemis) */
-function tbRoundEnd(){const S=TB_ROUND,c=G.cb;
+function tbRoundEnd(){const S=TB_ROUND,c=G.cb;tacRoundEnd(S);
   G.players.forEach((p,i)=>{if(c.in[i])pStatus(p,S)});
   for(const e of G.enemies){if(e.hp<=0)continue;e.taunt-=S;e.blind-=S;e.slowT-=S;e.markT-=S;e.frz=Math.max(0,e.frz-S);
     if(e.burn>0){const d=e.burnD*Math.min(e.burn,S);e.burn-=S;e.hp-=d;fx(41,e.x,e.y-e.r,Math.round(d));if(e.hp<=0)killEnemy(e)}}
@@ -3237,7 +3249,7 @@ function tbUpdate(dt){
   const want=G.players.map((p,i)=>!p.down&&!tbIn(i)&&(i===by||tbClose(p,TB_FIGHT)));
   if(!G.cb){if(!want.some(Boolean))return;if(!tbFoes().length){G.tbBy=null;return}G.tbBy=null;tbStart(by,want);if(!G.cb)return}
   else{want.forEach((w,i)=>{if(w)tbJoin(i,i===by)});if(by>=0)G.tbBy=null}
-  const c=G.cb;c.t+=dt;
+  const c=G.cb;c.t+=dt;tacTick();
   if(!tbFoes().length){tbEnd(true);return}
   if(!c.in.some(Boolean)){tbEnd(false);return}
   if(!tbLive(c.q[c.k])){tbNext();return}
@@ -3249,7 +3261,7 @@ function tbUpdate(dt){
   // Le tour se prolonge le temps que ses projectiles et sa charge arrivent.
   const e=G.enemies.find(o=>o.id===c.eid);
   if(c.tA<0&&e.tbA)c.tA=c.t;
-  const busy=G.projs.some(q=>q.from==='e')||e.chg>0||e.tele>0,done=e.tbSkip?c.t>=.6:c.t>=TB_EN||c.tA>=0&&c.t>=c.tA+TB_EN_AFTER;
+  const busy=G.projs.some(q=>q.from==='e')||e.chg>0||e.tele>0||e.backT>0||e.gMv>0,done=e.tbSkip?c.t>=.6:c.t>=TB_EN||c.tA>=0&&c.t>=c.tA+TB_EN_AFTER;
   if(done&&!busy||c.t>=TB_EN_MAX)tbNext()}
 /* l'invité : des points d'action et une potion pendant SON tour, rien sinon */
 function tbGate(i,kind,cost){const c=G.cb;if(!c||!c.in[i])return true;if(c.ph!=='h'||c.who!==i||c.rd[i])return false;
@@ -3261,12 +3273,15 @@ function tbRevive(pi){const c=G.cb,p=G.players[pi];if(!c||!c.in[pi]||c.ph!=='h'|
    ordre de la manche (jetons), rang de celui qui joue] */
 function tbPack(){const c=G.cb;if(!c)return 0;const f=(a,b)=>(a[0]?b:0)|(a[1]?b*2:0);
   return[c.ph==='h'?1:2,c.r,f(c.rd,1)|f(c.po,4)|f(c.in,16)|clamp(c.ap[0],0,3)<<6|clamp(c.ap[1],0,3)<<8,G.coop&&c.ph==='h'?Math.max(0,Math.ceil(TB_COOP_T-c.t)):0,
-    c.lg.slice(-8).map(x=>[x.id,x.k,x.pi,x.d]),c.q.slice(0,40),c.k]}
+    c.lg.slice(-8).map(x=>[x.id,x.k,x.pi,x.d,x.o==null?-1:x.o]),c.q.slice(0,40),c.k,
+    // marque du Chef (héros, tours restants), agrippé et provoqué (bits par héros), renforts [x, y, tours]
+    c.mk&&c.r<c.mk.u?c.mk.pi:-1,c.mk&&c.r<c.mk.u?c.mk.u-c.r:0,(c.gr&3)|(tacProvOn(0)?4:0)|(tacProvOn(1)?8:0),c.rf?[Math.round(c.rf.x),Math.round(c.rf.y),clamp(c.rf.n,0,99)]:0]}
 function tbUnpack(a){if(!Array.isArray(a)||!a.length)return null;const n=v=>Number.isFinite(+v)?+v:0,b=n(a[2])|0,f=k=>[!!(b&k),!!(b&k*2)];
-  const lg=(Array.isArray(a[4])?a[4].slice(0,8):[]).map(x=>{x=Array.isArray(x)?x:[];const id=n(x[0]),e=G.emap&&G.emap.get(id);return{id,k:clamp(n(x[1])|0,0,TB_LG.length-1),pi:clamp(n(x[2])|0,-1,1),d:clamp(n(x[3])|0,0,1e6),n:e?enemyName(e):'Ennemi'}});
+  const lg=(Array.isArray(a[4])?a[4].slice(0,8):[]).map(x=>{x=Array.isArray(x)?x:[];const id=n(x[0]),e=G.emap&&G.emap.get(id);return{id,k:clamp(n(x[1])|0,0,TB_LG.length-1),pi:clamp(n(x[2])|0,-1,1),d:clamp(n(x[3])|0,0,1e6),n:e?enemyName(e):'Ennemi',o:Math.trunc(n(x[4]))}});
   const q=(Array.isArray(a[5])?a[5].slice(0,40):[]).map(v=>clamp(Math.trunc(n(v)),-2,1e9)),k=clamp(n(a[6])|0,0,Math.max(0,q.length-1)),t=q.length?q[k]:0,ph=n(a[0])===2?'e':'h';
-  return{ph,r:clamp(n(a[1])|0,1,1e6),rd:f(1),po:f(4),in:f(16),ap:[b>>6&3,b>>8&3],tl:clamp(n(a[3]),0,999),t:0,lg,q,k,
-    who:ph==='h'&&t<0?-t-1:-1,eid:ph==='e'&&t>=0?t:-1}}
+  const r=clamp(n(a[1])|0,1,1e6),mp=clamp(n(a[7])|0,-1,1),ml=clamp(n(a[8])|0,0,3),g=n(a[9])|0,rf=Array.isArray(a[10])&&a[10].length>=3&&a[10].slice(0,3).every(v=>Number.isFinite(+v))?{x:+a[10][0],y:+a[10][1],n:clamp(+a[10][2]|0,0,99)}:null;
+  return{ph,r,rd:f(1),po:f(4),in:f(16),ap:[b>>6&3,b>>8&3],tl:clamp(n(a[3]),0,999),t:0,lg,q,k,
+    who:ph==='h'&&t<0?-t-1:-1,eid:ph==='e'&&t>=0?t:-1,mk:mp>=0&&ml>0?{pi:mp,u:r+ml,by:-1}:null,gr:g&3,pvb:g>>2&3,rf}}
 
 /* ---------- côté joueur (hôte et invité) ---------- */
 /* points d'action restants : ceux de l'hôte, moins ce que l'invité vient de dépenser et que l'hôte n'a pas encore vu */
@@ -3276,9 +3291,9 @@ function tbCanPot(){if(!tbMe())return true;return tbHero()&&!G.cb.po[myIdx]&&!L.
 function tbUse(kind,cost){if(!tbMe())return;if(kind==='po'){L.tbPot=true;if(mode!=='guest')G.cb.po[myIdx]=true;return}
   cost=cost||1;tbCommit();L.pv=null;if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-cost);else L.tbSpent=(L.tbSpent||0)+cost}
 function tbWhy(cost){return!tbMe()?'':!tbHero()?'Attends ton tour : '+tbTurnName()+' joue.':L.tbEnd?'Tu as fini ton tour.':(cost||1)>1&&tbAP()>0?'Il faut '+cost+' points d’action.':'Plus de points d’action ce tour. Déplace-toi ou touche « Fin du tour ».'}
-function tbMoveMax(){return TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}
+function tbMoveMax(){return tacGripped(myIdx)?0:TB_MOVE*TS*clamp(ST.spd/150,.8,1.6)}   // agrippé par une Mimique : pas de déplacement
 /* Foncer : TB_DASH points d'action pour un déplacement complet de plus, compté depuis l'endroit où l'on est */
-function tbDash(){if(!tbMe())return;if(!tbCanAct(TB_DASH)){toast(tbWhy(TB_DASH),'tb');return}const me=myP();if(!me||me.down)return;L.pv=null;
+function tbDash(){if(!tbMe())return;if(tacGripped(myIdx)){toast('Agrippé : impossible de foncer. Frappe la Mimique pour te libérer.','tbgr');return}if(!tbCanAct(TB_DASH)){toast(tbWhy(TB_DASH),'tb');return}const me=myP();if(!me||me.down)return;L.pv=null;
   if(mode!=='guest')G.cb.ap[myIdx]=Math.max(0,G.cb.ap[myIdx]-TB_DASH);else{L.tbSpent=(L.tbSpent||0)+TB_DASH;L.dc=(L.dc||0)+1}
   if(L.tbReA)L.tbRem+=tbMoveMax();else tbAnchor(Math.max(0,L.tbBud-tbDist(L.x,L.y))+tbMoveMax());
   L.tbAutoT=0;Snd.play('gate');toast('Tu fonces : déplacement doublé.','tbdash')}
@@ -3326,7 +3341,8 @@ function tbHud(){const box=hq('#tbInfo'),col=hq('#tbCol'),be=hq('#bEnd'),c=G.cb,
   tbOrder(hq('#tbOrd'));
   setTxt(hq('#tbAct'),'Actions '+'●'.repeat(on?ap:0)+'○'.repeat(Math.max(0,pa-(on?ap:0))));hq('#tbAct').classList.toggle('off',!on||!ap);
   setTxt(hq('#tbPot'),'Potion '+(pot?'○':'●'));hq('#tbPot').classList.toggle('off',pot||!on);
-  const mi=hq('#tbMv');setTxt(mi,on?'Déplacement '+(L.tbMv/TS).toFixed(1).replace('.',',')+' cases':'Déplacement —');mi.classList.toggle('off',!on||L.tbMv<2);
+  if(mine&&L.tbGr&&!tacGripped(myIdx)&&!L.tbEnd){L.tbRem=Math.max(L.tbRem||0,tbMoveMax());L.tbReA=true;toast('Tu es libéré : tu peux te déplacer.','tbgr')}L.tbGr=mine&&tacGripped(myIdx);   // libéré de la Mimique en plein tour
+  const mi=hq('#tbMv');setTxt(mi,on?(L.tbGr?'Déplacement bloqué':'Déplacement '+(L.tbMv/TS).toFixed(1).replace('.',',')+' cases'):'Déplacement —');mi.classList.toggle('off',!on||L.tbMv<2);
   be.classList.toggle('glow',mine&&!ap)}
 /* colonne de l'ordre des tours : une vignette carrée par acteur (figure, nom, vie). Celui qui joue est bordé d'or (héros)
    ou de rouge (ennemi), qui a déjà joué est pâli, la cible a un liseré bleu. Toucher la vignette d'un ennemi le choisit pour cible,
@@ -3351,7 +3367,7 @@ function holdable(n,tap,hold){let t=null,held=false;
   const up=e=>{clearTimeout(t);if(held){held=false;hold(false)}else if(e&&e.type==='pointerup')tap()};
   n.addEventListener('pointerup',up);n.addEventListener('pointercancel',up);n.addEventListener('pointerleave',()=>{clearTimeout(t);if(held){held=false;hold(false)}})}
 /* journal des ennemis, compact : actions identiques regroupées (« Adepte tire sur César : −10 ×4 »), 3 lignes au plus */
-function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x.pi],l=x.n+' '+TB_LG[x.k]+(t&&x.k<=3?' '+t.name:'')+(x.d?' : −'+x.d:'');m.set(l,(m.get(l)||0)+1)}
+function tbLogLines(lg){const m=new Map();for(const x of lg){const t=G.players[x.pi],l=x.n+' '+TB_LG[x.k]+(t&&(x.k<=3||x.k===12||x.k===14)?' '+t.name:'')+(x.d?' : −'+x.d:'');m.set(l,(m.get(l)||0)+1)}
   const out=[...m].map(([l,n])=>n>1?l+' ×'+n:l);return out.length>3?out.slice(0,2).concat('+ '+(out.length-2)+' autres actions'):out}
 /* fiche de la cible : petite (nom, vie, états, portée) ; tant qu'on reste appuyé dessus ou sur sa vignette, détaillée
    (prochain coup, effets en tours, dégâts estimés de l'attaque) et le reste de l'écran s'assombrit */
@@ -3495,6 +3511,198 @@ function drawPreview(T){if(!L.pv||!pvOn()){L.pv=null;L.pvS=null;return}const me=
   let lab;if(L.pv==='atk'){const dm=Math.round(ST.dmg*(tbMe()?TB_DMG:1));lab=CLS[hero.cls].atk+(t?' → '+enemyName(t)+' · ~'+dm+' dégâts':'')}
   else{const id=ST.ks[L.pv==='ult'?3:+String(L.pv).slice(1)],A=SK_AREA[id];lab=SK[id].nom+(t&&A&&A[0]!=='me'?' → '+enemyName(t):'')}
   ctx.textAlign='center';ctx.textBaseline='middle';pill(lab,L.x,L.y-58,'#ffe9a0','rgba(90,26,20,.92)')}
+/* ---- 43_tactique.js ---- */
+/* ================= Ennemis stratégiques : rôles, entraide, moral, patrouilles (14/10) =================
+   Règle commune : 1 action par ennemi et par tour ; une capacité spéciale REMPLACE son attaque (e.tbA = true).
+   - Marionnette (slime), le mur : va se placer à côté d'un Adepte ou d'un Chef (6 cases au plus) et le protège ; jusqu'à son prochain tour,
+     la moitié des dégâts que reçoit le protégé passe sur elle. Morte, elle laisse des os qu'un Adepte peut relever une fois
+     (à 50 % de vie). Elle ne fuit jamais.
+   - Rejeton (bat), le chasseur : vise un héros seul (aucun allié à TAC_ISO cases), sinon le plus blessé ; sa morsure lui rend
+     50 % des dégâts ; sous 50 % de vie, il recule d'environ 4 cases après avoir frappé.
+   - Adepte (archer), le soutien : relève des os (une fois par combat), sinon met un bouclier sur un allié sous 50 % de vie
+     (20 % de ses PV max, 2 tours, recharge 3 tours), sinon il tire.
+   - Orc, la brute : charge ; cri une fois par combat avec au moins 2 alliés proches (+25 % de dégâts aux alliés à 4 cases,
+     2 tours) ; provocation : qui le frappe au corps à corps fait −25 % sur toute autre cible jusqu'à la fin du tour suivant.
+   - Mimique, le piège : dort jusqu'au contact ; sa morsure agrippe le héros (plus de déplacement à son prochain tour,
+     Foncer compris) ; frapper la Mimique le libère. Recharge 3 tours.
+   - Chef (élite) : +1 vitesse aux alliés à TAC_AURA cases ; marque un héros au début du combat puis tous les 3 tours
+     (tout le groupe le vise, +15 % de dégâts sur lui) ; une fois par combat, un allié rejoue juste après lui.
+   - Encerclement : +15 % de dégâts sur un héros au contact de 2 ennemis ou plus.
+   Moral : à la mort du Chef, ou quand le groupe a perdu les 2/3 de ses membres, ceux qui restent paniquent (−25 % de dégâts,
+   2 tours) ; certains fuient (Rejeton sous 50 % de vie, Orc et Adepte une fois sur deux ; Marionnette et Mimique jamais).
+   Un fuyard qui a fui 2 tours sans héros à 4 cases quitte le combat (pas d'XP).
+   Patrouilles (monde) : 1 camp sur 4 fait une ronde (2 à 4 points, au pas lent) ; la nuit, des meutes de Rejetons rôdent
+   en plus. La position sur la ronde se calcule à partir de l'heure du jeu : rien à simuler au loin, même ronde chez les deux.
+   Une patrouille à PAT_REIN cases ou moins d'un combat accourt en renfort, annoncée avec le nombre de tours avant d'arriver. */
+const TAC_GUARD=2,TAC_SH=.2,TAC_SH_T=6,TAC_SH_CD=9,TAC_CRY=1.25,TAC_CRY_R=4,TAC_CRY_T=6,TAC_PROV=.75,TAC_MARK=1.15,TAC_ENC=1.15,
+  TAC_GRIP_CD=9,TAC_AURA=5,TAC_PAN=.75,TAC_PAN_T=6,TAC_BITE=.5,TAC_BACK=.5,TAC_ISO=3,TAC_MIMIC=1,PAT_SPD=28,PAT_REIN=15,PAT_GAP=1.1;
+const TAC_MOVE_SK=['charge','ombre','transfert','bond'];
+/* ---------- règles pures (testées) ---------- */
+/* qui fuit quand le groupe flanche : r = tirage entre 0 et 1 */
+function tacFlees(type,ratio,r){if(type==='slime'||type==='mimic'||type==='boss')return false;if(type==='bat')return ratio<.5;if(type==='orc'||type==='archer')return r<.5;return false}
+/* rôle d'un ennemi, envoyé à l'invité en un nombre : drapeaux sur 8 bits, puis tours restants (bouclier, cri, panique) */
+function tacPack(o){const t=v=>clamp(v|0,0,15);return(o.guard?1:0)|(o.sh?2:0)|(o.cry?4:0)|(o.pan?8:0)|(o.flee?16:0)|(o.prot?32:0)|(o.pat?64:0)|(o.aura?128:0)|t(o.shT)<<8|t(o.cryT)<<12|t(o.panT)<<16}
+function tacUnpack(v){v=Number.isFinite(+v)?+v|0:0;return{guard:!!(v&1),sh:!!(v&2),cry:!!(v&4),pan:!!(v&8),flee:!!(v&16),prot:!!(v&32),pat:!!(v&64),aura:!!(v&128),shT:v>>8&15,cryT:v>>12&15,panT:v>>16&15}}
+/* ronde : boucle fermée de points [x,y] en pixels ; s = distance parcourue sur la boucle */
+function patLen(R){let l=0;for(let i=0;i<R.length;i++){const a=R[i],b=R[(i+1)%R.length];l+=Math.hypot(b[0]-a[0],b[1]-a[1])}return l}
+function patPos(R,s){const L0=patLen(R);if(!L0)return{x:R[0][0],y:R[0][1],a:0};s=((s%L0)+L0)%L0;
+  for(let i=0;i<R.length;i++){const a=R[i],b=R[(i+1)%R.length],l=Math.hypot(b[0]-a[0],b[1]-a[1]);if(s<=l||i===R.length-1){const k=l?Math.min(1,s/l):0;return{x:a[0]+(b[0]-a[0])*k,y:a[1]+(b[1]-a[1])*k,a:Math.atan2(b[1]-a[1],b[0]-a[0])}}s-=l}
+  return{x:R[0][0],y:R[0][1],a:0}}
+/* renforts : tours avant d'arriver au contact (un ennemi n'avance que pendant son tour, TB_EN s) */
+function reinTurns(d,spd){return Math.max(0,Math.ceil((d-2*TS)/Math.max(1,spd*TB_EN)))}
+
+/* ---------- utilitaires ---------- */
+const tacFind=id=>id==null||id<0?null:G.enemies.find(o=>o.id===id&&o.hp>0)||null;
+function tacHeroOk(i){const c=G.cb,p=G.players[i];return!!(c&&p&&!p.down&&c.in[i])}
+/* la Marionnette qui protège e (au combat, à 3 cases au plus) */
+function tacGuardOf(e){if(!G.cb)return null;for(const o of G.enemies)if(o!==e&&o.hp>0&&o.guard===e.id&&Math.hypot(o.x-e.x,o.y-e.y)<3*TS)return o;return null}
+/* à moins de TAC_AURA cases d'un Chef vivant */
+function tacAura(e){if(e.elite||e.type==='boss')return false;for(const o of G.enemies)if(o!==e&&o.elite&&o.hp>0&&o.type!=='boss'&&Math.hypot(o.x-e.x,o.y-e.y)<TAC_AURA*TS)return true;return false}
+/* nombre d'ennemis au contact du héros i */
+function tacEnc(i){const p=G.players[i];if(!p||p.down)return 0;const w=i===myIdx&&typeof L!=='undefined'&&L&&L.x!=null?L:p;let n=0;
+  for(const e of G.enemies)if(e.hp>0&&e.act&&!e.ret&&Math.hypot((e.rx??e.x)-w.x,(e.ry??e.y)-w.y)<(e.r||12)+1.1*TS)n++;return n}
+function tacGripped(i){const c=G&&G.cb;return!!(c&&c.gr&&(c.gr>>i&1))}
+function tacProvOn(i){const c=G&&G.cb;if(!c)return false;if(c.pvb!=null)return!!(c.pvb>>i&1);const v=c.pv&&c.pv[i];return!!(v&&c.r<=v.u&&tacFind(v.id))}
+/* drapeaux de rôle d'un ennemi (côté hôte) */
+function tacBits(e){const g=tacFind(e.guard);return tacPack({guard:!!g&&Math.hypot(g.x-e.x,g.y-e.y)<3*TS,sh:e.esh>0,cry:e.cryT>0,pan:e.panT>0,flee:!!e.flee,prot:!!tacGuardOf(e),pat:e.pat!=null&&!e.act,aura:!!G.cb&&tacAura(e),
+  shT:e.eshT>0?tbTurns(e.eshT):0,cryT:e.cryT>0?tbTurns(e.cryT):0,panT:e.panT>0?tbTurns(e.panT):0})}
+/* états de rôle, affichés sur la fiche de la cible et au-dessus de l'ennemi */
+function tacStates(e){const b=tacUnpack(e.rb!=null?e.rb:tacBits(e)),r=[];
+  if(b.flee)r.push(['Fuit','#ffe39a',1]);
+  if(b.guard){const g=tacFind(e.gd!=null?e.gd:e.guard);r.push(['Protège '+(g?enemyName(g):'un allié'),'#e8e0c8',1])}
+  if(b.prot)r.push(['Protégé par une Marionnette','#e8e0c8',1]);
+  if(b.sh)r.push(['Bouclier','#f0c95a',b.shT||1]);if(b.cry)r.push(['Cri · +25 %','#ffc590',b.cryT||1]);if(b.pan)r.push(['Panique · −25 %','#d2dae8',b.panT||1]);
+  return r}
+function tacIntent(e){const b=tacUnpack(e.rb!=null?e.rb:tacBits(e));if(b.flee)return'cherche à s’enfuir';const p=b.pan?' (panique : −25 %)':'';
+  if(e.elite)return'va marquer un héros et frapper'+p;
+  return(({slime:'va protéger un allié ou frapper',bat:'va mordre le héros le plus isolé',archer:'va relever des os, protéger un allié ou tirer',orc:'va charger, frapper ou pousser un cri',mimic:'va mordre et agripper'})[e.type]||'va s’approcher et frapper')+p}
+
+/* ---------- côté hôte ---------- */
+function tacStart(c){c.mk=null;c.gr=0;c.grU=0;c.grBy=[-1,-1];c.pv=[null,null];c.rf=null;c.mor=0;c.ids=new Set();for(const e of tbFoes())c.ids.add(e.id)}
+function tacEnd(){for(const e of G.enemies){e.flee=0;e.fleeN=0;e.panT=0;e.cryT=0;e.guard=0;e.esh=0;e.eshT=0;e.backT=0;e.criU=0;e.ordU=0;e.revU=0;e.rein=0}G.bones=[]}
+/* début du tour d'un héros : agrippé, il ne se déplace pas pendant ce tour */
+function tacHeroTurn(i){const c=G.cb;if(c.gr>>i&1)c.grU|=1<<i}
+/* fin du tour de l'acteur t : un héros agrippé est libéré une fois son tour passé */
+function tacTurnOver(t){const c=G.cb;if(!c||t==null||t>=0)return;const i=-t-1;if(c.grU>>i&1){c.gr&=~(1<<i);c.grU&=~(1<<i);c.grBy[i]=-1}}
+function tacMarkPick(e){let b=-1,bd=1e9;G.players.forEach((p,i)=>{if(!tacHeroOk(i))return;const d=Math.hypot(p.x-e.x,p.y-e.y);if(d<bd){bd=d;b=i}});return b}
+/* protégé possible : un Adepte ou un Chef à 6 cases au plus (la Marionnette va se placer à ses côtés pendant son tour) */
+function tacGuardPick(e){let a=null,lo=2;for(const o of tbFoes()){if(o===e||!(o.type==='archer'||o.elite)||o.type==='boss')continue;
+  if(Math.hypot(o.x-e.x,o.y-e.y)>6*TS)continue;const g=tacGuardOf(o);if(g&&g!==e)continue;const r=o.hp/o.mhp;if(r<lo){lo=r;a=o}}return a}
+function tacRaise(e,b){e.revU=1;e.tbA=true;G.bones=(G.bones||[]).filter(x=>x!==b);
+  const s=spawnEnemy('slime',b.x,b.y,false,false,undefined,b.lv);s.hp=s.mhp*.5;s.act=true;s.raised=1;s.xp=Math.round(s.xp*.5);if(b.camp!=null)s.camp=b.camp;if(b.hx!=null){s.hx=b.hx;s.hy=b.hy}
+  fx(12,b.x,b.y,14);tbLog(e,9,-1,0,s.id)}
+/* début du tour d'un ennemi : capacité de rôle (elle remplace l'attaque) ou rien (il avance et frappe comme avant) */
+function tacTurn(e){const c=G.cb;if(!c)return;e.guard=0;if(e.type==='boss')return;
+  if(e.flee){e.fleeN=(e.fleeN||0)+1;tbLog(e,15);return}
+  if(e.elite){   // marque et ordre ne remplacent pas l'attaque du Chef
+    if(!c.mk||c.r>=c.mk.u||!tacHeroOk(c.mk.pi)){const h=tacMarkPick(e);if(h>=0){c.mk={pi:h,by:e.id,u:c.r+3};tbLog(e,12,h);msg('Le Chef marque '+G.players[h].name+' : tout le groupe le vise.','mk',3)}}
+    if(!e.ordU&&c.r>=2){let a=null,bd=1e9;for(const o of tbFoes())if(o!==e&&!o.elite&&o.type!=='boss'&&!o.flee){const d=Math.hypot(o.x-e.x,o.y-e.y);if(d<bd){bd=d;a=o}}
+      if(a){e.ordU=1;c.q.splice(c.k+1,0,a.id);tbLog(e,13,-1,0,a.id);msg('Le Chef donne un ordre : '+enemyName(a)+' rejoue.','ord',3)}}
+    return}
+  if(e.type==='slime'){const a=tacGuardPick(e);if(a){e.guard=a.id;e.tbA=true;e.gMv=Math.hypot(a.x-e.x,a.y-e.y)>TAC_GUARD*TS?TB_EN:0;tbLog(e,8,-1,0,a.id)}return}
+  if(e.type==='archer'){if(!e.revU){const b=(G.bones||[]).find(b=>Math.hypot(b.x-e.x,b.y-e.y)<7*TS);if(b){tacRaise(e,b);return}}
+    if(!(e.shCd>0)){let a=null,lo=.5;for(const o of tbFoes()){if(o===e||o.type==='boss'||o.esh>0||Math.hypot(o.x-e.x,o.y-e.y)>7*TS)continue;const r=o.hp/o.mhp;if(r<lo){lo=r;a=o}}
+      if(a){a.esh=a.mhp*TAC_SH;a.eshT=TAC_SH_T;e.shCd=TAC_SH_CD;e.tbA=true;tbLog(e,10,-1,0,a.id)}}
+    return}
+  if(e.type==='orc'&&!e.criU){const al=tbFoes().filter(o=>o!==e&&o.type!=='boss'&&Math.hypot(o.x-e.x,o.y-e.y)<TAC_CRY_R*TS);
+    if(al.length>=2&&!al.some(o=>o.cryT>0)){e.criU=1;   // un seul cri à la fois dans le groupe
+      e.tbA=true;for(const o of al.concat([e]))o.cryT=TAC_CRY_T;tbLog(e,11)}}}
+/* cible imposée : le héros marqué par le Chef, sinon pour le Rejeton le héros seul ou le plus blessé */
+function tacTarget(e,alive){const c=G.cb;if(!c||!alive.length)return null;
+  if(c.mk&&c.r<c.mk.u){const p=G.players[c.mk.pi];if(p&&alive.includes(p))return p}
+  if(e.type==='bat'){const iso=alive.filter(p=>!G.players.some(q=>q!==p&&!q.down&&Math.hypot(q.x-p.x,q.y-p.y)<TAC_ISO*TS));let b=null,lo=2;for(const p of iso.length?iso:alive){const r=p.hp/p.mhp;if(r<lo){lo=r;b=p}}return b}
+  return null}
+/* dégâts d'un ennemi sur le héros i : cri, panique, marque, encerclement */
+function tacDmgMul(e,i){let m=1;if(e){if(e.cryT>0)m*=TAC_CRY;if(e.panT>0)m*=TAC_PAN}const c=G.cb;
+  if(c&&i>=0){if(c.mk&&c.mk.pi===i&&c.r<c.mk.u)m*=TAC_MARK;if(tacEnc(i)>=2)m*=TAC_ENC}return m}
+/* coup reçu par un ennemi : la moitié pour la Marionnette qui le protège, puis le bouclier de l'Adepte */
+function tacAbsorb(e,d){if(!G.cb||d<=0)return d;const g=tacGuardOf(e);
+  if(g){const part=d*.5;d-=part;g.hp-=part;g.flash=.12;fx(1,g.x,g.y-g.r,Math.round(part));if(g.hp<=0)killEnemy(g)}
+  if(e.esh>0){const a=Math.min(e.esh,d);e.esh-=a;d-=a;if(e.esh<=0){e.esh=0;e.eshT=0}}return d}
+/* le héros i frappe e : provocation de l'Orc (corps à corps), libération de la Mimique */
+function tacProvoke(i,e){const c=G.cb;if(!c||!tbIn(i)||e.type!=='orc'||e.hp<=0)return;const v=c.pv[i];
+  if(!v||v.id!==e.id||c.r>v.u)msg(G.players[i].name+' est provoqué par '+enemyName(e)+' : −25 % sur les autres cibles.','pv'+i,6);c.pv[i]={id:e.id,u:c.r+1}}
+function tacProvMul(i,e){const c=G.cb;if(!c)return 1;const v=c.pv&&c.pv[i];return v&&c.r<=v.u&&v.id!==e.id&&tacFind(v.id)?TAC_PROV:1}
+function tacHitBy(i,e){const c=G.cb;if(c&&c.grBy&&c.grBy[i]===e.id){c.gr&=~(1<<i);c.grU&=~(1<<i);c.grBy[i]=-1;msg(G.players[i].name+' se libère de la Mimique.','grl'+i,3)}}
+/* morsure du Rejeton (soin, recul) et de la Mimique (agrippe) */
+function tacBite(e,i,d){const c=G.cb,p=G.players[i];if(!c||!p)return;
+  if(e.type==='bat'&&d>0){e.hp=Math.min(e.mhp,e.hp+d*TAC_BITE);fx(3,e.x,e.y-e.r,Math.round(d*TAC_BITE));if(e.hp<e.mhp*.5)e.backT=TAC_BACK}
+  if(e.type==='mimic'&&!(e.grCd>0)&&!p.down){c.gr|=1<<i;c.grBy[i]=e.id;e.grCd=TAC_GRIP_CD;tbLog(e,14,i);msg(p.name+' est agrippé : pas de déplacement au prochain tour. Frappe la Mimique pour te libérer.','gr'+i,6)}}
+/* la Marionnette rejoint son protégé (pendant son tour, sans frapper) */
+function tacGuardMove(e,dt){const a=tacFind(e.guard);if(!a||!(e.gMv>0)){e.gMv=0;return}e.gMv-=dt;const dx=a.x-e.x,dy=a.y-e.y,d=Math.hypot(dx,dy);
+  if(d<1.2*TS){e.gMv=0;return}const f=d<2*TS||los(e.x,e.y,a.x,a.y)?{x:dx/d,y:dy/d}:null;if(f)moveBody(e,f.x*e.spd*dt,f.y*e.spd*dt,e.r*.75);else e.gMv=0}
+/* fuite et recul pendant le tour de l'ennemi */
+function tacFleeMove(e,dt){const f=flowDir(e,true);const sp=e.backT>0?260:e.spd*1.2;if(e.backT>0)e.backT-=dt;if(f)moveBody(e,f.x*sp*dt,f.y*sp*dt,e.r*.75)}
+/* un ennemi meurt au combat : os de la Marionnette, Chef ou groupe décimé → moral */
+function tacOnKill(e){const c=G.cb;if(!c)return;if(c.mk&&c.mk.by===e.id)c.mk=null;
+  c.grBy.forEach((id,i)=>{if(id===e.id){c.gr&=~(1<<i);c.grU&=~(1<<i);c.grBy[i]=-1}});
+  if(e.type==='slime'&&!e.raised&&!e.minion){G.bones=(G.bones||[]).slice(-7);G.bones.push({x:e.x,y:e.y,lv:e.lv,camp:e.camp,hx:e.hx,hy:e.hy})}
+  if(c.mor||e.type==='boss'||e.minion)return;const left=tbFoes().filter(o=>o!==e&&o.hp>0);if(!left.length||left.some(o=>o.type==='boss'))return;
+  const chief=!!e.elite,n0=c.ids?c.ids.size:0;if(!chief&&!(n0>=3&&left.length<=Math.floor(n0/3)))return;
+  c.mor=1;msg(chief?'Le Chef est tombé : le groupe flanche !':'Le groupe flanche !');
+  for(const o of left){if(o.minion||o.wv)continue;if(tacFlees(o.type,o.hp/o.mhp,Math.random())){o.flee=1;o.fleeN=0}else if(o.type!=='slime'&&o.type!=='mimic')o.panT=TAC_PAN_T}}
+/* fin d'une manche : durées des rôles ; un fuyard qui a fui 2 tours sans héros à 4 cases quitte le combat */
+function tacRoundEnd(S){const c=G.cb;for(const e of G.enemies){if(e.hp<=0)continue;
+    if(e.eshT>0){e.eshT-=S;if(e.eshT<=0){e.eshT=0;e.esh=0}}e.cryT-=S;e.panT-=S;e.shCd-=S;e.grCd-=S;
+    if(e.flee&&e.fleeN>=2&&!G.players.some((p,i)=>c.in[i]&&!p.down&&Math.hypot(p.x-e.x,p.y-e.y)<4*TS)){e.hp=0;fx(12,e.x,e.y,e.r);msg(enemyName(e)+' s’échappe.')}}}
+/* à chaque image, au combat : groupe vu (moral), renforts des patrouilles */
+function tacTick(){const c=G.cb;if(!c)return;if(!c.ids)tacStart(c);for(const e of tbFoes())c.ids.add(e.id);
+  if(!G.m||G.m.kind!=='world'||typeof WORLD==='undefined'||!WORLD){c.rf=null;return}
+  const H=G.players.filter((p,i)=>c.in[i]&&!p.down);if(!H.length)return;const dist=(x,y)=>Math.min(...H.map(p=>Math.hypot(p.x-x,p.y-y)));
+  WORLD.camps.forEach((cp,i)=>{const s=G.camps[i];if(!s||s.state!=='live'||!s.pt)return;const M=G.enemies.filter(e=>e.pat===i&&e.hp>0);if(!M.length||M.some(e=>e.act))return;
+    const lp=tacLead(cp);if(dist(lp.x,lp.y)>PAT_REIN*TS)return;for(const e of M){e.act=true;e.rein=1;e.tbA=false}msg('Une patrouille accourt en renfort !','rein',8)});
+  let far=null;for(const e of G.enemies){if(!e.rein||e.hp<=0||!e.act)continue;const d=dist(e.x,e.y);if(d<2.5*TS){e.rein=0;continue}if(!far||d<far.d)far={d,x:e.x,y:e.y,spd:e.spd}}
+  c.rf=far?{x:far.x,y:far.y,n:Math.max(1,reinTurns(far.d,far.spd))}:null}
+
+/* ---------- patrouilles ---------- */
+/* ronde d'un camp : boucle de 2 à 4 points à 4-7 cases du camp, chaque segment sans obstacle (tirage fixe par camp) */
+function tacRoute(cp){if(cp.route!==undefined)return cp.route;const W=WORLD,R=mulberry(5000+cp.id),cx=(cp.x+.5)*TS,cy=(cp.y+.5)*TS;
+  const free=(x,y)=>{const tx=Math.floor(x/TS),ty=Math.floor(y/TS);return tx>0&&ty>0&&tx<W.W-1&&ty<W.H-1&&W.sol[ty*W.W+tx]!==1};
+  const seg=(a,b)=>{const d=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.ceil(d/(TS/4));for(let k=0;k<=n;k++){const x=a[0]+(b[0]-a[0])*k/n,y=a[1]+(b[1]-a[1])*k/n;
+    for(const[ox,oy]of[[0,0],[10,0],[-10,0],[0,10],[0,-10]])if(!free(x+ox,y+oy))return false}return true};
+  let out=null;for(let t=0;t<30&&!out;t++){const n=2+Math.floor(R()*3),o=R()*6.283,P=[];
+    for(let k=0;k<n;k++){const a=o+k/n*6.283+(R()-.5)*.6,r=(4+R()*3)*TS;P.push([Math.round(cx+Math.cos(a)*r),Math.round(cy+Math.sin(a)*r)])}
+    if(n===2)P.splice(1,0,[Math.round(cx),Math.round(cy)]);   // deux points : aller et retour en passant par le camp
+    if(P.every((p,k)=>free(p[0],p[1])&&seg(p,P[(k+1)%P.length])))out=P}
+  cp.route=out;return out}
+/* 0 : camp fixe ; 1 : patrouille (1 camp sur 4) ; 2 : meute de Rejetons qui rôde la nuit (un autre camp sur 4) */
+function tacPatKind(cp,i){if(!tacRoute(cp))return 0;if(i%4===1)return 1;if(i%4===3&&typeof Sky!=='undefined'&&Sky.isNight())return 2;return 0}
+function tacLead(cp){const R=tacRoute(cp);return patPos(R,G.time*PAT_SPD+cp.id*97)}
+/* rang dans la file : le Chef devant, les combattants, les Marionnettes, l'Adepte derrière */
+const tacRank=e=>e.elite?0:e.type==='archer'?3:e.type==='slime'?2:1;
+function tacFormation(i){const M=G.enemies.filter(e=>e.pat===i&&e.hp>0).sort((a,b)=>tacRank(a)-tacRank(b)||a.id-b.id);M.forEach((e,k)=>{e.patK=k});tacPatrols()}
+/* les membres d'une patrouille au repos suivent la ronde (leur poste avance avec elle) */
+function tacPatrols(){if(!G.m||G.m.kind!=='world')return;for(const e of G.enemies){if(e.pat==null||e.hp<=0)continue;const cp=WORLD.camps[e.pat];const R=cp&&tacRoute(cp);if(!R)continue;
+  const p=patPos(R,G.time*PAT_SPD+cp.id*97-(e.patK||0)*PAT_GAP*TS);e.hx=p.x;e.hy=p.y;if(e.act||e.ret)continue;e.x=p.x;e.y=p.y}}
+
+/* ---------- affichage (hôte et invité) ---------- */
+/* au sol : rondes des patrouilles proches, liens Marionnette → protégé, os relevables, cri de l'Orc */
+function drawTacGround(T,vis){const w=wpos(myIdx);if(!w)return;ctx.save();
+  if(G.m.kind==='world'){const seen=new Set();for(const e of G.enemies){if(e.pat==null||e.act||e.hp<=0||seen.has(e.pat))continue;seen.add(e.pat);const cp=WORLD.camps[e.pat],R=cp&&tacRoute(cp);if(!R)continue;
+      const lp=tacLead(cp);if(Math.hypot(lp.x-w.x,lp.y-w.y)>14*TS)continue;
+      ctx.strokeStyle='rgba(239,230,207,.5)';ctx.lineWidth=2;ctx.setLineDash([3,7]);ctx.lineDashOffset=-T*PAT_SPD;ctx.beginPath();R.forEach((p,k)=>k?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='rgba(239,230,207,.65)';for(const p of R){ctx.beginPath();ctx.arc(p[0],p[1],4,0,6.28);ctx.fill()}
+      const g=patPos(R,G.time*PAT_SPD+cp.id*97+3*PAT_SPD);if(vis(g.x,g.y)){ctx.globalAlpha=.35;ctx.strokeStyle='#efe6cf';ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(g.x,g.y,11,0,6.28);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=.85;
+        ctx.font='700 10px "Alegreya Sans",system-ui,sans-serif';ctx.textAlign='center';ctx.fillStyle='#efe6cf';ctx.fillText('dans 3 s',g.x,g.y-18);ctx.globalAlpha=1}}}
+  if(G.cb){for(const e of G.enemies){if(e.hp<=0)continue;const b=tacUnpack(e.rb!=null?e.rb:tacBits(e));const ex=e.rx??e.x,ey=e.ry??e.y;
+      if(b.guard){const g=tacFind(e.gd!=null?e.gd:e.guard);if(g&&vis(ex,ey)){const gx=g.rx??g.x,gy=g.ry??g.y;ctx.strokeStyle='rgba(232,224,200,.9)';ctx.lineWidth=3;ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(gx,gy);ctx.stroke();ctx.setLineDash([]);
+        const mx=(ex+gx)/2,my=(ey+gy)/2;ctx.fillStyle='#13252c';ctx.strokeStyle='#e8e0c8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(mx,my,9,0,6.28);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#e8e0c8';ctx.beginPath();ctx.moveTo(mx,my-6);ctx.lineTo(mx+5,my-3.5);ctx.lineTo(mx+5,my);ctx.quadraticCurveTo(mx+5,my+5,mx,my+6);ctx.quadraticCurveTo(mx-5,my+5,mx-5,my);ctx.lineTo(mx-5,my-3.5);ctx.closePath();ctx.fill()}}
+      if(b.cry&&vis(ex,ey)){ctx.strokeStyle='rgba(255,155,61,.85)';ctx.lineWidth=2;ctx.setLineDash([5,5]);ctx.lineDashOffset=-T*10;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,e.r+10,(e.r+10)*.45,0,0,6.28);ctx.stroke();ctx.setLineDash([])}}
+    for(const b of G.bones||[]){if(!vis(b.x,b.y))continue;ctx.fillStyle='#c9c3b0';ctx.strokeStyle='#3a3528';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(b.x,b.y+4,14,6,0,0,6.28);ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#efe6cf';ctx.beginPath();ctx.moveTo(b.x-8,b.y+2);ctx.lineTo(b.x+7,b.y+6);ctx.moveTo(b.x-6,b.y+7);ctx.lineTo(b.x+8,b.y+1);ctx.stroke()}}
+  ctx.restore()}
+/* au-dessus : marque du Chef, héros agrippé ou encerclé, os relevables, renforts annoncés */
+function drawTacOver(vis,hw,hh){const c=G.cb;if(!c)return;ctx.save();ctx.textAlign='center';ctx.textBaseline='middle';
+  G.players.forEach((p,i)=>{if(p.down||!c.in[i])return;const w=wpos(i);let y=w.y-74;const tags=[];
+    if(c.mk&&c.mk.pi===i&&c.r<c.mk.u){tags.push(['Marqué par le Chef','#ffb3a8','rgba(74,20,20,.92)']);
+      ctx.strokeStyle='#ff6a5a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(w.x,w.y-56,8,0,6.28);ctx.stroke();ctx.fillStyle='#ff6a5a';ctx.beginPath();ctx.arc(w.x,w.y-56,2.5,0,6.28);ctx.fill()}
+    if(tacGripped(i))tags.push(['Agrippé','#d2dae8','rgba(42,42,48,.92)']);
+    if(tacEnc(i)>=2)tags.push(['Encerclé · +15 %','#ffb3a8','rgba(74,20,20,.92)']);
+    for(const t of tags){pill(t[0],w.x,y,t[1],t[2]);y-=18}});
+  for(const b of G.bones||[])if(vis(b.x,b.y))pill('Os · relevable',b.x,b.y+20,'#e8e0c8','rgba(42,38,32,.9)');
+  if(c.rf&&c.rf.n>0){const t='Renforts dans '+c.rf.n+' tour'+(c.rf.n>1?'s':'');if(vis(c.rf.x,c.rf.y))pill(t,c.rf.x,c.rf.y-40,'#ffc590','rgba(74,42,16,.92)');else edgeArrow(c.rf.x,c.rf.y,'#ffc590',t,hw,hh)}
+  ctx.restore()}
 /* ---- 45_quests.js ---- */
 /* ================= Journal de quêtes : histoire + sous-quêtes ================= */
 // Chaque héros garde sa progression (hero.sq) ; les événements viennent des effets envoyés par l'hôte, donc ça marche à deux.
@@ -3679,8 +3887,11 @@ function onState(s,first){
   G.time=(s.t||0)/10;G.q=s.q|0;G.night=s.n|0;G.lv=s.lv|0||1;
   const nm=s.nm||[];
   G.players=(s.p||[]).map((a,i)=>{const old=G.players[i]||{};return{name:clean(nm[i])||('Joueur '+(i+1)),cls:CLS_IDS[a[6]]||'guerrier',x:a[0],y:a[1],rx:old.rx!=null?old.rx:a[0],ry:old.ry!=null?old.ry:a[1],hp:a[2],mhp:a[3]||1,down:!!a[4],rev:(a[5]||0)/40,drT:a[7]&1?1:0,shield:a[7]&2?1:0,stealthT:a[7]&4?1:0,aim:(a[8]||0)/10,sh:a[9]||0,lk:a[10]|0}});
-  const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);o.st=enemyStateUnpack(a[7]);em.set(a[0],o)}
+  const em=new Map();for(const a of s.e||[]){const o=G.emap.get(a[0])||{rx:a[2],ry:a[3]};o.id=a[0];o.type=ETYPES[a[1]]||'slime';if(!EN[o.type])o.type='slime';o.x=a[2];o.y=a[3];o.hpP=a[4];o.fl=a[5];o.bv=a[6]>=0?a[6]:undefined;o.hp=1;o.r=EN[o.type].r*((a[5]&8)&&o.type!=='orc'?1.4:1);o.elite=!!(a[5]&8);o.burn=a[5]&64?1:0;o.act=!!(a[5]&128);o.rb=Number.isFinite(+a[8])?+a[8]|0:0;o.gd=Number.isFinite(+a[9])?Math.trunc(+a[9]):-1;
+    o.pat=Number.isInteger(a[10])&&a[10]>=0&&WORLD&&a[10]<WORLD.camps.length?a[10]:undefined;em.set(a[0],o)}
+  G.bones=(Array.isArray(s.bo)?s.bo.slice(0,8):[]).filter(b=>Array.isArray(b)&&Number.isFinite(+b[0])&&Number.isFinite(+b[1])).map(b=>({x:+b[0],y:+b[1]}));
   G.emap=em;G.enemies=[...em.values()];G.cb=tbUnpack(s.cb);
+  for(const o of G.enemies)o.st=null;for(const o of G.enemies){const a=(s.e||[]).find(x=>x[0]===o.id);o.st=tacStates(o).concat(enemyStateUnpack(a&&a[7]))}   // les noms des protégés demandent tous les ennemis
   G.projs=(s.j||[]).map(a=>({x:a[0],y:a[1],k:a[2],ang:(a[3]||0)/10}));
   G.drops=(s.d||[]).map(a=>({id:a[0],k:a[1],x:a[2],y:a[3],r:a[4]|0,t:1}));
   G.zones=(s.zo||[]).map(a=>({x:a[0],y:a[1],r:a[2],smoke:a[3]===1?1:0,slow:a[3]===2?1:0}));
@@ -3699,7 +3910,8 @@ function serialize(){const r=Math.round;const near=(x,y)=>G.m.kind!=='world'||G.
   const s={z:G.zd,ep:G.ep,t:r(G.time*10),q:G.q,n:G.night,lv:G.lv,
     p:G.players.map(p=>[r(p.x),r(p.y),Math.ceil(p.hp),p.mhp,p.down?1:0,r(p.rev*40),CLS_IDS.indexOf(p.cls),(p.drT>0?1:0)|(p.shield>0?2:0)|(p.stealthT>0?4:0),Math.round((p.aim||0)*10),Math.round(p.shield||0),p.lk|0]),
     nm:G.players.map(p=>p.name),
-    e:G.enemies.filter(e=>e.hp>0&&near(e.x,e.y)).slice(0,34).map(e=>[e.id,ETYPES.indexOf(e.type),r(e.x),r(e.y),Math.max(1,Math.ceil(e.hp/e.mhp*100)),(e.frz>0?1:0)|(e.tele>0?2:0)|(e.flash>0?4:0)|(e.elite?8:0)|(e.chg>0?16:0)|(e.mistT>0?32:0)|(e.burn>0?64:0)|(e.act?128:0),e.bv??-1,enemyStatePack(e)]),
+    e:G.enemies.filter(e=>e.hp>0&&near(e.x,e.y)).slice(0,34).map(e=>[e.id,ETYPES.indexOf(e.type),r(e.x),r(e.y),Math.max(1,Math.ceil(e.hp/e.mhp*100)),(e.frz>0?1:0)|(e.tele>0?2:0)|(e.flash>0?4:0)|(e.elite?8:0)|(e.chg>0?16:0)|(e.mistT>0?32:0)|(e.burn>0?64:0)|(e.act?128:0),e.bv??-1,enemyStatePack(e),tacBits(e),tacFind(e.guard)?e.guard:-1,e.pat??-1]),
+    bo:(G.bones||[]).slice(-8).map(b=>[r(b.x),r(b.y)]),
     j:G.projs.slice(0,34).map(p=>[r(p.x),r(p.y),p.k,r(Math.atan2(p.vy,p.vx)*10)]),
     d:G.drops.filter(d=>near(d.x,d.y)).slice(0,26).map(d=>[d.id,d.k,r(d.x),r(d.y),d.r]),
     x:G.fx.filter(f=>G.time-f.t<1.2).slice(-14).map(f=>[f.id,f.k,r(f.x),r(f.y),r(f.v),f.o]),
@@ -3923,7 +4135,7 @@ function render(dt){
   if(m.kind==='house'){ctx.fillStyle='#2a1d12';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS);ctx.fillStyle='rgba(255,230,170,.18)';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS)}
   drawGroundFx(G.zones,G.fires,G.traps||[],G.decoys||[],T,vis);
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
-  drawTbGround(T,vis);
+  drawTbGround(T,vis);drawTacGround(T,vis);
   // tri en profondeur
   const Z=[];
   for(const c of m.chests){const op=G.opened.has(c.id);const py=(c.y+.5)*TS;if(vis((c.x+.5)*TS,py))Z.push([py+6,()=>drawChest(c,op)])}
@@ -4005,6 +4217,7 @@ function render(dt){
     if(G.stairsOpen&&!vis(s.x,s.y))edgeArrow(s.x,s.y,'#f2a33a','SORTIE',hw,hh);for(const d of G.drops)if(d.k===4&&!vis(d.x,d.y))edgeArrow(d.x,d.y,'#f0c95a','CLÉ',hw,hh);
     if(!G.stairsOpen&&m.marks&&m.marks.length){let b=null,bd=1e9;m.marks.forEach((mk,i)=>{if((G.gp[i]||0)>=1)return;const mx=(mk.x+.5)*TS,my=(mk.y+.5)*TS,dd=Math.hypot(mx-L.x,my-L.y);if(dd<bd){bd=dd;b={x:mx,y:my}}});if(b&&!vis(b.x,b.y))edgeArrow(b.x,b.y,'#f0c95a','OBJECTIF',hw,hh)}
     if(!G.stairsOpen&&m.goal&&m.goal.type==='waves'&&!G.wave&&!vis(m.goal.at.x,m.goal.at.y))edgeArrow(m.goal.at.x,m.goal.at.y,'#f0c95a','LES PORTES',hw,hh)}
+  drawTacOver(vis,hw,hh);
   if(isW&&!Scene.on){const o=objTarget();if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
   if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const a=Math.atan2(w.y-L.y,w.x-L.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
 /* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
@@ -4012,7 +4225,7 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
     if(e.act){const now=G.cb&&G.cb.ph==='e'&&G.cb.eid===e.id,pu=now?1+.1*Math.sin(T*8):1;   // l'ennemi qui joue : anneau épais et pulsé
       ctx.strokeStyle=now?'#ffb36a':'rgba(240,120,110,.9)';ctx.lineWidth=now?4:2;ctx.beginPath();ctx.ellipse(ex,ey+e.r*.6,(e.r+6)*pu,(e.r+6)*.45*pu,0,0,6.28);ctx.stroke();continue}
-    if(e.type==='boss'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);
+    if(e.type==='boss'||e.type==='mimic'||Math.hypot(w.x-ex,w.y-ey)>AGGRO_SHOW*TS)continue;ctx.beginPath();ctx.arc(ex,ey,AGGRO*TS,0,6.28);   // la Mimique endormie ne se trahit pas
     ctx.fillStyle='rgba(255,255,255,.05)';ctx.fill();ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=-T*8;ctx.stroke();ctx.setLineDash([])}
   // zone de combat : visible par le héros resté dehors, elle englobe tous les ennemis en combat
   if(G.cb&&!inn){ctx.save();ctx.fillStyle='rgba(200,72,60,.07)';ctx.strokeStyle='rgba(240,149,149,.55)';ctx.lineWidth=2;ctx.setLineDash([10,8]);ctx.lineDashOffset=T*10;
@@ -4022,12 +4235,14 @@ function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
     ctx.fillStyle='#f0c95a';ctx.beginPath();ctx.moveTo(tx,ty-t.r-10);ctx.lineTo(tx-6,ty-t.r-20);ctx.lineTo(tx+6,ty-t.r-20);ctx.closePath();ctx.fill()}
   if(tbHero()&&!L.tbEnd){const me=myP();if(me&&!me.down){drawMoveZone(T);ctx.save();ctx.fillStyle='rgba(255,255,255,.4)';ctx.beginPath();ctx.ellipse(L.tbOx,L.tbOy+12,7,3,0,0,6.28);ctx.fill();ctx.restore()}}}
 /* au-dessus des ennemis : ce qu'ils ont fait cette manche (pendant les tours des ennemis, puis 4 s), sinon leurs états */
-const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume'];
+const TB_TAG=['','Frappe','Charge','Tir','Passe son tour','Salve','Renforts','Brume','Protège','Relève les os','Bouclier sur','Cri · +25 %','Marque','Ordre :','Agrippe','Fuit'];
 function pill(t,x,y,col,bg){ctx.font='700 11px "Alegreya Sans",system-ui,sans-serif';const w=ctx.measureText(t).width+12;ctx.fillStyle=bg;ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-w/2,y-8,w,16,8);else ctx.rect(x-w/2,y-8,w,16);ctx.fill();ctx.stroke();ctx.fillStyle=col;ctx.fillText(t,x,y+.5)}
-function drawEnemyTags(vis){const c=G.cb,recent=c&&c.lg&&c.lg.length&&(c.ph==='e'||performance.now()-(L.tbLgT||0)<4000);
+function drawEnemyTags(vis){const pat=new Set(),c=G.cb,recent=c&&c.lg&&c.lg.length&&(c.ph==='e'||performance.now()-(L.tbLgT||0)<4000);
   for(const e of G.enemies){if(e.hp<=0)continue;const x=e.rx??e.x,y=(e.ry??e.y)-e.r-(e.type==='boss'?34:18);if(!vis(x,y))continue;
     const it=recent&&c.lg.find(q=>q.id===e.id);
-    if(it){pill(TB_TAG[it.k]+(it.d?' · −'+it.d:''),x,y,it.k===4?'#9fd0ff':'#ffd2c8',it.k===4?'rgba(29,54,64,.92)':'rgba(90,26,20,.92)');continue}
+    if(it){const o=it.o>=0&&G.enemies.find(q=>q.id===it.o),t=G.players[it.pi];
+      pill(TB_TAG[it.k]+(o?' '+enemyName(o):t&&(it.k===12||it.k===14)?' '+t.name:'')+(it.d?' · −'+it.d:''),x,y,it.k===4?'#9fd0ff':'#ffd2c8',it.k===4?'rgba(29,54,64,.92)':'rgba(90,26,20,.92)');continue}
+    if(e.pat!=null&&!e.act&&!c){if(!pat.has(e.pat)){pat.add(e.pat);pill(e.elite?'Patrouille · Chef':'Patrouille',x,y,'#efe6cf','rgba(19,37,44,.9)')}continue}
     const st=enemyStates(e);if(st.length)pill(st[0][0]+(st.length>1?' +'+(st.length-1):''),x,y,st[0][1],'rgba(19,37,44,.9)')}}
 function objTarget(){const qt=questTarget();if(qt)return qt;const o=OBJ[Math.min(G.q,6)];if(!o||!o.at||!WORLD)return null;return placePx(o.at)}
 function edgeArrow(x,y,col,label,hw,hh){const a=Math.atan2(y-L.y,x-L.x);const r=Math.min(hw,hh*.5)*.72;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;const pu=1+.12*Math.sin(G.time*6);
@@ -5487,6 +5702,8 @@ function meBigHud(me){const box=hq('#meBig'),on=!!(L.meBig&&me);setHid(box,!on);
 function meFx(me){const box=hq('#meFx');if(!box||!me)return;const inTb=tbMe(),d=s=>inTb?tbTurns(s):Math.ceil(s),fx=[];
   if((me.shield||me.sh||0)>0)fx.push(['Bouclier','#f0c95a',me.shieldT>0?d(me.shieldT):'']);if(L.rageT>0)fx.push(['Rage','#e0644c',d(L.rageT)]);
   if(L.stealthT>0)fx.push(['Disparition','#c9a2ff',d(L.stealthT)]);if(L.buffT>0&&hero.cls==='voleur')fx.push(['Prochain coup renforcé','#ffe08a',d(L.buffT)]);
+  {const c=G.cb;if(inTb&&c){if(c.mk&&c.mk.pi===myIdx&&c.r<c.mk.u)fx.push(['Marqué par le Chef : tout le groupe te vise, +15 % de dégâts','#ff6a5a',c.mk.u-c.r]);
+    if(tacGripped(myIdx))fx.push(['Agrippé : pas de déplacement ce tour','#d2dae8',1]);if(tacProvOn(myIdx))fx.push(['Provoqué : −25 % sur les autres cibles','#ff9a8a',1])}}
   if(ST.pa)fx.push(['Passif : '+SK[ST.pa].nom,'#9ff08a','P']);
   const key=fx.map(f=>f.join(':')).join('|');if(box._k===key)return;box._k=key;box.textContent='';
   for(const f of fx){const i=el('i','fxc',String(f[2]));i.style.setProperty('--c',f[1]);i.title=f[0]+(f[2]&&f[2]!=='P'?' · '+f[2]+(inTb?' tour'+(f[2]>1?'s':''):' s'):'');i.setAttribute('role','listitem');i.setAttribute('aria-label',i.title);box.append(i)}}

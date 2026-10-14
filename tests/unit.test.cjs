@@ -45,6 +45,7 @@ function loadGame() {
   vm.runInContext(code + `
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
   applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,tbPA,TB_DASH,
+  tacFlees,tacPack,tacUnpack,patPos,patLen,reinTurns,TB_LG,
   setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
@@ -272,9 +273,9 @@ if (!fs.existsSync(BUNDLE)) {
     const fresh = () => ({ time: 5, tbBy: null, cb: null, coop: true, projs: [], later: [], fires: [], zones: [], traps: [], decoys: [], emap: new Map(),
       msgs: [], msgId: 0, cool: {}, fx: [], fxId: 0,
       players: [{ name: 'César', cls: 'guerrier', st: { spd: 150 }, x: 0, y: 0, down: false }, { name: 'Léo', cls: 'mage', st: { spd: 146 }, x: 0, y: S, down: false }],
-      enemies: [foe(5, 'slime', 2 * S), foe(6, 'bat', 3 * S), foe(7, 'orc', 2 * S, { elite: true }), foe(8, 'archer', 4 * S)] });
+      enemies: [foe(5, 'slime', 2 * S), foe(6, 'bat', 3 * S), foe(7, 'orc', 2 * S, { elite: true }), foe(8, 'archer', 8 * S)] });   // l'Adepte hors de l'aura du Chef (5 cases)
     try {
-      // vitesse : Rejeton 13, héros 12 (le 1er joueur d'abord), Chef orc 9+1, Adepte 10, Marionnette 7 ; à égalité les héros d'abord
+      // vitesse : Rejeton 13+1 (aura du Chef), héros 12 (le 1er joueur d'abord), Chef orc 9+1, Adepte 10, Marionnette 7+1 ; à égalité les héros d'abord
       let G = fresh(); T.setG(G); T.tbStart(-1, [true, true]);
       assert.deepEqual([...G.cb.q], [6, -1, -2, 7, 8, 5]);
       assert.equal(G.cb.ph, 'e'); assert.equal(G.cb.eid, 6);
@@ -322,6 +323,51 @@ if (!fs.existsSync(BUNDLE)) {
       // César : 3 points, Foncer puis une attaque
       G.cb.rd[1] = true; T.tbUpdate(.016);
       assert.equal(G.cb.who, 0); assert.equal(G.cb.ap[0], 3);
+    } finally { T.setG(old); }
+  });
+
+  /* ---------- Ennemis stratégiques ---------- */
+  test('Moral : qui fuit quand le groupe flanche', () => {
+    assert.equal(T.tacFlees('slime', .1, 0), false);   // la Marionnette tient bon
+    assert.equal(T.tacFlees('mimic', .1, 0), false);
+    assert.equal(T.tacFlees('bat', .4, .9), true);      // Rejeton sous 50 % de vie
+    assert.equal(T.tacFlees('bat', .6, .1), false);
+    assert.equal(T.tacFlees('orc', 1, .3), true);       // Orc et Adepte : une fois sur deux
+    assert.equal(T.tacFlees('archer', 1, .7), false);
+    assert.equal(T.tacFlees('boss', .1, 0), false);
+  });
+  test('Rôles des ennemis : envoi à l’invité sans perte, valeurs bornées', () => {
+    const o = { guard: true, sh: true, cry: false, pan: true, flee: false, prot: true, pat: false, aura: true, shT: 2, cryT: 0, panT: 1 };
+    assert.deepEqual(JSON.parse(JSON.stringify(T.tacUnpack(T.tacPack(o)))), o);
+    const b = T.tacUnpack(T.tacPack({ shT: 99, cryT: -4 }));
+    assert.equal(b.shT, 15); assert.equal(b.cryT, 0);
+    assert.equal(T.tacUnpack('n’importe quoi').guard, false);
+  });
+  test('Patrouille : position sur la ronde calculée à partir de la distance parcourue', () => {
+    const R = [[0, 0], [100, 0], [100, 100], [0, 100]];
+    assert.equal(T.patLen(R), 400);
+    assert.deepEqual([T.patPos(R, 50).x, T.patPos(R, 50).y], [50, 0]);
+    assert.deepEqual([T.patPos(R, 150).x, T.patPos(R, 150).y], [100, 50]);
+    assert.deepEqual([T.patPos(R, 450).x, T.patPos(R, 450).y], [50, 0]);   // la ronde boucle
+    assert.deepEqual([T.patPos(R, -50).x, T.patPos(R, -50).y], [0, 50]);   // en retard sur la tête de file
+  });
+  test('Renforts : tours avant d’arriver au contact', () => {
+    assert.equal(T.reinTurns(2 * T.TS, 55), 0);
+    assert.equal(T.reinTurns(2 * T.TS + 55 * T.TB_EN, 55), 1);
+    assert.equal(T.reinTurns(15 * T.TS, 55), Math.ceil(13 * T.TS / (55 * T.TB_EN)));
+  });
+  test('Tour par tour : marque, agrippé, provoqué et renforts passent à l’invité, bornés', () => {
+    const old = T.getG();
+    const G = { players: [{ name: 'A', cls: 'guerrier', x: 0, y: 0, hp: 50, mhp: 50 }, { name: 'B', cls: 'mage', x: 0, y: 0, hp: 50, mhp: 50 }], enemies: [], coop: true, time: 0,
+      cb: { ph: 'h', who: 0, eid: -1, q: [-1, -2], k: 0, r: 4, t: 0, in: [true, true], rd: [false, false], ap: [3, 2], po: [false, false], pre: [0, 0], lg: [{ id: 7, k: 8, pi: -1, d: 0, o: 9 }],
+        mk: { pi: 1, by: 3, u: 6 }, gr: 1, grU: 0, grBy: [5, -1], pv: [null, null], rf: { x: 320, y: 64, n: 2 } } };
+    try {
+      T.setG(G);
+      const u = T.tbUnpack(JSON.parse(JSON.stringify(T.tbPack())));
+      assert.deepEqual([u.mk.pi, u.mk.u, u.gr, u.pvb, u.rf.n, u.lg[0].o], [1, 6, 1, 0, 2, 9]);
+      const bad = T.tbUnpack([1, 4, 0, 0, [], [], 0, 7, 99, 'x', ['a', 2, 3]]);
+      assert.deepEqual([bad.mk && bad.mk.pi, bad.gr, bad.rf], [1, 0, null]);
+      assert.equal(T.TB_LG.length, 16);
     } finally { T.setG(old); }
   });
 
