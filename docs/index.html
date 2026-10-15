@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-s96eZtkw0qaKNOYvpCkeuIWD/rcAODKmwkYx9jcPVqQ=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-olz6awXxhYhElTOafBp62F3CSpvI+hy1HFW6y3ZcxW8=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -874,7 +874,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='b6b2a6e5';
+const BUILD='d724aaf6';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -1105,7 +1105,7 @@ const enchCost=it=>({g:60+it.l*20,s:3+it.r*2});
 
 /* ================= Héros et caractéristiques ================= */
 /* v3 : arbre de talents et niveau 10 au plus ; les héros des versions précédentes repartent de zéro */
-const HERO_V=3;
+const HERO_V=4;   // 4 : remise à zéro du 15/10 (prologue de 2999)
 function newHero(cls){return{v:HERO_V,cls,lvl:1,xp:0,pts:0,tr:[],gold:30,pot:3,sh:0,q:0,fl:[],wp:['start'],pos:null,story:[],sq:{},sqd:[],track:'main',bag:[],eq:{arme:starter(cls,'arme'),armure:starter(cls,'armure'),talisman:null},ts:0}}
 function fixItem(it,cls){if(!it||typeof it!=='object'||!SLOTS.includes(it.s))return null;if(typeof it.rq==='string'&&RELICS[it.rq]){const r=makeRelic(it.rq,cls,it.l|0);if(r.s!==it.s)return null;r.u=clamp(it.u|0,0,5);return r}const o=genItem(it.id|0,it.l|0,it.r|0,cls,it.s);o.u=clamp(it.u|0,0,5);o.e=it.e&&enchOf(it.s,it.e)?it.e:null;if(typeof it.n==='string'&&it.n.length<60)o.n=it.n;return o}
 function fixHero(h,cls){const n=newHero(cls);if(!h||typeof h!=='object'||h.v!==HERO_V)return n;const o=Object.assign(n,h);o.cls=cls;o.v=HERO_V;delete o.tal;
