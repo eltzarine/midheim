@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dR5IkXqYsHQEqt0KBGmlvrX2Sx0EwDtoudxxl037k0w=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z4VPVyHsBI/v0nWdff74T6CZMlhi95r0JdYmLWjRy9Q=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -874,7 +874,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='3abfda9f';
+const BUILD='45fe5bcb';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -1255,10 +1255,12 @@ const SPR={im:{},_t:new Map(),_o:new Map(),
     if(st==='walk')return L[((Math.floor(v/m.stride*L.length)%L.length)+L.length)%L.length];
     return L.length>1?L[Math.floor(t*(m.idleFps||4))%L.length]:L[0]},
   /* dessine une case, pieds en (x,y) */
-  draw(g,src,m,i,f,flip,x,y){const sc=m.wh/m.h,cs=m.cs,col=m.axis==='row'?f:i,row=m.axis==='row'?i:f,w=cs*sc;
-    const sm=m.smooth!=null?m.smooth:(g.getTransform?g.getTransform().a*sc<1.5:false);g.imageSmoothingEnabled=!!sm;if(sm&&'imageSmoothingQuality'in g)g.imageSmoothingQuality='high';
+  /* pixel parfait : l'échelle est arrondie à un entier (×1, ×2…) ou à une fraction simple (½, ⅓) ; jamais 0,92 ou 2,25,
+     qui donneraient des pixels de tailles inégales. Une planche HD s'affiche donc à sa taille dessinée : 1 px du dessin = 1 px du monde. */
+  draw(g,src,m,i,f,flip,x,y){const r0=m.wh/m.h,sc=r0>=1?Math.round(r0):1/Math.round(1/r0),cs=m.cs,col=m.axis==='row'?f:i,row=m.axis==='row'?i:f,w=cs*sc;
+    const sm=m.smooth!=null?m.smooth:(g.getTransform?g.getTransform().a*sc<1:false);   // lissage seulement si l'image est réduiteg.imageSmoothingEnabled=!!sm;if(sm&&'imageSmoothingQuality'in g)g.imageSmoothingQuality='high';
     const left=flip?-w/2:x-w/2,top=Math.round(y-m.foot*sc);
-    if(flip){g.save();g.translate(x,0);g.scale(-1,1)}
+    if(flip){g.save();g.translate(Math.round(x),0);g.scale(-1,1)}
     g.drawImage(src,col*cs,row*cs,cs,cs,flip?left:Math.round(left),top,w,w);
     if(flip)g.restore();g.imageSmoothingEnabled=false}};
 SPR.load();
@@ -1281,7 +1283,7 @@ function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const hs=he
   if(!SPR.ok(hs.key))return false;const m=SPR.meta(hs.key);
   const hue=m.tint===false?null:RAR_HUE[L2.ar],sheet=SPR.tint(hs.key,hue,hs.head);
   g.save();g.imageSmoothingEnabled=false;
-  g.fillStyle='rgba(20,12,30,.35)';g.beginPath();g.ellipse(x,y+13,10*m.wh/36,3.5*m.wh/36,0,0,6.28);g.fill();
+  {const sh=sunSh(g,10*m.wh/36,0);g.fillStyle='rgba(20,12,30,'+.35*sh.a+')';g.beginPath();g.ellipse(x+sh.ox,y+13,sh.rx,3.5*m.wh/36,0,0,6.28);g.fill()}
   if(o.down){const pk=SPR.pick(m,Math.PI/2);g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.draw(g,sheet,m,pk.i,SPR.frame(m,'idle',0,0),pk.flip,0,8);g.restore();return true}
   const sw=typeof _hsw!=='undefined'&&_hsw;const ba=moving&&!sw&&o.mf!=null?o.mf:aim;   // en marche, le corps regarde où l'on va ; l'arme garde la visée
   const pk=SPR.pick(m,ba),back=pk.d==='N'||pk.d==='NE'||pk.d==='NW';
@@ -3540,7 +3542,7 @@ function pvNear(cx,cy,r){return pvFoes().filter(e=>Math.hypot(pvX(e)-cx,pvY(e)-c
    est passé en niveaux de gris (mélange « saturation » avec du gris, puis découpe à la forme d'origine) et recopié.
    Rien ne dépend du filtre du canevas (ignoré par Safari sur iPhone). */
 let PV_C=null,PV_C2=null;
-function pvGray(fn){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
+function pvGray(fn){const w=ctx.canvas.width,h=ctx.canvas.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
   for(const c of[PV_C,PV_C2])if(c.width!==w||c.height!==h){c.width=w;c.height=h}
   const g=PV_C.getContext('2d'),g2=PV_C2.getContext('2d'),real=ctx,m=real.getTransform(),a0=real.globalAlpha;
   g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);g.imageSmoothingEnabled=real.imageSmoothingEnabled;
@@ -3551,7 +3553,7 @@ function pvGray(fn){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createE
   g.globalCompositeOperation='destination-in';g.drawImage(PV_C2,0,0);g.globalCompositeOperation='source-over';   // on ne garde que la forme
   real.save();real.setTransform(1,0,0,1,0,0);real.globalAlpha=1;real.drawImage(PV_C,0,0);real.restore()}
 /* contour seul : la silhouette de ce que dessine fn, décalée tout autour, moins la silhouette elle-même ; trait gris clair */
-function pvOutline(fn,al){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
+function pvOutline(fn,al){const w=ctx.canvas.width,h=ctx.canvas.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
   for(const c of[PV_C,PV_C2])if(c.width!==w||c.height!==h){c.width=w;c.height=h}
   const g=PV_C.getContext('2d'),g2=PV_C2.getContext('2d'),real=ctx,m=real.getTransform(),k=Math.max(1.5,Math.min(3,Math.hypot(m.a,m.b)*.7));
   g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);g.imageSmoothingEnabled=real.imageSmoothingEnabled;
@@ -4163,17 +4165,23 @@ let bannerT=null;function showBanner(t,sub){const b=$('#banner');b.textContent=t
 let loadT=null;function showLoading(t,sub){const b=$('#loadBox');$('#loadTitle').textContent=t||'Midheim';$('#loadSub').textContent=sub||'';b.hidden=false;b.style.opacity=1;clearTimeout(loadT);loadT=setTimeout(()=>{b.style.opacity=0;loadT=setTimeout(()=>{b.hidden=true},260)},650)}
 
 /* ================= Caméra ================= */
-const cv=$('#cv');let ctx=cv.getContext('2d');   // let : l'aperçu gris dessine un instant sur un calque (pvGray)
+const cv=$('#cv'),fctx=cv.getContext('2d');let ctx=fctx;   // let : le monde se dessine sur le petit canevas pc, l'aperçu gris sur un calque (pvGray)
+/* Rendu « pixel parfait » (façon Sea of Stars) : le monde est dessiné dans un petit canevas pc où 1 pixel = 1 pixel du monde,
+   puis agrandi d'un facteur ENTIER PX, sans lissage. Tous les pixels du dessin ont donc la même taille à l'écran, nette et carrée.
+   Les textes (noms, dégâts, bulles) sont écrits ensuite en pleine résolution, pour rester lisibles. */
+const pc=document.createElement('canvas'),pctx=pc.getContext('2d');
 const lc=document.createElement('canvas'),lx=lc.getContext('2d');
-let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0;
-/* caméra : CAM_TILES cases sur le côté court de l'écran ; au combat elle recule à CAM_TILES_TB cases, pour voir que le mode change */
-const CAM_TILES=13,CAM_TILES_TB=16;
-function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
-  baseScale=clamp(Math.min(vw/(TS*CAM_TILES),vh/(TS*CAM_TILES)),.6,1.6);scale=baseScale*camZ}
+let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0,PX=1,rs=1,camTx=0,camTy=0;
+/* caméra : environ CAM_TILES cases sur le côté court de l'écran (facteur entier le plus proche). Plus de zoom au combat :
+   changer d'échelle ferait varier la taille des pixels. */
+const CAM_TILES=13;
+function resize(){dpr=Math.min(3,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);
+  PX=Math.max(1,Math.round(Math.min(cv.width,cv.height)/(TS*CAM_TILES)));pc.width=lc.width=Math.max(1,Math.ceil(cv.width/PX));pc.height=lc.height=Math.max(1,Math.ceil(cv.height/PX));
+  rs=dpr/PX;baseScale=PX/dpr;scale=baseScale;camZ=1}
 addEventListener('resize',resize);
 /* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
    On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
-function fitCanvas(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,r=Math.min(2,window.devicePixelRatio||1);
+function fitCanvas(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,r=Math.min(3,window.devicePixelRatio||1);
   if(w!==vw||h!==vh||r!==dpr)resize()}
 function settleResize(){resize();for(const t of[60,200,450,900])setTimeout(()=>{fitCanvas();if(typeof Cine!=='undefined'&&Cine.on)Cine.size()},t)}
 addEventListener('orientationchange',settleResize);
@@ -4198,7 +4206,7 @@ function wT(x,y){const m=WORLD;if(x<0||y<0||x>=m.W||y>=m.H)return 0;return m.t[y
 function chunkOf(cx,cy){const k=cx+','+cy,M=WORLD.chunks;let c=M.get(k);if(c){M.delete(k);M.set(k,c);return c}c=renderChunk(cx,cy);M.set(k,c);if(M.size>42)M.delete(M.keys().next().value);return c}
 function drawWorldGround(x0,y0,x1,y1){const c0=Math.max(0,Math.floor(x0/(CHK*TS))),c1=Math.min(Math.ceil(WORLD.W/CHK)-1,Math.floor(x1/(CHK*TS)));
   const r0=Math.max(0,Math.floor(y0/(CHK*TS))),r1=Math.min(Math.ceil(WORLD.H/CHK)-1,Math.floor((y1+CPAD)/(CHK*TS)));
-  ctx.imageSmoothingEnabled=false;for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=chunkOf(cx,cy);ctx.drawImage(c,cx*CHK*TS,cy*CHK*TS-CPAD,c.width+1,c.height+1)}ctx.imageSmoothingEnabled=true}
+  ctx.imageSmoothingEnabled=false;for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=chunkOf(cx,cy);ctx.drawImage(c,cx*CHK*TS,cy*CHK*TS-CPAD)}ctx.imageSmoothingEnabled=true}
 /* ================= Objets du monde : arbres, rochers, bâtiments, personnages ================= */
 function drawBuildingBase(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,roof=b.roof||'#7a3a2a';const dx=(b.door.x+.5)*TS;
   g.fillStyle='rgba(0,0,0,.28)';g.fillRect(x+6,y+h-4,w,10);
@@ -4274,16 +4282,15 @@ function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
 
 /* ================= Rendu principal ================= */
 function render(dt){
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=(G&&G.m&&G.m.st)?({rempart:'#8fa44c',salle:'#1c1820',col:'#9b5a36',nain:'#2a221c',bois:'#2f5a28',tresor:'#33281e',sentier:'#dfe6ea',sceaux:'#14111b',prison:'#14111b'}[G.m.style]||'#0b161b'):'#0b161b';ctx.fillRect(0,0,cv.width,cv.height);
-  if(!G||!G.m)return;const m=G.m,isW=m.kind==='world';
+  ctx=fctx;ctx.setTransform(1,0,0,1,0,0);const BG=(G&&G.m&&G.m.st)?({rempart:'#8fa44c',salle:'#1c1820',col:'#9b5a36',nain:'#2a221c',bois:'#2f5a28',tresor:'#33281e',sentier:'#dfe6ea',sceaux:'#14111b',prison:'#14111b'}[G.m.style]||'#0b161b'):'#0b161b';ctx.fillStyle=BG;ctx.fillRect(0,0,cv.width,cv.height);
+  if(!G||!G.m)return;ctx=pctx;sunTick(G.m.kind==='world');ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=BG;ctx.fillRect(0,0,pc.width,pc.height);const m=G.m,isW=m.kind==='world';
   const k=1-Math.pow(.0005,dt);
   for(let i=0;i<G.players.length;i++){const p=G.players[i];if(i===myIdx)continue;if(Math.hypot(p.x-p.rx,p.y-p.ry)>120){p.rx=p.x;p.ry=p.y}else{p.rx+=(p.x-p.rx)*k;p.ry+=(p.y-p.ry)*k}}
   for(const e of G.enemies){if(e.rx==null){e.rx=e.x;e.ry=e.y}if(Math.hypot(e.x-e.rx,e.y-e.ry)>100){e.rx=e.x;e.ry=e.y}else{e.rx+=(e.x-e.rx)*k;e.ry+=(e.y-e.ry)*k}}
   for(const c of G.crates){c.rx+=(c.x-c.rx)*Math.min(1,dt*14);c.ry+=(c.y-c.ry)*Math.min(1,dt*14)}
-  {const zt=!Scene.on&&typeof tbMe==='function'&&tbMe()?CAM_TILES/CAM_TILES_TB:1;camZ+=(zt-camZ)*Math.min(1,dt*3);if(Math.abs(zt-camZ)<.002)camZ=zt;scale=baseScale*camZ}
   const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:camBound(L.x,hw);camY=Scene.on?Scene.cam.y:L.y;
   shake=Math.max(0,shake-dt*30);const sh=shake?(Math.random()-.5)*shake:0;
-  const S=scale*dpr;ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);
+  camTx=Math.round(pc.width/2-camX-sh);camTy=Math.round(pc.height*fy-camY-sh);const cam=()=>ctx.setTransform(1,0,0,1,camTx,camTy);cam();   // calé sur la grille des pixels
   const x0=camX-hw-48,x1=camX+hw+48,y0=camY-hh*fy-64,y1=camY+hh*(1-fy)+48;
   const vis=(x,y)=>x>x0&&x<x1&&y>y0&&y<y1;const T=G.time;
   const boss=G.enemies.find(e=>e.type==='boss');G.bossPal=boss?boss.bv:0;
@@ -4354,7 +4361,7 @@ function render(dt){
   // lumière : intérieurs sombres, nuit, soir et mauvais temps dehors
   const dark=isW?Math.max(G.night?.8:0,Sky.dark):(m.kind==='house'?.22:(m.st?m.st.dark:.5));
   if(dark>.01){lx.setTransform(1,0,0,1,0,0);if(isW)lx.clearRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='source-over';lx.fillStyle=isW?(G.night?'rgba(8,14,34,'+dark+')':'rgba('+Sky.tint+','+dark+')'):'rgba(6,5,10,'+dark+')';lx.fillRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='destination-out';
-    const ls=S/2,ox=lc.width/2-(camX+sh)*ls,oy=lc.height*fy-(camY+sh)*ls;
+    const ls=1,ox=camTx,oy=camTy;
     const light=(x,y,r,a)=>{const sx=x*ls+ox,sy=y*ls+oy,rr2=r*ls;if(sx<-rr2||sy<-rr2||sx>lc.width+rr2||sy>lc.height+rr2)return;const g=lx.createRadialGradient(sx,sy,0,sx,sy,rr2);g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(.6,'rgba(0,0,0,'+a*.55+')');g.addColorStop(1,'rgba(0,0,0,0)');lx.fillStyle=g;lx.fillRect(sx-rr2,sy-rr2,rr2*2,rr2*2)};
     {const dk=isW&&!G.night?clamp(Sky.dark/.6,0,1):0;G.players.forEach((p,i)=>{const w=wpos(i);light(w.x,w.y,(i===myIdx?320:260)*(1-.55*dk),1-.12*dk)})}
     if(!isW)for(const t of m.torches)light((t.x+.5)*TS,t.y*TS+20,150+Math.sin(T*9+t.x)*8,.85);
@@ -4365,9 +4372,12 @@ function render(dt){
     for(const p of G.projs)if(p.k===1||p.k===2)light(p.x,p.y,70,.8);
     for(const z of G.zones)if(!z.smoke)light(z.x,z.y,z.r,.5);for(const f of G.fires)light(f.x,f.y,f.r+40,.8);
     if(m.kind==='dun'&&G.stairsOpen)light(m.stairs.x,m.stairs.y,110,.8);
-    lx.globalCompositeOperation='source-over';ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(lc,0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);if(isW)vitrineGlow(x0,y0,x1,y1)}
-  else{ctx.setTransform(1,0,0,1,0,0);const gr=ctx.createRadialGradient(cv.width/2,cv.height*fy,Math.min(cv.width,cv.height)*.35,cv.width/2,cv.height*fy,Math.max(cv.width,cv.height)*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,20,26,.35)');ctx.fillStyle=gr;ctx.fillRect(0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S)}
+    lx.globalCompositeOperation='source-over';ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(lc,0,0);cam();if(isW)vitrineGlow(x0,y0,x1,y1)}
+  else{ctx.setTransform(1,0,0,1,0,0);const W=pc.width,H=pc.height,gr=ctx.createRadialGradient(W/2,H*fy,Math.min(W,H)*.35,W/2,H*fy,Math.max(W,H)*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,20,26,.35)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);cam()}
   if(isW)Sky.drawScreen(Math.min(.05,dt||.016));
+  // le monde est prêt : agrandi d'un facteur entier, sans lissage ; la suite (textes, flèches) s'écrit en pleine résolution
+  fctx.setTransform(1,0,0,1,0,0);fctx.imageSmoothingEnabled=false;fctx.drawImage(pc,0,0,pc.width*PX,pc.height*PX);fctx.imageSmoothingEnabled=true;
+  ctx=fctx;ctx.setTransform(PX,0,0,PX,camTx*PX,camTy*PX);
   // textes
   ctx.textAlign='center';ctx.textBaseline='middle';
   const label=(t,x,y,col,size)=>{ctx.font='700 '+(size||12)+'px "Alegreya Sans",system-ui,sans-serif';ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillText(t,x+1,y+1);ctx.fillStyle=col||'#efe6cf';ctx.fillText(t,x,y)};
@@ -4645,7 +4655,14 @@ function openChron(){const box=$('#chronList');box.textContent='';const seen=(he
 const _shc=new Map();
 function shade(hex,k){const key=hex+k;let c=_shc.get(key);if(c)return c;const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;
   if(k>0){r+=(255-r)*k;g+=(255-g)*k;b+=(255-b)*k}else{r*=1+k;g*=1+k;b*=1+k}c='rgb('+(r|0)+','+(g|0)+','+(b|0)+')';if(_shc.size>4000)_shc.clear();_shc.set(key,c);return c}
-function dshadow(g,x,y,rx,ry,a){g.fillStyle='rgba(40,20,10,'+(a||.28)+')';g.beginPath();g.ellipse(x+rx*.25,y,rx,ry,0,0,6.28);g.fill()}
+/* Ombres au soleil : dehors, elles tournent et s'allongent avec l'heure (soleil à l'est le matin, à l'ouest le soir),
+   pâlissent sous les nuages et deviennent de faibles ombres de lune la nuit. Les morceaux de sol mis en cache gardent l'ombre neutre. */
+const SUN={on:false,k:0,s:1,a:1};
+function sunTick(isW){SUN.on=!!isW;if(!isW)return;const h=Sky.hour,day=h>=6&&h<20.5;
+  if(day){const k=clamp((h-13)/7,-1,1);SUN.k=k;SUN.s=1+Math.abs(k)*.8;SUN.a=(1-Sky.cloud*.65)*(1-Math.max(0,Math.abs(k)-.85)*2)}
+  else{SUN.k=.35;SUN.s=1.15;SUN.a=.45*(Sky.moon===0?1.2:.8)*(1-Sky.cloud*.7)}}
+function sunSh(g,rx,base){if(g!==ctx||!SUN.on)return{ox:rx*base,rx,a:1};return{ox:rx*SUN.k*.9,rx:rx*SUN.s,a:SUN.a}}
+function dshadow(g,x,y,rx,ry,a){const s=sunSh(g,rx,.25);g.fillStyle='rgba(40,20,10,'+(a||.28)*s.a+')';g.beginPath();g.ellipse(x+s.ox,y,s.rx,ry,0,0,6.28);g.fill()}
 function poly(g,pts,col){g.fillStyle=col;g.beginPath();g.moveTo(pts[0],pts[1]);for(let i=2;i<pts.length;i+=2)g.lineTo(pts[i],pts[i+1]);g.closePath();g.fill()}
 // prisme vu de 3/4 : empreinte au sol (x,y,w,h), hauteur z
 function prism(g,x,y,w,h,z,col,o){o=o||{};const top=o.top||shade(col,.18),front=o.front||col,side=o.side||shade(col,-.28);
@@ -5190,7 +5207,8 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
       for(let X=bx;X<x1+sp;X+=sp*4)for(let Y=by;Y<y1+sp;Y+=sp*3){const r=300+hash2(i,3,95)*260;if(X+r<x0||X-r>x1||Y+r<y0||Y-r>y1)continue;
         const gr=g.createRadialGradient(X,Y,0,X,Y,r);gr.addColorStop(0,'rgba(18,26,38,'+(.34*k)+')');gr.addColorStop(.55,'rgba(18,26,38,'+(.2*k)+')');gr.addColorStop(1,'rgba(20,28,40,0)');g.fillStyle=gr;g.fillRect(X-r,Y-r,r*2,r*2)}}},
   /* ---- pluie, brume, lumière dorée, éclairs (coordonnées de l'écran) ---- */
-  drawScreen(dt){const g=ctx,W=cv.width,H=cv.height,s=dpr;g.save();g.setTransform(1,0,0,1,0,0);
+  drawScreen(dt){const g=ctx,W=g.canvas.width,H=g.canvas.height,s=rs;   // dessiné sur le petit canevas du monde : gouttes en vrais pixels
+    g.save();g.setTransform(1,0,0,1,0,0);
     if(this.gold>0){g.fillStyle='rgba(255,130,50,'+(.16*this.gold*(1-this.rain))+')';g.fillRect(0,0,W,H)}
     if(this.dawn>0){g.fillStyle='rgba(255,170,190,'+(.06*this.dawn)+')';g.fillRect(0,0,W,H)}
     if(this.fog>0){for(let i=0;i<5;i++){const x=((hash2(i,5,96)*W+this.secs*(8+i*3)*s)%(W*1.6))-W*.3,y=H*(.15+hash2(i,6,97)*.8),r=Math.max(W,H)*(.35+hash2(i,7,98)*.25);

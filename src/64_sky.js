@@ -52,7 +52,8 @@ const Sky={secs:0,hour:12,day:1,dark:0,lamps:false,folkOut:1,tint:'26,18,48',gol
       for(let X=bx;X<x1+sp;X+=sp*4)for(let Y=by;Y<y1+sp;Y+=sp*3){const r=300+hash2(i,3,95)*260;if(X+r<x0||X-r>x1||Y+r<y0||Y-r>y1)continue;
         const gr=g.createRadialGradient(X,Y,0,X,Y,r);gr.addColorStop(0,'rgba(18,26,38,'+(.34*k)+')');gr.addColorStop(.55,'rgba(18,26,38,'+(.2*k)+')');gr.addColorStop(1,'rgba(20,28,40,0)');g.fillStyle=gr;g.fillRect(X-r,Y-r,r*2,r*2)}}},
   /* ---- pluie, brume, lumière dorée, éclairs (coordonnées de l'écran) ---- */
-  drawScreen(dt){const g=ctx,W=cv.width,H=cv.height,s=dpr;g.save();g.setTransform(1,0,0,1,0,0);
+  drawScreen(dt){const g=ctx,W=g.canvas.width,H=g.canvas.height,s=rs;   // dessiné sur le petit canevas du monde : gouttes en vrais pixels
+    g.save();g.setTransform(1,0,0,1,0,0);
     if(this.gold>0){g.fillStyle='rgba(255,130,50,'+(.16*this.gold*(1-this.rain))+')';g.fillRect(0,0,W,H)}
     if(this.dawn>0){g.fillStyle='rgba(255,170,190,'+(.06*this.dawn)+')';g.fillRect(0,0,W,H)}
     if(this.fog>0){for(let i=0;i<5;i++){const x=((hash2(i,5,96)*W+this.secs*(8+i*3)*s)%(W*1.6))-W*.3,y=H*(.15+hash2(i,6,97)*.8),r=Math.max(W,H)*(.35+hash2(i,7,98)*.25);
