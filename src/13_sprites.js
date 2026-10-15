@@ -115,11 +115,14 @@ function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.typ
   if(elite){const ol=SPR.outline(src,'#f0c95a','c_'+name);SPR.cell(g,ol,col,row,x,fy,PIX)}
   SPR.cell(g,src,col,row,x,fy,PIX);g.restore();return true}
 /* personnages de ville (PNJ nommés et villageois) */
-const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3',maitre:'Master'};
+const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3',maitre:'Master',
+  kari:'Woman',bjorn:'Hunter',sigrid:'Villager2',liv:'Villager3',ragna:'OldWoman',maren:'Princess',arne:'Villager5',halvard:'OldMan3',nils:'Child'};
+/* fratrie et PNJ du prologue : sprites du pack recolorés (teinte des vêtements, tête intacte) en attendant les dessins */
+const NPC_HUE={kari:[28,8],bjorn:[100,8],sigrid:[218,8],liv:[42,8],maren:[40,6],arne:[205,8]};
 const FOLK_SPR=['Villager','Villager2','Villager3','Villager4','Villager5','Woman','OldWoman','OldMan2','Child','Boy','Noble','Princess','Inspector'];
 function drawNPCPix(g,who,x,y,T,col,row){const name=NPC_SPR[who];if(!name||!SPR.ok('c_'+name))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.3)';g.beginPath();g.ellipse(x,y+12,9,3.2,0,0,6.28);g.fill();
-  SPR.cell(g,SPR.im['c_'+name],col||0,row||0,x,y+13-Math.round(Math.sin(T*2+x)*.5),PIX);g.restore();return true}
+  const hu=NPC_HUE[who];SPR.cell(g,hu?SPR.tint('c_'+name,hu[0],hu[1]):SPR.im['c_'+name],col||0,row||0,x,y+13-Math.round(Math.sin(T*2+x)*.5),PIX);g.restore();return true}
 function drawFolkPix(g,f,p){const h=(f.id!=null?f.id:Math.abs(Math.round((f.look&&f.look[0]||'').split('').reduce((a,c)=>a*31+c.charCodeAt(0),7))));
   const name=FOLK_SPR[Math.abs(h|0)%FOLK_SPR.length];if(!SPR.ok('c_'+name))return false;g.save();g.imageSmoothingEnabled=false;
   g.fillStyle='rgba(20,12,30,.28)';g.beginPath();g.ellipse(p.x,p.y+11,8,3,0,0,6.28);g.fill();

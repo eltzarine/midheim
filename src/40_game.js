@@ -15,15 +15,15 @@ function mkPlayer(name,cls,st){return{name,cls,st,hp:st.mhp,mhp:st.mhp,x:0,y:0,r
 // la description d'une zone peut venir du réseau : on la valide avant de construire quoi que ce soit
 function zoneFromDesc(zd){const a=String(zd||'').slice(0,120).split(':');const num=(v,lo,hi)=>clamp(Math.floor(+v)||0,lo,hi);
   if(a[0]==='d'&&Object.prototype.hasOwnProperty.call(DUNGEONS,a[1])){a[2]=num(a[2],0,DUNGEONS[a[1]].floors-1);a[3]=num(a[3],0,1e9);a[4]=num(a[4],1,99)}
-  else if(a[0]==='h'&&/^(auberge|forge|marchand|maison|talents)$/.test(a[1])&&/^[a-z0-9_]{1,40}$/.test(a[2]||'')){a[3]=num(a[3],0,1e5);a[4]=num(a[4],0,1e5)}
+  else if(a[0]==='h'&&/^(auberge|forge|marchand|maison|talents|lanterne)$/.test(a[1])&&/^[a-z0-9_]{1,40}$/.test(a[2]||'')){a[3]=num(a[3],0,1e5);a[4]=num(a[4],0,1e5)}
   else a[0]='w';
   if(a[0]==='w'){if(!WORLD)buildWorld();return WORLD}
   if(a[0]==='d'){const m=genDungeon2(a[1],+a[2],+a[3],+a[4]);m.kind='dun';m.did=a[1];m.idx=+a[2];m.lv=+a[4];m.mapCv=renderDun(m);{const s=m.start,tx=Math.floor(s.x/TS),ty=Math.floor(s.y/TS);const dy=m.t[(ty+1)*m.W+tx]===0?TS:0;m.leave={x:s.x,y:s.y+dy};m.inter=[{x:s.x,y:s.y+dy,r:26,kind:'door',act:'leave',label:'Quitter le donjon'}]}return m}
-  if(a[0]==='h'){const m=buildHouse(a[1],a[2],{x:+a[3],y:+a[4]});m.mapCv=renderMap(m);return m}
+  if(a[0]==='h'){const m=a[1]==='lanterne'?buildLanterne(a[2],{x:+a[3],y:+a[4]}):buildHouse(a[1],a[2],{x:+a[3],y:+a[4]});m.mapCv=renderMap(m);return m}
   return WORLD}
 function zoneName(m){if(!m)return'';if(m.kind==='world'){const r=regionAt(Math.floor(L.x/TS),Math.floor(L.y/TS));return r.nom}
   if(m.kind==='dun'){const s=DUNGEONS[m.did];return s.fl[m.idx]||s.nom}
-  if(m.kind==='house'){const b=WORLD&&WORLD.builds.find(b=>b.hid===m.hid);return b?b.label:'Intérieur'}return''}
+  if(m.kind==='house'){if(m.hk==='lanterne')return proName();const b=WORLD&&WORLD.builds.find(b=>b.hid===m.hid);return b?b.label:'Intérieur'}return''}
 
 /* ================= Collisions ================= */
 function tileAt(tx,ty){const m=G.m;if(tx<0||ty<0||tx>=m.W||ty>=m.H)return 1;return m.t[ty*m.W+tx]}
@@ -242,7 +242,7 @@ function hostUpdate(dt){
   if(G.m.kind==='dun'){const sx=G.m.stairs.x,sy=G.m.stairs.y;
     if(G.stairsOpen){if(alive.length&&alive.every(p=>Math.hypot(p.x-sx,p.y-sy)<36)){G.stairsT+=dt;if(G.stairsT>.7)dunNext()}else{G.stairsT=0;if(alive.some(p=>Math.hypot(p.x-sx,p.y-sy)<36)&&G.players.length>1)msg('Attendez-vous : les deux héros doivent être sur la sortie.','stw',5)}}
     else if(alive.some(p=>Math.hypot(p.x-sx,p.y-sy)<40))msg(goalHint(),'sts',5)}
-  if(G.m.kind==='house'){const dy=(G.m.H-1)*TS;if(alive.some(p=>p.y>dy-4))hostRequest('exit',0)}
+  if(G.m.kind==='house'){proTick();const dy=(G.m.H-1)*TS;if(alive.some(p=>p.y>dy-4))hostRequest('exit',0)}
   if(G.m.kind==='world'){tacPatrols();G.campT-=dt;if(G.campT<=0){G.campT=.5;updCamps();checkQuest()}}
   if(G.players.length&&G.players.every(p=>p.down)){G.defT+=dt;if(G.defT>2.5){G.dc++;defeat()}}else G.defT=0;
   applyGains({xp:G.xpTot,g:G.gain.g,pt:G.gain.pt,gm:G.gain.gm,sh:G.gain.sh,dc:G.dc,ep:G.ep,q:G.q});
@@ -266,7 +266,7 @@ function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){host
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
   if(act==='revive'){tbRevive(pi);return}
-  if(act==='exit'){if(m.kind==='house')hostEnter('w',m.exitTo);return}
+  if(act==='exit'){if(m.kind==='house'&&(m.hk!=='lanterne'||(proBits(G.pr)&2)))hostEnter('w',m.exitTo);return}
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
   if(act==='leave'){if(m.kind==='dun'&&near('leave')){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}
@@ -554,6 +554,7 @@ function interactLabel(it){if(!it)return'';const a=it.act;
 function doInteract(it){const a=it.act;
   if(a==='revive'){requestAct('revive');tbUse('ac',1);return}
   if(a.startsWith('talk:')){talkTo(a.slice(5));return}
+  if(a.startsWith('pro:')){proTalk(a.slice(4));return}
   if(a.startsWith('closed:')){showDialog('garde',it.label,a.slice(7));return}
   if(a.startsWith('shop:')){openTrade(a.slice(5),it.town);return}
   if(a==='talents'){toggleTalents(true);return}

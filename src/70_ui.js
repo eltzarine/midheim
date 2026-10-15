@@ -1,5 +1,5 @@
 /* ================= Portraits supplémentaires ================= */
-function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron'].includes(who)){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
+function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron'].includes(who)||PRO_NOM[who]){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
     const gr=g.createRadialGradient(c.width/2,c.height*.4,6,c.width/2,c.height/2,c.width*.7);gr.addColorStop(0,'#3a5a62');gr.addColorStop(1,'#0c1418');g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);
     drawNPC(g,who,c.width/2,c.height*.68,0,c.width/30);return}
   drawPortraitBase(c,who)}
@@ -196,7 +196,7 @@ function hud(dt){hudT-=dt;miniT-=dt;if(miniT<=0){miniT=.2;drawMini();skyTag()}if
   meFx(me);meBigHud(me);
   const boss=G.enemies.find(e=>e.type==='boss');setHid(hq('#bossBox'),!boss);if(boss){setTxt(hq('#bossName'),BOSSES[boss.bv??0].nom+(boss.bv===5?' · régénère':''));setW(hq('#bossHp'),(boss.hpP!=null?boss.hpP:boss.hp/boss.mhp*100)/100)}
   const m=G.m;let obj;if(m.kind==='dun'){obj=goalText()}
-  else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
+  else if(m.hk==='lanterne')obj=proObj();else if(m.kind==='house')obj='Parle à l’habitant ou sors par la porte';else obj=G.reinOn?'Survis à Reinald':OBJ[Math.min(G.q,6)].t;
   const tq=m.kind==='world'&&!G.reinOn?trackedText():null;
   const ob=tq?tq[0]+' · ':m.kind==='world'?'Quête · ':m.kind==='dun'?DUNGEONS[m.did].nom+' · ':'',os=tq?tq[1]:obj;
   const ot=hq('#objTxt');if(ot._t!==ob+'\n'+os){ot._t=ob+'\n'+os;ot.textContent='';ot.append(el('b',null,ob),document.createTextNode(os))}
@@ -275,7 +275,7 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logNa
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();
-  if(hero.q===0){if(!window.__noStory&&!hero.story.includes('prologue')){Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}else['prologue','reinald0','ch0'].forEach(queueStoryKey)}
+  if(hero.q===0&&!proStart()){if(!window.__noStory&&!hero.story.includes('prologue')){Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}else['prologue','reinald0','ch0'].forEach(queueStoryKey)}
   // toute partie est ouverte : tant qu'il reste une place, un 2e joueur peut la rejoindre depuis le menu
   if(room)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)})}
 function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
@@ -298,7 +298,7 @@ function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(
     parts=parts.filter(q=>q.life>0);if(parts.length>360)parts.splice(0,parts.length-360);
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
-    Sky.update(dt);Vitrine.tick(dt);tavernTick();Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);drawFade(dt);hud(dt);doSave(false)}
+    Sky.update(dt);Vitrine.tick(dt);tavernTick();proLocal();Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);drawFade(dt);hud(dt);doSave(false)}
   else if(mode==='menu')MenuBg.draw(dt)}
 
 /* ================= Entrées ================= */

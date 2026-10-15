@@ -3,7 +3,8 @@
 const VOICE_CLIPS=@@CLIPS@@;
 const VOX={narrateur:{g:'f',p:1.02,r:.88},virganth:{g:'m',p:.72,r:.86},grinmir:{g:'m',p:.58,r:.95},abhorash:{g:'m',p:.42,r:.82},
   reinald:{g:'m',p:.92,r:.9},reinaldj:{g:'m',p:1,r:.95},sinthara:{g:'f',p:.82,r:.92},amarath:{g:'m',p:.3,r:.76},garde:{g:'m',p:.85,r:1.05},
-  aubergiste:{g:'m',p:1.12,r:1.06},marchand:{g:'m',p:1.25,r:1.14},forgeron:{g:'m',p:.62,r:1}};
+  aubergiste:{g:'m',p:1.12,r:1.06},ragna:{g:'f',p:.86,r:1},maren:{g:'f',p:1.1,r:.92},arne:{g:'m',p:.8,r:.95},halvard:{g:'m',p:.66,r:.86},nils:{g:'m',p:1.45,r:1.15},
+  kari:{g:'f',p:.98,r:1},bjorn:{g:'m',p:.82,r:1},sigrid:{g:'f',p:1.12,r:1.12},liv:{g:'f',p:.95,r:.95},marchand:{g:'m',p:1.25,r:1.14},forgeron:{g:'m',p:.62,r:1}};
 const VOX_F=/am[ée]lie|audrey|aur[ée]lie|marie|julie|virginie|hortense|denise|c[ée]line|l[ée]a\b|chantal|sylvie|[ée]lo[iï]se|female|femme|v[ée]ronique|caroline|charlotte|jacqueline|vivienne|brigitte|eloise|josephine|seraphina|coralie|ariane/i;
 const VOX_M=/thomas|nicolas|paul\b|henri|claude|mathieu|jacques|r[ée]mi|yves|antoine|alain|\bmale|homme|guillaume|bruno|f[ée]lix|daniel|jean|pierre|remy|gerard|g[ée]rard|maxime|fabrice|alexandre|christophe|gr[ée]goire/i;
 const Voice={on:true,vs:[],tok:0,audio:null,busy:false,
