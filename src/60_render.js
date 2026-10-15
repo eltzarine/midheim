@@ -174,7 +174,7 @@ function drawNPC(g,who,x,y,T,scale){scale=scale||1;g.save();g.translate(x,y);g.s
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={kari:'Kári',bjorn:'Bjorn',sigrid:'Sigrid',liv:'Liv',ragna:'Ragna',maren:'Sœur Maren',arne:'Arne',halvard:'Halvard',nils:'Nils',maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}
@@ -184,6 +184,7 @@ function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   else if(f.k==='tonneau'){g.fillStyle='#6e4422';rr(g,px+6,py+5,20,23,6);g.fill();g.fillStyle='#3a3a44';g.fillRect(px+6,py+9,20,2.5);g.fillRect(px+6,py+21,20,2.5)}
   else if(f.k==='four'){g.fillStyle='#5a5246';g.fillRect(px-4,py,40,30);g.fillStyle='#1a1410';g.fillRect(px+4,py+10,24,16);g.fillStyle='rgba(255,140,40,'+(.6+.3*Math.sin(G.time*8))+')';g.fillRect(px+6,py+14,20,10)}
   else if(f.k==='enclume'){g.fillStyle='#3a3a44';g.fillRect(px+6,py+12,20,8);g.fillRect(px+12,py+20,8,8);g.fillStyle='#5a5a66';g.fillRect(px+4,py+10,24,4)}
+  else if(PRO_FURN[f.k])PRO_FURN[f.k](g,px,py,G.time);
   else if(f.k==='armes'){g.strokeStyle='#d8d6e2';g.lineWidth=3;for(let k=0;k<3;k++){g.beginPath();g.moveTo(px+4+k*10,py+28);g.lineTo(px+4+k*10,py+4);g.stroke()}}}
 
 /* ================= Rendu principal ================= */
@@ -216,7 +217,7 @@ function render(dt){
   if(!isW&&!m.st)for(const t of m.torches){if(vis((t.x+.5)*TS,t.y*TS))drawTorch(t,T)}
   if(m.goal&&m.goal.type==='waves'){const a=m.goal.at;if(vis(a.x,a.y)){if(!G.wave){ctx.strokeStyle='rgba(240,201,90,'+(.35+.25*Math.sin(T*4))+')';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.lineDashOffset=-T*12;ctx.beginPath();ctx.arc(a.x,a.y,7*TS,0,6.28);ctx.stroke();ctx.setLineDash([])}
     dshadow(ctx,a.x+4,a.y+8,8,3);ctx.fillStyle='#4a3020';ctx.fillRect(a.x-1.5,a.y-44,3,52);poly(ctx,[a.x+1,a.y-42,a.x+22+Math.sin(T*3)*2,a.y-38,a.x+18,a.y-28,a.x+22+Math.sin(T*3+1)*2,a.y-20,a.x+1,a.y-22],'#1f3358');ctx.fillStyle='#e0b45c';ctx.fillRect(a.x+6,a.y-36,10,2);ctx.fillRect(a.x+10,a.y-38,2,12)}}
-  if(m.kind==='house'){ctx.fillStyle='#2a1d12';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS);ctx.fillStyle='rgba(255,230,170,.18)';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS)}
+  if(m.kind==='house'&&m.hk!=='lanterne'){ctx.fillStyle='#2a1d12';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS);ctx.fillStyle='rgba(255,230,170,.18)';ctx.fillRect(5*TS+4,(m.H-1)*TS,TS-8,TS)}
   drawGroundFx(G.zones,G.fires,G.traps||[],G.decoys||[],T,vis);
   for(const d of G.drops){const b=Math.sin(T*5+d.id)*2;drawDrop2(d,d.x,d.y+b)}
   drawTbGround(T,vis);drawTacGround(T,vis);
@@ -265,11 +266,12 @@ function render(dt){
     if(sl>=0){ctx.strokeStyle='rgba('+col+',.6)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(ex,ey,26,0,6.28);ctx.stroke()}ctx.restore()}
   if(isW)Sky.drawWorld(x0,y0,x1,y1);
   // lumière : intérieurs sombres, nuit, soir et mauvais temps dehors
-  const dark=isW?Math.max(G.night?.8:0,Sky.dark):(m.kind==='house'?.22:(m.st?m.st.dark:.5));
+  const dark=isW?Math.max(G.night?.8:0,Sky.dark):(m.kind==='house'?(m.dark??.22):(m.st?m.st.dark:.5));
   if(dark>.01){lx.setTransform(1,0,0,1,0,0);if(isW)lx.clearRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='source-over';lx.fillStyle=isW?(G.night?'rgba(8,14,34,'+dark+')':'rgba('+Sky.tint+','+dark+')'):'rgba(6,5,10,'+dark+')';lx.fillRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='destination-out';
     const ls=1,ox=camTx,oy=camTy;
     const light=(x,y,r,a)=>{const sx=x*ls+ox,sy=y*ls+oy,rr2=r*ls;if(sx<-rr2||sy<-rr2||sx>lc.width+rr2||sy>lc.height+rr2)return;const g=lx.createRadialGradient(sx,sy,0,sx,sy,rr2);g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(.6,'rgba(0,0,0,'+a*.55+')');g.addColorStop(1,'rgba(0,0,0,0)');lx.fillStyle=g;lx.fillRect(sx-rr2,sy-rr2,rr2*2,rr2*2)};
-    {const dk=isW&&!G.night?clamp(Sky.dark/.6,0,1):0;G.players.forEach((p,i)=>{const w=wpos(i);light(w.x,w.y,(i===myIdx?320:260)*(1-.55*dk),1-.12*dk)})}
+    {const dk=isW&&!G.night?clamp(Sky.dark/.6,0,1):0;G.players.forEach((p,i)=>{const w=wpos(i);light(w.x,w.y,(i===myIdx?320:260)*(1-.55*dk)*(m.lights?.4:1),(1-.12*dk)*(m.lights?.7:1))})}
+    if(m.lights)for(const l of m.lights)light(l.x*TS,l.y*TS,l.r+(l.fl?Math.sin(T*(5+l.fl*2.3)+l.fl)*(l.fl===1?3:7):0),l.a);
     if(!isW)for(const t of m.torches)light((t.x+.5)*TS,t.y*TS+20,150+Math.sin(T*9+t.x)*8,.85);
     if(isW)vitrineHoles(light,x0,y0,x1,y1);
     if(isW&&G.night)for(const bd of m.builds)if(bd.kind!=='puits')light((bd.door.x+.5)*TS,bd.door.y*TS,90,.7);

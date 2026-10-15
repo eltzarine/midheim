@@ -46,7 +46,7 @@ function loadGame() {
 ;globalThis.__T={xpNeed,LVL_MAX,HERO_V,newHero,fixHero,clean,logName,treeNode,treeWhy,heroKit,treePts,TREE,SK,
   applyGuestStats,applyGuestInput,hostRequest,zoneName:typeof zoneName,tbLogLines,tbUpdate,tbClose,TS,tbStart,tbQueue,tbPack,tbUnpack,tbGate,TB_EN,tbPA,TB_DASH,
   tacFlees,tacPack,tacUnpack,patPos,patLen,reinTurns,TB_LG,hitChance,HIT_BASE,HIT_FAR,tbNoteSpend,tbAdmit,
-  SPR,SHEET_HD,SHEET_NINJA,STEP_PX,setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
+  SPR,SHEET_HD,SHEET_NINJA,STEP_PX,proBits,proSibOf,buildLanterne,PRO_SEAT,PRO_DOOR,setG:v=>{G=v},getG:()=>G};`, ctx, { filename: 'bundle.js' });
   return ctx.__T;
 }
 
@@ -56,6 +56,20 @@ if (!fs.existsSync(BUNDLE)) {
   const T = loadGame();
   const hero = (cls, lvl, tr = []) => Object.assign(T.newHero(cls), { lvl, tr });
 
+
+  /* ---------- Prologue de 2999 (la Lanterne froide) ---------- */
+  test('Prologue : « pr » reçu de l’autre joueur est borné aux deux bits (Maren, Nils)', () => {
+    assert.deepEqual([0, 1, 2, 3, 7, 255, -1, 'x', null, 1e40, NaN, '2'].map(T.proBits), [0, 1, 2, 3, 3, 3, 3, 0, 0, 0, 0, 2]);
+  });
+  test('Prologue : chaque classe joue son frère ou sa sœur', () => {
+    assert.deepEqual(['guerrier', 'voleur', 'mage', 'soigneur', 'inconnu'].map(T.proSibOf), ['bjorn', 'kari', 'sigrid', 'liv', 'kari']);
+  });
+  test('Prologue : la porte de la Lanterne est fermée au départ et les places autour de la table sont libres', () => {
+    const m = T.buildLanterne('tarkin_auberge', { x: 0, y: 0 });
+    assert.equal(m.t[(m.H - 1) * m.W + T.PRO_DOOR], 6);
+    for (const s of ['kari', 'bjorn', 'sigrid', 'liv']) { const [x, y] = T.PRO_SEAT[s]; assert.equal(m.t[Math.floor(y) * m.W + Math.floor(x)], 0, s); }
+    assert.ok(m.inter.some(i => i.act === 'exit'));
+  });
 
   /* ---------- Planches de personnage ---------- */
   test('Planches : 8 directions, angle -> ligne de la planche', () => {
