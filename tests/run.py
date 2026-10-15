@@ -63,7 +63,28 @@ with sync_playwright() as pw:
       const r={midi:at(12.5),soir:at(19.5),nuit:at(23)};r.mulNuit=G&&G.m?(G.m.kind==='world'?Sky.mul():4):4;at(12.5);r.mulJour=G&&G.m?Sky.mul():1;Sky.off=keep[0];Sky.force=keep[1];return r})()""")
     check('Ciel : midi clair, soir qui baisse, nuit sombre', sky['midi'][0]=='Midi' and sky['midi'][1] < .15 and .15 < sky['soir'][1] < sky['nuit'][1] and sky['nuit'][1] > .75, sky)
     pg.fill('#name', 'César'); pg.click('#bSolo'); pg.wait_for_timeout(900)
-    check('Départ dans le monde, côté Wild Realms', go(pg, "G.zd") == 'w' and go(pg, "Math.floor(L.x/TS)") < 55)
+    # ---- prologue de 2999 : un nouveau héros commence à la Lanterne froide ----
+    check('Prologue : un nouveau héros commence à la Lanterne froide, à Tarkin', go(pg, "G.m.hk==='lanterne'&&zoneName(G.m)==='La Lanterne froide'") and go(pg, "Scene.on"))
+    pg.wait_for_timeout(1800)
+    check('Prologue : titre du chapitre et narratrice', 'Lanterne froide' in pg.inner_text('#scnTitle') and 'rationnement' in (pg.inner_text('#vig') + pg.inner_text('#scnCap')))
+    pg.screenshot(path=f'{OUT}/p1_lanterne_arrivee.png')
+    skip(pg)
+    me = go(pg, "proMe()")
+    check('Prologue : les trois autres à table, la porte fermée, l’objectif « écoute la salle »',
+          sorted(go(pg, "G.m.npcs.filter(n=>PRO_SIBS.includes(n.who)).map(n=>n.who)")) == sorted([s for s in ['kari', 'bjorn', 'sigrid', 'liv'] if s != me])
+          and go(pg, "G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]") == 6 and 'indices 0/3' in pg.inner_text('#objTxt'), me)
+    go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/p2_lanterne_salle.png'); go(pg, "paused=false")
+    go(pg, "proTalk('halvard')"); pg.wait_for_timeout(1600)
+    check('Prologue : parler à Halvard note un indice', go(pg, "hero.fl.includes('pi_pierres')") and 'indices 1/3' in pg.inner_text('#objTxt') and 'pierres' in pg.inner_text('#vig'))
+    go(pg, "Vig.close(true);L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-2)*TS"); pg.wait_for_timeout(900)
+    check('Prologue : en approchant de la porte, Sœur Maren entre (et chacun reprend sa place)', go(pg, "(G.pr&1)&&Scene.on&&Scene.actors.some(a=>a.who==='maren')") and go(pg, "L.y<(PRO_H-2.5)*TS"))
+    pg.wait_for_timeout(2600); pg.screenshot(path=f'{OUT}/p3_lanterne_maren.png')
+    check('Prologue : Maren salue les enfants Haldorsen', 'Haldorsen' in pg.inner_text('#vig'))
+    skip(pg); pg.wait_for_timeout(300); skip(pg)
+    check('Prologue : puis Nils, la porte s’ouvre, objectif « rentrer chez la mère »', go(pg, "G.pr===3&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0&&G.m.npcs.some(n=>n.id==='nils')") and 'Rentrer chez la mère' in pg.inner_text('#objTxt'))
+    go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/p4_lanterne_nils.png'); go(pg, "paused=false")
+    go(pg, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-1.6)*TS;touch.jx=0;touch.jy=1"); pg.wait_for_timeout(1000); go(pg, "touch.jy=0")
+    check('Prologue : on sort à Tarkin, devant l’auberge, prologue noté', go(pg, "G.zd==='w'&&hero.fl.includes('pro_done')&&Math.hypot(L.x/TS-PL.tarkin[0],L.y/TS-PL.tarkin[1])<14"), go(pg, "[G.zd,L.x/TS,L.y/TS]"))
     check('Mise en scène d’introduction dans le jeu', go(pg, "Scene.on&&Scene.def.hideP") and go(pg, "Music.want") == 'cine' and pg.is_visible('#scnSkip'))
     pg.wait_for_timeout(2500)
     check('Intro : la narratrice parle (sous-titre ou vignette)', 'Le monde a changé' in (pg.inner_text('#scnCap') + pg.inner_text('#vig')))
@@ -74,7 +95,8 @@ with sync_playwright() as pw:
     skip(pg)
     check('Intro passée : prologue, Reinald et prophétie marqués', go(pg, "['prologue','reinald0','ch0'].every(k=>hero.story.includes(k))"))
     check('Mise en scène terminée, jeu actif', not go(pg, 'Scene.on') and go(pg, 'paused') is False)
-    # marcher (joystick) vers l'est jusqu'au pont
+    # marcher (joystick) vers l'est jusqu'au pont, depuis le départ de l'histoire de l'an 147
+    go(pg, "(()=>{const q=WORLD.start;L.x=q.x;L.y=q.y;G.players[0].x=q.x;G.players[0].y=q.y})()"); pg.wait_for_timeout(200)
     go(pg, "touch.jx=1;touch.jy=0"); pg.wait_for_timeout(1500); go(pg, "touch.jx=0")
     x1 = go(pg, "L.x/TS")
     check('Le héros marche vers le Pont de Lathandre', x1 > 43.5, round(x1, 1))
@@ -559,6 +581,37 @@ with sync_playwright() as pw:
     B.click('#pMenu'); B.click('#bQuit'); A.wait_for_timeout(900)
     check('À deux : le frère quitte, l’hôte continue', go(A, "G.players.length") == 1)
     check('Aucune erreur JavaScript (à deux)', not A.errs and not B.errs, (A.errs + B.errs)[:4])
+
+    # ================= Prologue à deux : chacun joue son frère ou sa sœur, l'hôte décide des moments forts =================
+    ctx = br.new_context(viewport={'width': 844, 'height': 390}, is_mobile=True, has_touch=True)
+    ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE_STORY)
+    A = ctx.new_page(); A.errs = []; A.on('pageerror', lambda e: A.errs.append('[hôte] ' + str(e)))
+    A.goto(URL); A.wait_for_timeout(600); A.click('.cls >> nth=0'); A.fill('#name', 'César'); A.click('#bSolo'); A.wait_for_timeout(900); skip(A)
+    B = ctx.new_page(); B.errs = []; B.on('pageerror', lambda e: B.errs.append('[frère] ' + str(e)))
+    B.goto(URL); B.wait_for_timeout(800); B.fill('#name', 'Petit frère'); B.click('.cls >> nth=2'); B.wait_for_timeout(300)
+    B.wait_for_selector('#hosts button:not([disabled])', timeout=5000); B.click('#hosts button'); B.wait_for_timeout(1000)
+    for _ in range(16):
+        if go(B, "mode==='guest'&&!!G&&!!G.m"): break
+        B.wait_for_timeout(250)
+    B.wait_for_timeout(600); skip(B)
+    check('Prologue à deux : le frère arrive à la Lanterne, Kári et Bjorn joués, Sigrid et Liv à table',
+          go(B, "G.m.hk==='lanterne'") and sorted(go(B, "G.m.npcs.filter(n=>PRO_SIBS.includes(n.who)).map(n=>n.who)")) == ['liv', 'sigrid'] and go(A, "G.players.length") == 2)
+    check('Prologue à deux : chez le frère, la porte est fermée', go(B, "G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]") == 6)
+    go(B, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-2)*TS"); A.wait_for_timeout(1200)
+    check('Prologue à deux : le frère s’approche de la porte, Maren entre chez les deux', go(A, "G.pr&1") and go(B, "(G.pr&1)&&(Scene.on||Scene.q.length>0)"))
+    skip(A); A.wait_for_timeout(600); skip(A); skip(B); B.wait_for_timeout(600); skip(B)
+    for _ in range(20):
+        if go(B, "G.pr===3"): break
+        B.wait_for_timeout(250)
+    skip(B)
+    check('Prologue à deux : Nils arrive, la porte s’ouvre aussi chez le frère', go(B, "G.pr===3&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0") and 'Rentrer chez la mère' in B.inner_text('#objTxt'))
+    go(A, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-1.6)*TS;touch.jx=0;touch.jy=1"); A.wait_for_timeout(1000); go(A, "touch.jy=0")
+    for _ in range(12):
+        if go(B, "G.zd==='w'"): break
+        B.wait_for_timeout(250)
+    check('Prologue à deux : sortis ensemble à Tarkin, prologue noté chez les deux', go(A, "G.zd==='w'&&hero.fl.includes('pro_done')") and go(B, "G.zd==='w'&&hero.fl.includes('pro_done')"))
+    check('Aucune erreur JavaScript (prologue à deux)', not A.errs and not B.errs, (A.errs + B.errs)[:4])
+    ctx.close()
 
     # ================= À deux sur le site public (Firebase simulé) : toute partie lancée reste ouverte =================
     FBA = open(os.path.join(ROOT, 'tests', 'fake_firebase_app.js')).read(); FBD = open(os.path.join(ROOT, 'tests', 'fake_firebase_database.js')).read()
