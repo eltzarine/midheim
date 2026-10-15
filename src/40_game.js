@@ -508,10 +508,11 @@ function updateLocal(dt){
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
   else{const t=tbAimAt(),n=t?{x:t.rx??t.x,y:t.ry??t.y}:null;L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
   {const t=tbTarget();if(t&&!touch.aimOn)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // cible choisie : on la vise, souris comprise
+  sceneCross();
   // découverte des lieux et région
   L.wpT-=dt;if(L.wpT<=0&&G.m&&G.m.kind==='world'){L.wpT=.5;const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS);
     for(const k in WAYPOINTS){if(hero.wp.includes(k))continue;const w=WAYPOINTS[k];if((w.pt[0]-tx)**2+(w.pt[1]-ty)**2<64){hero.wp.push(k);toast('Lieu découvert : '+w.nom+'. Voyage rapide possible depuis la carte.');questEvent('wp');doSave(true)}}
-    const rg=townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
+    const rg=inPontT(tx,ty)?{id:'pont',nom:'Le Pont de Lathandre',lv:1}:townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
   if(down){skQ=[false,false,false,false];potQ=false;actQ=false;return}
   // au combat, une attaque par appui (1 point d'action) ; hors combat, on frappe tant qu'on appuie
   const held=mouse.down||keys.has('KeyJ')||touch.atk,press=held&&!L.atkHeld||atkQ;L.atkHeld=held;atkQ=false;
@@ -531,6 +532,17 @@ function updateLocal(dt){
 /* recharges, mana, ultime et effets du héros local : s secondes (chaque image hors combat, un tour entier au combat) */
 function tickLocal(s,round){for(let k=0;k<4;k++)L.cd[k]-=s;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*s);L.buffT-=s;L.stealthT-=s;L.rageT-=s;
   if(ST.ks[3])L.ult=Math.min(100,L.ult+s*1.1+(round?TB_ULT:0))}
+/* scènes plaine → grand pont → Tarkin : on change de scène en sortant par le bord (le petit pont du monde sert de passage).
+   Chaque héros passe pour lui-même ; au combat (tour par tour) on ne change pas de scène. */
+function sceneCross(){if(!G.m||G.m.kind!=='world'||tbMe()||(typeof Scene!=='undefined'&&Scene.on))return;const B=WORLD.bridge,P=WORLD.pont;if(!B||!P)return;
+  const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS),row=g=>clamp(g,0,.999);let to=null;
+  if(inPontT(tx,ty)){const g=row((L.y/TS-P.y0)/(P.y1+1-P.y0)),oy=(B.y0+.2+g*(B.y1-B.y0+.6))*TS;
+    if(L.x<(P.x0-1.5)*TS)to={x:(B.x0-1.6)*TS,y:oy,ban:'plaine'};
+    else if(L.x>(P.x1+2.5)*TS)to={x:(B.x1+3.3)*TS,y:oy,ban:'tarkin'}}
+  else if(ty>=B.y0&&ty<=B.y1&&tx>=B.x0&&tx<=B.x1+1){const g=row((L.y/TS-B.y0)/(B.y1+1-B.y0)),py=(P.y0+.4+g*(P.y1-P.y0+.2))*TS;
+    to=L.x<(B.x0+B.x1+1)/2*TS?{x:(P.x0+1.2)*TS,y:py,ban:'pont'}:{x:(P.x1-.2)*TS,y:py,ban:'pont'}}
+  if(!to)return;L.x=to.x;L.y=to.y;L.dashT=0;L.fadeT=.45;Log.ev('scene','vers '+to.ban);
+}
 function townAt(tx,ty){for(const k in TOWNS){const p=PL[k];if((p[0]-tx)**2+(p[1]-ty)**2<100)return{id:'t_'+k,nom:TOWNS[k].nom,lv:0}}return null}
 function findInteract(){const m=G.m;if(!m)return null;
   if(tbHero()&&tbCanAct()){const me=myP(),q=G.players.find((o,j)=>j!==myIdx&&o.down&&Math.hypot((o.rx??o.x)-L.x,(o.ry??o.y)-L.y)<60);if(me&&!me.down&&q)return{x:q.x,y:q.y,r:60,act:'revive',label:'Relever '+q.name}}

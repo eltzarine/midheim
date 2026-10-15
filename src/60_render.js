@@ -87,6 +87,15 @@ function settleResize(){resize();for(const t of[60,200,450,900])setTimeout(()=>{
 addEventListener('orientationchange',settleResize);
 if(window.visualViewport)visualViewport.addEventListener('resize',settleResize);
 if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',settleResize);
+/* scènes : la caméra s'arrête aux bords. Plaine : le début du pont au bord droit ; grand pont : de bout en bout ;
+   Tarkin : le bord gauche sur le rempart. Près du pont seulement (fondu de la contrainte au nord et au sud). */
+function camBound(cx,hw){if(!WORLD||!G||!G.m||G.m.kind!=='world')return cx;const P=WORLD.pont,B=WORLD.bridge;
+  if(P&&pontOn(L.x,L.y)){const r=pontRect(),a=r.X0-12+hw,b=r.X1+12-hw;return a>b?(a+b)/2:clamp(cx,a,b)}
+  if(!B)return cx;const dy=Math.abs(L.y/TS-(B.y0+B.y1+1)/2),k=clamp((28-dy)/12,0,1);if(!k)return cx;
+  if(L.x<(B.x0+B.x1+1)/2*TS){const lim=B.x0*TS+62-hw;return cx>lim?cx+(lim-cx)*k:cx}
+  const lim=(B.x1+1.5)*TS+hw;return cx<lim?cx+(lim-cx)*k:cx}
+/* changement de scène : court fondu au noir */
+function drawFade(dt){if(!(L&&L.fadeT>0))return;L.fadeT-=dt;ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='rgba(5,8,12,'+clamp(L.fadeT/.45,0,1)+')';ctx.fillRect(0,0,cv.width,cv.height)}
 function screenToWorld(sx,sy){return{x:(sx-vw/2)/scale+camX,y:(sy-vh*focusY())/scale+camY}}
 function focusY(){return vh>vw?.55:.52}
 function wpos(i){const p=G.players[i];if(i===myIdx)return{x:L.x,y:L.y};return{x:p.rx,y:p.ry}}
@@ -180,13 +189,13 @@ function render(dt){
   for(const e of G.enemies){if(e.rx==null){e.rx=e.x;e.ry=e.y}if(Math.hypot(e.x-e.rx,e.y-e.ry)>100){e.rx=e.x;e.ry=e.y}else{e.rx+=(e.x-e.rx)*k;e.ry+=(e.y-e.ry)*k}}
   for(const c of G.crates){c.rx+=(c.x-c.rx)*Math.min(1,dt*14);c.ry+=(c.y-c.ry)*Math.min(1,dt*14)}
   {const zt=!Scene.on&&typeof tbMe==='function'&&tbMe()?CAM_TILES/CAM_TILES_TB:1;camZ+=(zt-camZ)*Math.min(1,dt*3);if(Math.abs(zt-camZ)<.002)camZ=zt;scale=baseScale*camZ}
-  const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:L.x;camY=Scene.on?Scene.cam.y:L.y;
+  const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:camBound(L.x,hw);camY=Scene.on?Scene.cam.y:L.y;
   shake=Math.max(0,shake-dt*30);const sh=shake?(Math.random()-.5)*shake:0;
   const S=scale*dpr;ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);
   const x0=camX-hw-48,x1=camX+hw+48,y0=camY-hh*fy-64,y1=camY+hh*(1-fy)+48;
   const vis=(x,y)=>x>x0&&x<x1&&y>y0&&y<y1;const T=G.time;
   const boss=G.enemies.find(e=>e.type==='boss');G.bossPal=boss?boss.bv:0;
-  if(isW){ctx.imageSmoothingEnabled=true;drawWorldGround(x0,y0,x1,y1);drawWater(x0,y0,x1,y1,T);drawLathBridge(T)}
+  if(isW){ctx.imageSmoothingEnabled=true;drawWorldGround(x0,y0,x1,y1);drawWater(x0,y0,x1,y1,T);drawLathBridge(T);drawGrandPont(T,x0,y0,x1,y1,camX,camY)}
   else{ctx.imageSmoothingEnabled=false;ctx.drawImage(m.mapCv,0,0)}
   if(m.kind==='dun'){const s=m.stairs;
     if(G.stairsOpen){const pu=.5+.5*Math.sin(T*4);ctx.fillStyle='rgba(242,163,58,'+(.18+.14*pu)+')';ctx.beginPath();ctx.arc(s.x,s.y,30+pu*4,0,6.28);ctx.fill();ctx.fillStyle='#120c04';ctx.beginPath();ctx.arc(s.x,s.y,17,0,6.28);ctx.fill();
@@ -216,7 +225,7 @@ function render(dt){
   if(isW){const a=Math.max(0,Math.floor(x0/TS)),b=Math.min(m.W-1,Math.floor(x1/TS)),c=Math.max(0,Math.floor(y0/TS)),d=Math.min(m.H-1,Math.floor((y1+80)/TS));
     for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){const o=m.obj[ty*m.W+tx];if(!o)continue;const ox=(tx+.5)*TS,oy=(ty+1)*TS;let al=1;
       if(o!==4&&o!==7&&Math.abs(ox-L.x)<30&&L.y<oy-4&&L.y>oy-70)al=.45;Z.push([oy-4,()=>drawTreeObj(o,tx,ty,al)])}
-    bridgeProps(Z,T);
+    bridgeProps(Z,T);grandPontProps(Z,T,camX,camY);
     if(Sky.folkOut>0)for(const k in TOWNS){const c=PL[k];if(Math.hypot(L.x/TS-c[0],L.y/TS-c[1])>VITRINE.r+14)continue;const fl=vitrineFolk(k),n=Math.round(fl.length*Sky.folkOut);for(let i=0;i<n;i++){const f=fl[i],p=folkPos(f,Sky.secs);if(vis(p.x,p.y))Z.push([p.y+6,()=>drawFolk(ctx,f,p)])}}
     for(const bd of m.builds){if(bd.x*TS>x1+64||(bd.x+bd.w)*TS<x0-64||bd.y*TS>y1+64||(bd.y+bd.h)*TS<y0-90)continue;Z.push([(bd.y+bd.h)*TS-2,()=>drawBuilding(bd,T)])}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(vis(n.x,n.y))Z.push([n.y+6,()=>drawNPC(ctx,n.who,n.x,n.y,T)])}
@@ -260,6 +269,7 @@ function render(dt){
     if(isW)vitrineHoles(light,x0,y0,x1,y1);
     if(isW&&G.night)for(const bd of m.builds)if(bd.kind!=='puits')light((bd.door.x+.5)*TS,bd.door.y*TS,90,.7);
     if(isW&&WORLD.bridge){const r=bridgeRect();for(const[x,y]of[[r.X0,r.Y0],[r.X1,r.Y0],[r.X0,r.Y1+6],[r.X1,r.Y1+6]])light(x,y-60,120,.8)}
+    if(isW&&pontOn(camX,camY))for(const[x,y]of pontPylons())light(x,y-60,120,.8);
     for(const p of G.projs)if(p.k===1||p.k===2)light(p.x,p.y,70,.8);
     for(const z of G.zones)if(!z.smoke)light(z.x,z.y,z.r,.5);for(const f of G.fires)light(f.x,f.y,f.r+40,.8);
     if(m.kind==='dun'&&G.stairsOpen)light(m.stairs.x,m.stairs.y,110,.8);
@@ -290,8 +300,8 @@ function render(dt){
     if(!G.stairsOpen&&m.marks&&m.marks.length){let b=null,bd=1e9;m.marks.forEach((mk,i)=>{if((G.gp[i]||0)>=1)return;const mx=(mk.x+.5)*TS,my=(mk.y+.5)*TS,dd=Math.hypot(mx-L.x,my-L.y);if(dd<bd){bd=dd;b={x:mx,y:my}}});if(b&&!vis(b.x,b.y))edgeArrow(b.x,b.y,'#f0c95a','OBJECTIF',hw,hh)}
     if(!G.stairsOpen&&m.goal&&m.goal.type==='waves'&&!G.wave&&!vis(m.goal.at.x,m.goal.at.y))edgeArrow(m.goal.at.x,m.goal.at.y,'#f0c95a','LES PORTES',hw,hh)}
   drawTacOver(vis,hw,hh);
-  if(isW&&!Scene.on){const o=objTarget();if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
-  if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const a=Math.atan2(w.y-L.y,w.x-L.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
+  if(isW&&!Scene.on){let o=objTarget();if(o){const me=realPx(L.x,L.y);o={x:o.x-me.x+L.x,y:o.y-me.y+L.y}}if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
+  if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const rw=realPx(w.x,w.y),rm=realPx(L.x,L.y),a=Math.atan2(rw.y-rm.y,rw.x-rm.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
 /* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
 function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
@@ -329,11 +339,11 @@ function drawDrop2(d,x,y){if(d.k===6){const g=ctx,c=RAR[d.r|0].col;g.fillStyle='
 let mapImgEl=null;
 function drawMini(){const c=$('#mini');if(!G||!G.m)return;const g=c.getContext('2d');const W=c.width,H=c.height;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
   if(G.m.kind==='world'){mapImgEl=mapImgEl||$('#mapImg');c.classList.remove('sq');if(!mapImgEl.complete)return;const iw=mapImgEl.naturalWidth,ih=mapImgEl.naturalHeight;const kx=iw/WORLD.W,ky=ih/WORLD.H;
-    const span=46;const cx=L.x/TS*kx,cy=L.y/TS*ky;const sw=span*kx;g.save();g.beginPath();g.arc(W/2,H/2,W/2,0,6.28);g.clip();
+    const span=46;const me=realPx(L.x,L.y),cx=me.x/TS*kx,cy=me.y/TS*ky;const sw=span*kx;g.save();g.beginPath();g.arc(W/2,H/2,W/2,0,6.28);g.clip();
     g.drawImage(mapImgEl,cx-sw/2,cy-sw/2,sw,sw,0,0,W,H);
     const toM=(x,y)=>({x:W/2+(x/TS*kx-cx)/sw*W,y:H/2+(y/TS*ky-cy)/sw*H});
     const o=objTarget();if(o){let p=toM(o.x,o.y);const d=Math.hypot(p.x-W/2,p.y-H/2);if(d>W/2-8){p={x:W/2+(p.x-W/2)/d*(W/2-8),y:H/2+(p.y-H/2)/d*(H/2-8)}}g.strokeStyle='#f0c95a';g.lineWidth=3;g.beginPath();g.arc(p.x,p.y,5,0,6.28);g.stroke()}
-    G.players.forEach((p,i)=>{const w=wpos(i);const q=toM(w.x,w.y);g.fillStyle=CLS[p.cls].col;g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.arc(q.x,q.y,i===myIdx?4.5:3.5,0,6.28);g.fill();g.stroke()});
+    G.players.forEach((p,i)=>{const w0=wpos(i),w=realPx(w0.x,w0.y);const q=toM(w.x,w.y);g.fillStyle=CLS[p.cls].col;g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.arc(q.x,q.y,i===myIdx?4.5:3.5,0,6.28);g.fill();g.stroke()});
     g.restore()}
   else{c.classList.add('sq');updSeen();const m=G.m;const k=Math.min(W/m.W,H/m.H);g.setTransform(k,0,0,k,(W-m.W*k)/2,(H-m.H*k)/2);g.fillStyle='rgba(10,16,20,.6)';g.fillRect(0,0,m.W,m.H);const S2=G.seen;
     for(let y=0;y<m.H;y++)for(let x=0;x<m.W;x++){if(!S2[y*m.W+x])continue;const v=m.t[y*m.W+x];if(v===1)continue;g.fillStyle=v===2?(G.gateOpen?'#4a6670':'#a5b6c2'):v===4?'#5fd8cf':v===7?'#ff7a2a':v===6?'#6a7a80':'#4a6670';g.fillRect(x,y,1.02,1.02)}

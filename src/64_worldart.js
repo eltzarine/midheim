@@ -207,3 +207,49 @@ function drawBridgePylon(x,y,T,banner){const g=ctx;dshadow(g,x+4,y+2,16,5);const
 function bridgeProps(Z,T){if(!WORLD.bridge)return;const{X0,X1,Y0,Y1}=bridgeRect();
   Z.push([Y1+2,()=>drawParapet(X0,X1,Y1+1,false)]);
   for(const[x,y,b]of[[X0,Y0,1],[X1,Y0,1],[X0,Y1+6,0],[X1,Y1+6,0]])Z.push([y,()=>drawBridgePylon(x,y,T,b)])}
+/* ================= Scène du grand Pont de Lathandre : le pont au-dessus de la Fissure ================= */
+function pontRect(){const P=WORLD.pont;return{X0:P.x0*TS-8,X1:(P.x1+1)*TS+8,Y0:P.y0*TS,Y1:(P.y1+1)*TS}}
+const pontArches=()=>{const{X0,X1}=pontRect();return Math.max(3,Math.round((X1-X0)/190))};
+/* la caméra est-elle dans la scène du pont ? (on ne peint la Fissure que là) */
+function pontOn(cx,cy){return!!(WORLD&&WORLD.pont&&inPontT(Math.floor(cx/TS),Math.floor(cy/TS)))}
+const _rnd=k=>{const v=Math.sin(k*127.1)*43758.5453;return v-Math.floor(v)};
+function drawGrandPont(T,x0,y0,x1,y1,cx,cy){if(!pontOn(cx,cy))return;const g=ctx,P=WORLD.pont,{X0,X1,Y0,Y1}=pontRect(),GX0=P.x0*TS,GX1=(P.x1+1)*TS;
+  // rives : terre sèche de la plaine à l'ouest, pavés puis herbe de Tarkin à l'est (la route prolonge le tablier)
+  g.save();g.imageSmoothingEnabled=false;const a=Math.floor(x0/TS)-1,b=Math.ceil(x1/TS)+1,c=Math.floor(y0/TS)-1,d=Math.ceil(y1/TS)+1;
+  for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){if(tx>=P.x0&&tx<=P.x1)continue;const deck=ty>=P.y0&&ty<=P.y1,w=tx<P.x0;
+    const v=w?(deck&&tx>=P.x0-12?7:3):(deck||(tx<=P.x1+4&&Math.abs(ty-(P.y0+P.y1)/2)<5)?10:2);
+    g.fillStyle=w?'#d38a4a':v===10?'#c9b27a':'#7fb24a';g.fillRect(tx*TS,ty*TS,TS,TS);groundTile(g,v,tx+500,ty+500,tx*TS,ty*TS)}
+  g.restore();
+  // la Fissure : gorge sans fond, lueur rouge tout au fond
+  const H0=Math.min(y0,Y0-400),H1=Math.max(y1,Y1+400),H=H1-H0;
+  const gr=g.createLinearGradient(GX0,0,GX1,0);gr.addColorStop(0,'#3b2a22');gr.addColorStop(.05,'#1d1418');gr.addColorStop(.5,'#0a0710');gr.addColorStop(.95,'#1d1418');gr.addColorStop(1,'#3b2a22');
+  g.fillStyle=gr;g.fillRect(GX0,H0,GX1-GX0,H);
+  const gl=g.createRadialGradient((GX0+GX1)/2,(Y0+Y1)/2+160,10,(GX0+GX1)/2,(Y0+Y1)/2+160,(GX1-GX0)*.5);gl.addColorStop(0,'rgba(150,44,30,.22)');gl.addColorStop(1,'rgba(150,44,30,0)');g.fillStyle=gl;g.fillRect(GX0,H0,GX1-GX0,H);
+  // parois rocheuses de chaque côté : strates, arêtes éclairées, ombre portée vers le vide
+  const s0=Math.floor(H0/10);for(const side of[0,1]){const ex=side?GX1:GX0;
+    for(let k=s0,y=s0*10;y<H1;y+=10,k++){const w=30+_rnd(k+side*99)*34,sh=_rnd(k*3+side*7),x=side?ex-w:ex;
+      g.fillStyle=sh<.33?'#5a4434':sh<.66?'#4a372b':'#3a2b23';g.fillRect(x,y,w,10);g.fillStyle='rgba(255,220,170,.10)';g.fillRect(x,y,w,2);
+      g.fillStyle='rgba(0,0,0,.35)';g.fillRect(side?x:x+w-6,y,6,10)}
+    g.fillStyle='#7a5e45';g.fillRect(side?ex-6:ex,H0,6,H);g.fillStyle='rgba(255,230,180,.25)';g.fillRect(side?ex-6:ex+4,H0,2,H)}
+  // éboulis qui tombent et brume qui dérive
+  for(let k=0;k<40;k++){const x=GX0+60+_rnd(k+5)*(GX1-GX0-120),y=H0+((_rnd(k+11)*H+T*(20+_rnd(k)*30))%H);g.fillStyle='rgba(120,100,90,'+(.25+_rnd(k+3)*.3)+')';g.fillRect(x,y,2,2)}
+  for(let k=0;k<12;k++){const y=H0+H*(k+.5)/12,x=GX0+((_rnd(k)*1000+T*(8+k*2))%(GX1-GX0+400))-200;
+    g.fillStyle='rgba(190,180,200,.07)';g.beginPath();g.ellipse(x,y,220,26,0,0,6.28);g.fill();g.beginPath();g.ellipse(x+180,y+14,140,18,0,0,6.28);g.fill()}
+  // le pont : piles qui plongent dans le vide, face sud à arches, tablier et soleil de Lathandre
+  const n=pontArches(),W=X1-X0,FH=60,span=W/n;
+  for(let k=0;k<=n;k++){const px=X0+span*k,pw=k===0||k===n?30:38,pg=g.createLinearGradient(0,Y1+FH,0,Y1+FH+520);pg.addColorStop(0,'#7c735f');pg.addColorStop(.35,'#3e382f');pg.addColorStop(1,'rgba(10,7,16,0)');
+    g.fillStyle=pg;g.fillRect(px-pw/2,Y1+FH-4,pw,520);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(px+pw/2-8,Y1+FH-4,8,520)}
+  stoneBlocks(g,X0,Y1,W,FH,'#8f8572',9);
+  for(let k=0;k<n;k++){const cx2=X0+span*(k+.5),aw=span*.36,top=Y1+14;g.fillStyle='#0d0912';g.beginPath();g.moveTo(cx2-aw,Y1+FH);g.lineTo(cx2-aw,top+aw*.5);g.quadraticCurveTo(cx2-aw,top,cx2,top);g.quadraticCurveTo(cx2+aw,top,cx2+aw,top+aw*.5);g.lineTo(cx2+aw,Y1+FH);g.closePath();g.fill();
+    g.strokeStyle='#c9bfa9';g.lineWidth=3;g.stroke();g.fillStyle='#d8cfba';g.fillRect(cx2-3,top-5,6,7)}
+  g.fillStyle='rgba(0,0,0,.25)';g.fillRect(X0,Y1,W,4);
+  g.fillStyle='#bdb39e';g.fillRect(X0,Y0,W,Y1-Y0);g.strokeStyle='rgba(70,58,44,.3)';g.lineWidth=1;
+  for(let r=0,yy=Y0;yy<Y1;r++,yy+=14){for(let x=X0+(r%2)*10;x<X1;x+=20)g.strokeRect(x+.5,yy+.5,20,14)}
+  g.fillStyle='rgba(255,255,255,.06)';g.fillRect(X0,(Y0+Y1)/2-20,W,40);
+  {const sx=(X0+X1)/2,sy=(Y0+Y1)/2;g.save();g.translate(sx,sy);g.scale(1.5,.93);g.fillStyle='#8a7350';g.beginPath();g.arc(0,0,30,0,6.28);g.fill();g.fillStyle='#e0b45c';
+    for(let k=0;k<16;k++){g.rotate(Math.PI/8);g.beginPath();g.moveTo(-4,14);g.lineTo(0,29);g.lineTo(4,14);g.closePath();g.fill()}g.beginPath();g.arc(0,0,13,0,6.28);g.fill();g.fillStyle='#f6dc8a';g.beginPath();g.arc(-2,-2,7,0,6.28);g.fill();g.restore()}
+  drawParapet(X0,X1,Y0-2,true)}
+/* parapet sud et piliers (triés en profondeur avec les personnages) */
+function pontPylons(){const{X0,X1,Y0,Y1}=pontRect(),n=pontArches(),o=[];for(let k=0;k<=n;k++){const x=X0+(X1-X0)*k/n;o.push([x,Y0,k%2===0],[x,Y1+6,false])}return o}
+function grandPontProps(Z,T,cx,cy){if(!pontOn(cx,cy))return;const{X0,X1,Y1}=pontRect();Z.push([Y1+2,()=>drawParapet(X0,X1,Y1+1,false)]);
+  for(const[x,y,b]of pontPylons())Z.push([y,()=>drawBridgePylon(x,y,T,b)])}

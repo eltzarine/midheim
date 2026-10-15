@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VcS7+7PJ6Etksv7CcXA5cnkUDpPVP5YecqsX5M1hkH0=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dR5IkXqYsHQEqt0KBGmlvrX2Sx0EwDtoudxxl037k0w=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -874,7 +874,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='51994d33';
+const BUILD='3abfda9f';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -1835,7 +1835,14 @@ const REGIONS=[
   {id:'mir',nom:'Le Royaume de Mir',pt:[188,186],lv:7,mobs:[['orc',2],['bat',2],['archer',2]]},
   {id:'kadrin',nom:'Karaz Kadrin',pt:[118,176],lv:5,mobs:[['orc',3],['bat',2]]},
 ];
-const regionAt=(tx,ty)=>{let b=REGIONS[0],bd=1e9;for(const r of REGIONS){const d=(r.pt[0]-tx)**2+(r.pt[1]-ty)**2;if(d<bd){bd=d;b=r}}return b};
+/* Scène du grand Pont de Lathandre : un tablier de 5 cases sur 37 au-dessus de la Fissure, posé à l'écart dans la mer du nord
+   (on n'y entre qu'en marchant sur le petit pont du monde, qui sert de passage entre la plaine, le grand pont et Tarkin) */
+const GPONT={x0:30,x1:66,y0:13,y1:17};
+const inPontT=(tx,ty)=>tx>=GPONT.x0-8&&tx<=GPONT.x1+8&&ty>=GPONT.y0-14&&ty<=GPONT.y1+14;
+/* position « réelle » sur la carte (mini-carte, flèches, région) : le grand pont correspond au petit pont du monde */
+function realPx(x,y){if(!inPontT(Math.floor(x/TS),Math.floor(y/TS)))return{x,y};const f=clamp((x/TS-GPONT.x0)/(GPONT.x1+1-GPONT.x0),0,1),g=clamp((y/TS-GPONT.y0)/(GPONT.y1+1-GPONT.y0),0,1);
+  return{x:(PL.pont[0]-2+f*6)*TS,y:(PL.pont[1]-1+g*3)*TS}}
+const regionAt=(tx,ty)=>{if(inPontT(tx,ty)){tx=PL.pont[0];ty=PL.pont[1]}let b=REGIONS[0],bd=1e9;for(const r of REGIONS){const d=(r.pt[0]-tx)**2+(r.pt[1]-ty)**2;if(d<bd){bd=d;b=r}}return b};
 /* Villes : bâtiments posés autour du centre lu sur la carte */
 const TOWNS={
   tarkin:{nom:'Tarkin',walls:9,roof:'#5a3b6e',b:[['keep','La forteresse de l’Everwatch','dun:everwatch'],['auberge','Auberge du Pont','house:auberge'],['marchand','Comptoir du Conseil','house:marchand'],['forge','Forge de Tarkin','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison']]},
@@ -2091,6 +2098,9 @@ function buildWorld(){
     for(let y=y0;y<=y1;y++){for(let x=x0;x<=x1;x++)t[I(x,y)]=8;t[I(x0-1,y)]=7;t[I(x1+1,y)]=10;t[I(x1+2,y)]=10}
     for(let x=x0;x<=x1;x++){t[I(x,y0-1)]=0;t[I(x,y1+1)]=0;t[I(x,y1+2)]=0}
     return{x0,x1,y0,y1}})();
+  // scène du grand pont : le tablier, prolongé de 3 cases de route (ouest) et de pavés (est) qui sortent de l'écran
+  {const P=GPONT,I=(x,y)=>y*W+x;for(let y=P.y0;y<=P.y1;y++)for(let x=P.x0-3;x<=P.x1+3;x++)t[I(x,y)]=x<P.x0?7:x>P.x1?10:8;
+    for(let x=P.x0-3;x<=P.x1+3;x++){t[I(x,P.y0-1)]=0;t[I(x,P.y1+1)]=0}}
   const sol=new Uint8Array(N),blk=new Uint8Array(N),obj=new Uint8Array(N),clear=new Uint8Array(N),deco=new Uint8Array(N);
   for(let i=0;i<N;i++){sol[i]=T_SOLID[t[i]];blk[i]=T_BLOCK[t[i]]}
   const idx=(x,y)=>y*W+x,inb=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
@@ -2208,7 +2218,9 @@ function buildWorld(){
       const rg=regionAt(x,y);if(!rg.mobs.length)continue;if(rg.id==='wild'&&++wild>3)continue;
       const tot=rg.mobs.reduce((a,b)=>a+b[1],0),pick=()=>{let q=R()*tot;for(const[k,w]of rg.mobs){if((q-=w)<0)return k}return rg.mobs[0][0]};
       const n2=2+Math.floor(R()*2),mobs=[];for(let k=0;k<n2;k++)mobs.push(pick());
-      camps.push({id:camps.length,x,y,lv:rg.lv,mobs,elite:R()<.14,reg:rg.id})}}
+      camps.push({id:camps.length,x,y,lv:rg.lv,mobs,elite:R()<.14,reg:rg.id})}
+    // la garde du grand pont : une bande qui barre le passage (jamais en patrouille)
+    camps.push({id:camps.length,x:Math.round((GPONT.x0+GPONT.x1)/2)+4,y:(GPONT.y0+GPONT.y1)>>1,lv:1,mobs:['slime','archer','slime'],elite:false,reg:'tarkin',fixe:true})}
   // coffres dans la nature
   const chests=[];{const R=mulberry(4242);for(let n=0;n<3000&&chests.length<48;n++){const x=ri(R,2,W-3),y=ri(R,2,H-3),i=idx(x,y);const v=t[i];if(!passT(v)||v===7||v===10||sol[i]||occ[i])continue;
     if(!chests.every(c=>(c.x-x)**2+(c.y-y)**2>196))continue;if((x-PL.start[0])**2+(y-PL.start[1])**2<64)continue;chests.push({id:1000+chests.length,x,y,locked:R()<.3,vault:false})}}
@@ -2228,7 +2240,7 @@ function buildWorld(){
         for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(t[j]===0||(occ[j]&&sol[j]))continue;
           const c=cd+(free(j)?1:t[j]===5?4:2);if(c<dist[j]){dist[j]=c;prev[j]=i;q.push([c,j])}}}
       if(hit<0)continue;for(let i=hit;i!==-1;i=prev[i])if(!free(i))open(i);fill(b.door.x,b.door.y)}}
-  WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,medals,fieldv,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
+  WORLD={kind:'world',bridge:BR,pont:GPONT,W,H,t,sol,blk,obj,deco,clear,builds,medals,fieldv,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
     start:{x:(st[0]+.5)*TS,y:(st[1]+.5)*TS},chunks:new Map()};
   return WORLD}
 /* Points d'apparition sûrs dans le monde */
@@ -3147,10 +3159,11 @@ function updateLocal(dt){
   else if(useMouse){const w=screenToWorld(mouse.x,mouse.y);L.aim=Math.atan2(w.y-L.y,w.x-L.x)}
   else{const t=tbAimAt(),n=t?{x:t.rx??t.x,y:t.ry??t.y}:null;L.aim=n?Math.atan2(n.y-L.y,n.x-L.x):L.face}
   {const t=tbTarget();if(t&&!touch.aimOn)L.aim=Math.atan2((t.ry??t.y)-L.y,(t.rx??t.x)-L.x)}   // cible choisie : on la vise, souris comprise
+  sceneCross();
   // découverte des lieux et région
   L.wpT-=dt;if(L.wpT<=0&&G.m&&G.m.kind==='world'){L.wpT=.5;const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS);
     for(const k in WAYPOINTS){if(hero.wp.includes(k))continue;const w=WAYPOINTS[k];if((w.pt[0]-tx)**2+(w.pt[1]-ty)**2<64){hero.wp.push(k);toast('Lieu découvert : '+w.nom+'. Voyage rapide possible depuis la carte.');questEvent('wp');doSave(true)}}
-    const rg=townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
+    const rg=inPontT(tx,ty)?{id:'pont',nom:'Le Pont de Lathandre',lv:1}:townAt(tx,ty)||regionAt(tx,ty);const key=rg.id||rg.nom;if(key!==L.reg){L.reg=key;showBanner(rg.nom,rg.lv?'Niveau conseillé '+rg.lv:'')}}
   if(down){skQ=[false,false,false,false];potQ=false;actQ=false;return}
   // au combat, une attaque par appui (1 point d'action) ; hors combat, on frappe tant qu'on appuie
   const held=mouse.down||keys.has('KeyJ')||touch.atk,press=held&&!L.atkHeld||atkQ;L.atkHeld=held;atkQ=false;
@@ -3170,6 +3183,17 @@ function updateLocal(dt){
 /* recharges, mana, ultime et effets du héros local : s secondes (chaque image hors combat, un tour entier au combat) */
 function tickLocal(s,round){for(let k=0;k<4;k++)L.cd[k]-=s;L.mp=Math.min(ST.mmp,L.mp+ST.mpr*s);L.buffT-=s;L.stealthT-=s;L.rageT-=s;
   if(ST.ks[3])L.ult=Math.min(100,L.ult+s*1.1+(round?TB_ULT:0))}
+/* scènes plaine → grand pont → Tarkin : on change de scène en sortant par le bord (le petit pont du monde sert de passage).
+   Chaque héros passe pour lui-même ; au combat (tour par tour) on ne change pas de scène. */
+function sceneCross(){if(!G.m||G.m.kind!=='world'||tbMe()||(typeof Scene!=='undefined'&&Scene.on))return;const B=WORLD.bridge,P=WORLD.pont;if(!B||!P)return;
+  const tx=Math.floor(L.x/TS),ty=Math.floor(L.y/TS),row=g=>clamp(g,0,.999);let to=null;
+  if(inPontT(tx,ty)){const g=row((L.y/TS-P.y0)/(P.y1+1-P.y0)),oy=(B.y0+.2+g*(B.y1-B.y0+.6))*TS;
+    if(L.x<(P.x0-1.5)*TS)to={x:(B.x0-1.6)*TS,y:oy,ban:'plaine'};
+    else if(L.x>(P.x1+2.5)*TS)to={x:(B.x1+3.3)*TS,y:oy,ban:'tarkin'}}
+  else if(ty>=B.y0&&ty<=B.y1&&tx>=B.x0&&tx<=B.x1+1){const g=row((L.y/TS-B.y0)/(B.y1+1-B.y0)),py=(P.y0+.4+g*(P.y1-P.y0+.2))*TS;
+    to=L.x<(B.x0+B.x1+1)/2*TS?{x:(P.x0+1.2)*TS,y:py,ban:'pont'}:{x:(P.x1-.2)*TS,y:py,ban:'pont'}}
+  if(!to)return;L.x=to.x;L.y=to.y;L.dashT=0;L.fadeT=.45;Log.ev('scene','vers '+to.ban);
+}
 function townAt(tx,ty){for(const k in TOWNS){const p=PL[k];if((p[0]-tx)**2+(p[1]-ty)**2<100)return{id:'t_'+k,nom:TOWNS[k].nom,lv:0}}return null}
 function findInteract(){const m=G.m;if(!m)return null;
   if(tbHero()&&tbCanAct()){const me=myP(),q=G.players.find((o,j)=>j!==myIdx&&o.down&&Math.hypot((o.rx??o.x)-L.x,(o.ry??o.y)-L.y)<60);if(me&&!me.down&&q)return{x:q.x,y:q.y,r:60,act:'revive',label:'Relever '+q.name}}
@@ -3802,7 +3826,7 @@ function tacRoute(cp){if(cp.route!==undefined)return cp.route;const W=WORLD,R=mu
     if(P.every((p,k)=>free(p[0],p[1])&&seg(p,P[(k+1)%P.length])))out=P}
   cp.route=out;return out}
 /* 0 : camp fixe ; 1 : patrouille (1 camp sur 4) ; 2 : meute de Rejetons qui rôde la nuit (un autre camp sur 4) */
-function tacPatKind(cp,i){if(!tacRoute(cp))return 0;if(i%4===1)return 1;if(i%4===3&&typeof Sky!=='undefined'&&Sky.isNight())return 2;return 0}
+function tacPatKind(cp,i){if(cp.fixe||!tacRoute(cp))return 0;if(i%4===1)return 1;if(i%4===3&&typeof Sky!=='undefined'&&Sky.isNight())return 2;return 0}
 function tacLead(cp){const R=tacRoute(cp);return patPos(R,G.time*PAT_SPD+cp.id*97)}
 /* rang dans la file : le Chef devant, les combattants, les Marionnettes, l'Adepte derrière */
 const tacRank=e=>e.elite?0:e.type==='archer'?3:e.type==='slime'?2:1;
@@ -4155,6 +4179,15 @@ function settleResize(){resize();for(const t of[60,200,450,900])setTimeout(()=>{
 addEventListener('orientationchange',settleResize);
 if(window.visualViewport)visualViewport.addEventListener('resize',settleResize);
 if(screen.orientation&&screen.orientation.addEventListener)screen.orientation.addEventListener('change',settleResize);
+/* scènes : la caméra s'arrête aux bords. Plaine : le début du pont au bord droit ; grand pont : de bout en bout ;
+   Tarkin : le bord gauche sur le rempart. Près du pont seulement (fondu de la contrainte au nord et au sud). */
+function camBound(cx,hw){if(!WORLD||!G||!G.m||G.m.kind!=='world')return cx;const P=WORLD.pont,B=WORLD.bridge;
+  if(P&&pontOn(L.x,L.y)){const r=pontRect(),a=r.X0-12+hw,b=r.X1+12-hw;return a>b?(a+b)/2:clamp(cx,a,b)}
+  if(!B)return cx;const dy=Math.abs(L.y/TS-(B.y0+B.y1+1)/2),k=clamp((28-dy)/12,0,1);if(!k)return cx;
+  if(L.x<(B.x0+B.x1+1)/2*TS){const lim=B.x0*TS+62-hw;return cx>lim?cx+(lim-cx)*k:cx}
+  const lim=(B.x1+1.5)*TS+hw;return cx<lim?cx+(lim-cx)*k:cx}
+/* changement de scène : court fondu au noir */
+function drawFade(dt){if(!(L&&L.fadeT>0))return;L.fadeT-=dt;ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='rgba(5,8,12,'+clamp(L.fadeT/.45,0,1)+')';ctx.fillRect(0,0,cv.width,cv.height)}
 function screenToWorld(sx,sy){return{x:(sx-vw/2)/scale+camX,y:(sy-vh*focusY())/scale+camY}}
 function focusY(){return vh>vw?.55:.52}
 function wpos(i){const p=G.players[i];if(i===myIdx)return{x:L.x,y:L.y};return{x:p.rx,y:p.ry}}
@@ -4248,13 +4281,13 @@ function render(dt){
   for(const e of G.enemies){if(e.rx==null){e.rx=e.x;e.ry=e.y}if(Math.hypot(e.x-e.rx,e.y-e.ry)>100){e.rx=e.x;e.ry=e.y}else{e.rx+=(e.x-e.rx)*k;e.ry+=(e.y-e.ry)*k}}
   for(const c of G.crates){c.rx+=(c.x-c.rx)*Math.min(1,dt*14);c.ry+=(c.y-c.ry)*Math.min(1,dt*14)}
   {const zt=!Scene.on&&typeof tbMe==='function'&&tbMe()?CAM_TILES/CAM_TILES_TB:1;camZ+=(zt-camZ)*Math.min(1,dt*3);if(Math.abs(zt-camZ)<.002)camZ=zt;scale=baseScale*camZ}
-  const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:L.x;camY=Scene.on?Scene.cam.y:L.y;
+  const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:camBound(L.x,hw);camY=Scene.on?Scene.cam.y:L.y;
   shake=Math.max(0,shake-dt*30);const sh=shake?(Math.random()-.5)*shake:0;
   const S=scale*dpr;ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);
   const x0=camX-hw-48,x1=camX+hw+48,y0=camY-hh*fy-64,y1=camY+hh*(1-fy)+48;
   const vis=(x,y)=>x>x0&&x<x1&&y>y0&&y<y1;const T=G.time;
   const boss=G.enemies.find(e=>e.type==='boss');G.bossPal=boss?boss.bv:0;
-  if(isW){ctx.imageSmoothingEnabled=true;drawWorldGround(x0,y0,x1,y1);drawWater(x0,y0,x1,y1,T);drawLathBridge(T)}
+  if(isW){ctx.imageSmoothingEnabled=true;drawWorldGround(x0,y0,x1,y1);drawWater(x0,y0,x1,y1,T);drawLathBridge(T);drawGrandPont(T,x0,y0,x1,y1,camX,camY)}
   else{ctx.imageSmoothingEnabled=false;ctx.drawImage(m.mapCv,0,0)}
   if(m.kind==='dun'){const s=m.stairs;
     if(G.stairsOpen){const pu=.5+.5*Math.sin(T*4);ctx.fillStyle='rgba(242,163,58,'+(.18+.14*pu)+')';ctx.beginPath();ctx.arc(s.x,s.y,30+pu*4,0,6.28);ctx.fill();ctx.fillStyle='#120c04';ctx.beginPath();ctx.arc(s.x,s.y,17,0,6.28);ctx.fill();
@@ -4284,7 +4317,7 @@ function render(dt){
   if(isW){const a=Math.max(0,Math.floor(x0/TS)),b=Math.min(m.W-1,Math.floor(x1/TS)),c=Math.max(0,Math.floor(y0/TS)),d=Math.min(m.H-1,Math.floor((y1+80)/TS));
     for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){const o=m.obj[ty*m.W+tx];if(!o)continue;const ox=(tx+.5)*TS,oy=(ty+1)*TS;let al=1;
       if(o!==4&&o!==7&&Math.abs(ox-L.x)<30&&L.y<oy-4&&L.y>oy-70)al=.45;Z.push([oy-4,()=>drawTreeObj(o,tx,ty,al)])}
-    bridgeProps(Z,T);
+    bridgeProps(Z,T);grandPontProps(Z,T,camX,camY);
     if(Sky.folkOut>0)for(const k in TOWNS){const c=PL[k];if(Math.hypot(L.x/TS-c[0],L.y/TS-c[1])>VITRINE.r+14)continue;const fl=vitrineFolk(k),n=Math.round(fl.length*Sky.folkOut);for(let i=0;i<n;i++){const f=fl[i],p=folkPos(f,Sky.secs);if(vis(p.x,p.y))Z.push([p.y+6,()=>drawFolk(ctx,f,p)])}}
     for(const bd of m.builds){if(bd.x*TS>x1+64||(bd.x+bd.w)*TS<x0-64||bd.y*TS>y1+64||(bd.y+bd.h)*TS<y0-90)continue;Z.push([(bd.y+bd.h)*TS-2,()=>drawBuilding(bd,T)])}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(vis(n.x,n.y))Z.push([n.y+6,()=>drawNPC(ctx,n.who,n.x,n.y,T)])}
@@ -4328,6 +4361,7 @@ function render(dt){
     if(isW)vitrineHoles(light,x0,y0,x1,y1);
     if(isW&&G.night)for(const bd of m.builds)if(bd.kind!=='puits')light((bd.door.x+.5)*TS,bd.door.y*TS,90,.7);
     if(isW&&WORLD.bridge){const r=bridgeRect();for(const[x,y]of[[r.X0,r.Y0],[r.X1,r.Y0],[r.X0,r.Y1+6],[r.X1,r.Y1+6]])light(x,y-60,120,.8)}
+    if(isW&&pontOn(camX,camY))for(const[x,y]of pontPylons())light(x,y-60,120,.8);
     for(const p of G.projs)if(p.k===1||p.k===2)light(p.x,p.y,70,.8);
     for(const z of G.zones)if(!z.smoke)light(z.x,z.y,z.r,.5);for(const f of G.fires)light(f.x,f.y,f.r+40,.8);
     if(m.kind==='dun'&&G.stairsOpen)light(m.stairs.x,m.stairs.y,110,.8);
@@ -4358,8 +4392,8 @@ function render(dt){
     if(!G.stairsOpen&&m.marks&&m.marks.length){let b=null,bd=1e9;m.marks.forEach((mk,i)=>{if((G.gp[i]||0)>=1)return;const mx=(mk.x+.5)*TS,my=(mk.y+.5)*TS,dd=Math.hypot(mx-L.x,my-L.y);if(dd<bd){bd=dd;b={x:mx,y:my}}});if(b&&!vis(b.x,b.y))edgeArrow(b.x,b.y,'#f0c95a','OBJECTIF',hw,hh)}
     if(!G.stairsOpen&&m.goal&&m.goal.type==='waves'&&!G.wave&&!vis(m.goal.at.x,m.goal.at.y))edgeArrow(m.goal.at.x,m.goal.at.y,'#f0c95a','LES PORTES',hw,hh)}
   drawTacOver(vis,hw,hh);
-  if(isW&&!Scene.on){const o=objTarget();if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
-  if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const a=Math.atan2(w.y-L.y,w.x-L.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
+  if(isW&&!Scene.on){let o=objTarget();if(o){const me=realPx(L.x,L.y);o={x:o.x-me.x+L.x,y:o.y-me.y+L.y}}if(o&&Math.hypot(o.x-L.x,o.y-L.y)>200)edgeArrow(o.x,o.y,'#f0c95a',Math.round(Math.hypot(o.x-L.x,o.y-L.y)/TS)+' m',hw,hh)}
+  if(G.players.length>1){const oi=myIdx===0?1:0,w=wpos(oi);if(!vis(w.x,w.y)){const rw=realPx(w.x,w.y),rm=realPx(L.x,L.y),a=Math.atan2(rw.y-rm.y,rw.x-rm.x);const r=Math.min(hw,hh*.5)*.8;const ax=L.x+Math.cos(a)*r,ay=L.y+Math.sin(a)*r;ctx.save();ctx.translate(ax,ay);ctx.rotate(a);ctx.fillStyle=CLS[G.players[oi].cls].col;ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(-6,-7);ctx.lineTo(-6,7);ctx.fill();ctx.restore()}}}
 /* au sol : zones d'alerte des ennemis au repos, zone de combat (pour qui n'y est pas encore), cible touchée, déplacement du tour */
 function drawTbGround(T,vis){const w=wpos(myIdx);if(!w)return;const inn=tbMe();
   for(const e of G.enemies){if(e.hp<=0||e.ret)continue;const ex=e.rx??e.x,ey=e.ry??e.y;if(!vis(ex,ey))continue;
@@ -4397,11 +4431,11 @@ function drawDrop2(d,x,y){if(d.k===6){const g=ctx,c=RAR[d.r|0].col;g.fillStyle='
 let mapImgEl=null;
 function drawMini(){const c=$('#mini');if(!G||!G.m)return;const g=c.getContext('2d');const W=c.width,H=c.height;g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);
   if(G.m.kind==='world'){mapImgEl=mapImgEl||$('#mapImg');c.classList.remove('sq');if(!mapImgEl.complete)return;const iw=mapImgEl.naturalWidth,ih=mapImgEl.naturalHeight;const kx=iw/WORLD.W,ky=ih/WORLD.H;
-    const span=46;const cx=L.x/TS*kx,cy=L.y/TS*ky;const sw=span*kx;g.save();g.beginPath();g.arc(W/2,H/2,W/2,0,6.28);g.clip();
+    const span=46;const me=realPx(L.x,L.y),cx=me.x/TS*kx,cy=me.y/TS*ky;const sw=span*kx;g.save();g.beginPath();g.arc(W/2,H/2,W/2,0,6.28);g.clip();
     g.drawImage(mapImgEl,cx-sw/2,cy-sw/2,sw,sw,0,0,W,H);
     const toM=(x,y)=>({x:W/2+(x/TS*kx-cx)/sw*W,y:H/2+(y/TS*ky-cy)/sw*H});
     const o=objTarget();if(o){let p=toM(o.x,o.y);const d=Math.hypot(p.x-W/2,p.y-H/2);if(d>W/2-8){p={x:W/2+(p.x-W/2)/d*(W/2-8),y:H/2+(p.y-H/2)/d*(H/2-8)}}g.strokeStyle='#f0c95a';g.lineWidth=3;g.beginPath();g.arc(p.x,p.y,5,0,6.28);g.stroke()}
-    G.players.forEach((p,i)=>{const w=wpos(i);const q=toM(w.x,w.y);g.fillStyle=CLS[p.cls].col;g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.arc(q.x,q.y,i===myIdx?4.5:3.5,0,6.28);g.fill();g.stroke()});
+    G.players.forEach((p,i)=>{const w0=wpos(i),w=realPx(w0.x,w0.y);const q=toM(w.x,w.y);g.fillStyle=CLS[p.cls].col;g.strokeStyle='#fff';g.lineWidth=2;g.beginPath();g.arc(q.x,q.y,i===myIdx?4.5:3.5,0,6.28);g.fill();g.stroke()});
     g.restore()}
   else{c.classList.add('sq');updSeen();const m=G.m;const k=Math.min(W/m.W,H/m.H);g.setTransform(k,0,0,k,(W-m.W*k)/2,(H-m.H*k)/2);g.fillStyle='rgba(10,16,20,.6)';g.fillRect(0,0,m.W,m.H);const S2=G.seen;
     for(let y=0;y<m.H;y++)for(let x=0;x<m.W;x++){if(!S2[y*m.W+x])continue;const v=m.t[y*m.W+x];if(v===1)continue;g.fillStyle=v===2?(G.gateOpen?'#4a6670':'#a5b6c2'):v===4?'#5fd8cf':v===7?'#ff7a2a':v===6?'#6a7a80':'#4a6670';g.fillRect(x,y,1.02,1.02)}
@@ -5055,6 +5089,52 @@ function drawBridgePylon(x,y,T,banner){const g=ctx;dshadow(g,x+4,y+2,16,5);const
 function bridgeProps(Z,T){if(!WORLD.bridge)return;const{X0,X1,Y0,Y1}=bridgeRect();
   Z.push([Y1+2,()=>drawParapet(X0,X1,Y1+1,false)]);
   for(const[x,y,b]of[[X0,Y0,1],[X1,Y0,1],[X0,Y1+6,0],[X1,Y1+6,0]])Z.push([y,()=>drawBridgePylon(x,y,T,b)])}
+/* ================= Scène du grand Pont de Lathandre : le pont au-dessus de la Fissure ================= */
+function pontRect(){const P=WORLD.pont;return{X0:P.x0*TS-8,X1:(P.x1+1)*TS+8,Y0:P.y0*TS,Y1:(P.y1+1)*TS}}
+const pontArches=()=>{const{X0,X1}=pontRect();return Math.max(3,Math.round((X1-X0)/190))};
+/* la caméra est-elle dans la scène du pont ? (on ne peint la Fissure que là) */
+function pontOn(cx,cy){return!!(WORLD&&WORLD.pont&&inPontT(Math.floor(cx/TS),Math.floor(cy/TS)))}
+const _rnd=k=>{const v=Math.sin(k*127.1)*43758.5453;return v-Math.floor(v)};
+function drawGrandPont(T,x0,y0,x1,y1,cx,cy){if(!pontOn(cx,cy))return;const g=ctx,P=WORLD.pont,{X0,X1,Y0,Y1}=pontRect(),GX0=P.x0*TS,GX1=(P.x1+1)*TS;
+  // rives : terre sèche de la plaine à l'ouest, pavés puis herbe de Tarkin à l'est (la route prolonge le tablier)
+  g.save();g.imageSmoothingEnabled=false;const a=Math.floor(x0/TS)-1,b=Math.ceil(x1/TS)+1,c=Math.floor(y0/TS)-1,d=Math.ceil(y1/TS)+1;
+  for(let ty=c;ty<=d;ty++)for(let tx=a;tx<=b;tx++){if(tx>=P.x0&&tx<=P.x1)continue;const deck=ty>=P.y0&&ty<=P.y1,w=tx<P.x0;
+    const v=w?(deck&&tx>=P.x0-12?7:3):(deck||(tx<=P.x1+4&&Math.abs(ty-(P.y0+P.y1)/2)<5)?10:2);
+    g.fillStyle=w?'#d38a4a':v===10?'#c9b27a':'#7fb24a';g.fillRect(tx*TS,ty*TS,TS,TS);groundTile(g,v,tx+500,ty+500,tx*TS,ty*TS)}
+  g.restore();
+  // la Fissure : gorge sans fond, lueur rouge tout au fond
+  const H0=Math.min(y0,Y0-400),H1=Math.max(y1,Y1+400),H=H1-H0;
+  const gr=g.createLinearGradient(GX0,0,GX1,0);gr.addColorStop(0,'#3b2a22');gr.addColorStop(.05,'#1d1418');gr.addColorStop(.5,'#0a0710');gr.addColorStop(.95,'#1d1418');gr.addColorStop(1,'#3b2a22');
+  g.fillStyle=gr;g.fillRect(GX0,H0,GX1-GX0,H);
+  const gl=g.createRadialGradient((GX0+GX1)/2,(Y0+Y1)/2+160,10,(GX0+GX1)/2,(Y0+Y1)/2+160,(GX1-GX0)*.5);gl.addColorStop(0,'rgba(150,44,30,.22)');gl.addColorStop(1,'rgba(150,44,30,0)');g.fillStyle=gl;g.fillRect(GX0,H0,GX1-GX0,H);
+  // parois rocheuses de chaque côté : strates, arêtes éclairées, ombre portée vers le vide
+  const s0=Math.floor(H0/10);for(const side of[0,1]){const ex=side?GX1:GX0;
+    for(let k=s0,y=s0*10;y<H1;y+=10,k++){const w=30+_rnd(k+side*99)*34,sh=_rnd(k*3+side*7),x=side?ex-w:ex;
+      g.fillStyle=sh<.33?'#5a4434':sh<.66?'#4a372b':'#3a2b23';g.fillRect(x,y,w,10);g.fillStyle='rgba(255,220,170,.10)';g.fillRect(x,y,w,2);
+      g.fillStyle='rgba(0,0,0,.35)';g.fillRect(side?x:x+w-6,y,6,10)}
+    g.fillStyle='#7a5e45';g.fillRect(side?ex-6:ex,H0,6,H);g.fillStyle='rgba(255,230,180,.25)';g.fillRect(side?ex-6:ex+4,H0,2,H)}
+  // éboulis qui tombent et brume qui dérive
+  for(let k=0;k<40;k++){const x=GX0+60+_rnd(k+5)*(GX1-GX0-120),y=H0+((_rnd(k+11)*H+T*(20+_rnd(k)*30))%H);g.fillStyle='rgba(120,100,90,'+(.25+_rnd(k+3)*.3)+')';g.fillRect(x,y,2,2)}
+  for(let k=0;k<12;k++){const y=H0+H*(k+.5)/12,x=GX0+((_rnd(k)*1000+T*(8+k*2))%(GX1-GX0+400))-200;
+    g.fillStyle='rgba(190,180,200,.07)';g.beginPath();g.ellipse(x,y,220,26,0,0,6.28);g.fill();g.beginPath();g.ellipse(x+180,y+14,140,18,0,0,6.28);g.fill()}
+  // le pont : piles qui plongent dans le vide, face sud à arches, tablier et soleil de Lathandre
+  const n=pontArches(),W=X1-X0,FH=60,span=W/n;
+  for(let k=0;k<=n;k++){const px=X0+span*k,pw=k===0||k===n?30:38,pg=g.createLinearGradient(0,Y1+FH,0,Y1+FH+520);pg.addColorStop(0,'#7c735f');pg.addColorStop(.35,'#3e382f');pg.addColorStop(1,'rgba(10,7,16,0)');
+    g.fillStyle=pg;g.fillRect(px-pw/2,Y1+FH-4,pw,520);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(px+pw/2-8,Y1+FH-4,8,520)}
+  stoneBlocks(g,X0,Y1,W,FH,'#8f8572',9);
+  for(let k=0;k<n;k++){const cx2=X0+span*(k+.5),aw=span*.36,top=Y1+14;g.fillStyle='#0d0912';g.beginPath();g.moveTo(cx2-aw,Y1+FH);g.lineTo(cx2-aw,top+aw*.5);g.quadraticCurveTo(cx2-aw,top,cx2,top);g.quadraticCurveTo(cx2+aw,top,cx2+aw,top+aw*.5);g.lineTo(cx2+aw,Y1+FH);g.closePath();g.fill();
+    g.strokeStyle='#c9bfa9';g.lineWidth=3;g.stroke();g.fillStyle='#d8cfba';g.fillRect(cx2-3,top-5,6,7)}
+  g.fillStyle='rgba(0,0,0,.25)';g.fillRect(X0,Y1,W,4);
+  g.fillStyle='#bdb39e';g.fillRect(X0,Y0,W,Y1-Y0);g.strokeStyle='rgba(70,58,44,.3)';g.lineWidth=1;
+  for(let r=0,yy=Y0;yy<Y1;r++,yy+=14){for(let x=X0+(r%2)*10;x<X1;x+=20)g.strokeRect(x+.5,yy+.5,20,14)}
+  g.fillStyle='rgba(255,255,255,.06)';g.fillRect(X0,(Y0+Y1)/2-20,W,40);
+  {const sx=(X0+X1)/2,sy=(Y0+Y1)/2;g.save();g.translate(sx,sy);g.scale(1.5,.93);g.fillStyle='#8a7350';g.beginPath();g.arc(0,0,30,0,6.28);g.fill();g.fillStyle='#e0b45c';
+    for(let k=0;k<16;k++){g.rotate(Math.PI/8);g.beginPath();g.moveTo(-4,14);g.lineTo(0,29);g.lineTo(4,14);g.closePath();g.fill()}g.beginPath();g.arc(0,0,13,0,6.28);g.fill();g.fillStyle='#f6dc8a';g.beginPath();g.arc(-2,-2,7,0,6.28);g.fill();g.restore()}
+  drawParapet(X0,X1,Y0-2,true)}
+/* parapet sud et piliers (triés en profondeur avec les personnages) */
+function pontPylons(){const{X0,X1,Y0,Y1}=pontRect(),n=pontArches(),o=[];for(let k=0;k<=n;k++){const x=X0+(X1-X0)*k/n;o.push([x,Y0,k%2===0],[x,Y1+6,false])}return o}
+function grandPontProps(Z,T,cx,cy){if(!pontOn(cx,cy))return;const{X0,X1,Y1}=pontRect();Z.push([Y1+2,()=>drawParapet(X0,X1,Y1+1,false)]);
+  for(const[x,y,b]of pontPylons())Z.push([y,()=>drawBridgePylon(x,y,T,b)])}
 /* ---- 64_sky.js ---- */
 /* ================= Ciel : heure du jour, météo, lune =================
    Horloge tirée de l'heure réelle : une journée de Midheim dure 24 minutes (1 minute = 1 heure).
@@ -5980,7 +6060,7 @@ function frame(now){const dt=Math.min(.05,(now-lastT)/1000);lastT=now;Music.set(
     parts=parts.filter(q=>q.life>0);if(parts.length>360)parts.splice(0,parts.length-360);
     if(G&&G.m&&Math.random()<dt*(G.m.kind==='world'?8:14))parts.push(G.m.kind==='world'&&Math.random()<.4?{k:'leaf',x:L.x+(Math.random()-.5)*400,y:L.y-220+Math.random()*200,vx:20+Math.random()*20,vy:18+Math.random()*12,life:6,max:6,col:['#8aa04a','#c9a24a','#6f8c38'][Math.floor(Math.random()*3)]}:{k:'mote',x:L.x+(Math.random()-.5)*360,y:L.y+(Math.random()-.5)*360,vx:(Math.random()-.5)*6,vy:-3-Math.random()*5,life:3+Math.random()*3,max:6});
     for(const b of bubbles)b.life-=dt;bubbles=bubbles.filter(b=>b.life>0);
-    Sky.update(dt);Vitrine.tick(dt);tavernTick();Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);hud(dt);doSave(false)}
+    Sky.update(dt);Vitrine.tick(dt);tavernTick();Scene.tick(dt);Vig.tick(dt);QDone.tick(dt);if(!$('#game').hidden)fitCanvas();render(dt);drawFade(dt);hud(dt);doSave(false)}
   else if(mode==='menu')MenuBg.draw(dt)}
 
 /* ================= Entrées ================= */
