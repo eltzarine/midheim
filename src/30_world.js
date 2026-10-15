@@ -13,6 +13,9 @@ function buildWorld(){
     for(let y=y0;y<=y1;y++){for(let x=x0;x<=x1;x++)t[I(x,y)]=8;t[I(x0-1,y)]=7;t[I(x1+1,y)]=10;t[I(x1+2,y)]=10}
     for(let x=x0;x<=x1;x++){t[I(x,y0-1)]=0;t[I(x,y1+1)]=0;t[I(x,y1+2)]=0}
     return{x0,x1,y0,y1}})();
+  // scène du grand pont : le tablier, prolongé de 3 cases de route (ouest) et de pavés (est) qui sortent de l'écran
+  {const P=GPONT,I=(x,y)=>y*W+x;for(let y=P.y0;y<=P.y1;y++)for(let x=P.x0-3;x<=P.x1+3;x++)t[I(x,y)]=x<P.x0?7:x>P.x1?10:8;
+    for(let x=P.x0-3;x<=P.x1+3;x++){t[I(x,P.y0-1)]=0;t[I(x,P.y1+1)]=0}}
   const sol=new Uint8Array(N),blk=new Uint8Array(N),obj=new Uint8Array(N),clear=new Uint8Array(N),deco=new Uint8Array(N);
   for(let i=0;i<N;i++){sol[i]=T_SOLID[t[i]];blk[i]=T_BLOCK[t[i]]}
   const idx=(x,y)=>y*W+x,inb=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
@@ -130,7 +133,9 @@ function buildWorld(){
       const rg=regionAt(x,y);if(!rg.mobs.length)continue;if(rg.id==='wild'&&++wild>3)continue;
       const tot=rg.mobs.reduce((a,b)=>a+b[1],0),pick=()=>{let q=R()*tot;for(const[k,w]of rg.mobs){if((q-=w)<0)return k}return rg.mobs[0][0]};
       const n2=2+Math.floor(R()*2),mobs=[];for(let k=0;k<n2;k++)mobs.push(pick());
-      camps.push({id:camps.length,x,y,lv:rg.lv,mobs,elite:R()<.14,reg:rg.id})}}
+      camps.push({id:camps.length,x,y,lv:rg.lv,mobs,elite:R()<.14,reg:rg.id})}
+    // la garde du grand pont : une bande qui barre le passage (jamais en patrouille)
+    camps.push({id:camps.length,x:Math.round((GPONT.x0+GPONT.x1)/2)+4,y:(GPONT.y0+GPONT.y1)>>1,lv:1,mobs:['slime','archer','slime'],elite:false,reg:'tarkin',fixe:true})}
   // coffres dans la nature
   const chests=[];{const R=mulberry(4242);for(let n=0;n<3000&&chests.length<48;n++){const x=ri(R,2,W-3),y=ri(R,2,H-3),i=idx(x,y);const v=t[i];if(!passT(v)||v===7||v===10||sol[i]||occ[i])continue;
     if(!chests.every(c=>(c.x-x)**2+(c.y-y)**2>196))continue;if((x-PL.start[0])**2+(y-PL.start[1])**2<64)continue;chests.push({id:1000+chests.length,x,y,locked:R()<.3,vault:false})}}
@@ -150,7 +155,7 @@ function buildWorld(){
         for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(t[j]===0||(occ[j]&&sol[j]))continue;
           const c=cd+(free(j)?1:t[j]===5?4:2);if(c<dist[j]){dist[j]=c;prev[j]=i;q.push([c,j])}}}
       if(hit<0)continue;for(let i=hit;i!==-1;i=prev[i])if(!free(i))open(i);fill(b.door.x,b.door.y)}}
-  WORLD={kind:'world',bridge:BR,W,H,t,sol,blk,obj,deco,clear,builds,medals,fieldv,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
+  WORLD={kind:'world',bridge:BR,pont:GPONT,W,H,t,sol,blk,obj,deco,clear,builds,medals,fieldv,inter,npcs,camps,chests,arena,spikes:[],plates:[],crates:[],torches:[],props:[],rooms:[],stairs:null,boss:false,
     start:{x:(st[0]+.5)*TS,y:(st[1]+.5)*TS},chunks:new Map()};
   return WORLD}
 /* Points d'apparition sûrs dans le monde */

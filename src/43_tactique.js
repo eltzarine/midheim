@@ -152,7 +152,7 @@ function tacRoute(cp){if(cp.route!==undefined)return cp.route;const W=WORLD,R=mu
     if(P.every((p,k)=>free(p[0],p[1])&&seg(p,P[(k+1)%P.length])))out=P}
   cp.route=out;return out}
 /* 0 : camp fixe ; 1 : patrouille (1 camp sur 4) ; 2 : meute de Rejetons qui rôde la nuit (un autre camp sur 4) */
-function tacPatKind(cp,i){if(!tacRoute(cp))return 0;if(i%4===1)return 1;if(i%4===3&&typeof Sky!=='undefined'&&Sky.isNight())return 2;return 0}
+function tacPatKind(cp,i){if(cp.fixe||!tacRoute(cp))return 0;if(i%4===1)return 1;if(i%4===3&&typeof Sky!=='undefined'&&Sky.isNight())return 2;return 0}
 function tacLead(cp){const R=tacRoute(cp);return patPos(R,G.time*PAT_SPD+cp.id*97)}
 /* rang dans la file : le Chef devant, les combattants, les Marionnettes, l'Adepte derrière */
 const tacRank=e=>e.elite?0:e.type==='archer'?3:e.type==='slime'?2:1;

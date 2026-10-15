@@ -17,7 +17,14 @@ const REGIONS=[
   {id:'mir',nom:'Le Royaume de Mir',pt:[188,186],lv:7,mobs:[['orc',2],['bat',2],['archer',2]]},
   {id:'kadrin',nom:'Karaz Kadrin',pt:[118,176],lv:5,mobs:[['orc',3],['bat',2]]},
 ];
-const regionAt=(tx,ty)=>{let b=REGIONS[0],bd=1e9;for(const r of REGIONS){const d=(r.pt[0]-tx)**2+(r.pt[1]-ty)**2;if(d<bd){bd=d;b=r}}return b};
+/* Scène du grand Pont de Lathandre : un tablier de 5 cases sur 37 au-dessus de la Fissure, posé à l'écart dans la mer du nord
+   (on n'y entre qu'en marchant sur le petit pont du monde, qui sert de passage entre la plaine, le grand pont et Tarkin) */
+const GPONT={x0:30,x1:66,y0:13,y1:17};
+const inPontT=(tx,ty)=>tx>=GPONT.x0-8&&tx<=GPONT.x1+8&&ty>=GPONT.y0-14&&ty<=GPONT.y1+14;
+/* position « réelle » sur la carte (mini-carte, flèches, région) : le grand pont correspond au petit pont du monde */
+function realPx(x,y){if(!inPontT(Math.floor(x/TS),Math.floor(y/TS)))return{x,y};const f=clamp((x/TS-GPONT.x0)/(GPONT.x1+1-GPONT.x0),0,1),g=clamp((y/TS-GPONT.y0)/(GPONT.y1+1-GPONT.y0),0,1);
+  return{x:(PL.pont[0]-2+f*6)*TS,y:(PL.pont[1]-1+g*3)*TS}}
+const regionAt=(tx,ty)=>{if(inPontT(tx,ty)){tx=PL.pont[0];ty=PL.pont[1]}let b=REGIONS[0],bd=1e9;for(const r of REGIONS){const d=(r.pt[0]-tx)**2+(r.pt[1]-ty)**2;if(d<bd){bd=d;b=r}}return b};
 /* Villes : bâtiments posés autour du centre lu sur la carte */
 const TOWNS={
   tarkin:{nom:'Tarkin',walls:9,roof:'#5a3b6e',b:[['keep','La forteresse de l’Everwatch','dun:everwatch'],['auberge','Auberge du Pont','house:auberge'],['marchand','Comptoir du Conseil','house:marchand'],['forge','Forge de Tarkin','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison']]},

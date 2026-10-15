@@ -79,6 +79,13 @@ with sync_playwright() as pw:
     x1 = go(pg, "L.x/TS")
     check('Le héros marche vers le Pont de Lathandre', x1 > 43.5, round(x1, 1))
     go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/a1_depart.png'); go(pg, "paused=false")
+    # scènes : le petit pont mène au grand pont au-dessus de la Fissure, et son bout est à Tarkin
+    go(pg, "(()=>{const B=WORLD.bridge;L.x=(B.x0-1.5)*TS;L.y=(B.y0+1.5)*TS;touch.jx=1;touch.jy=0})()"); pg.wait_for_timeout(700); go(pg, "touch.jx=0")
+    check('Scènes : en marchant sur le pont, on passe sur le grand pont de la Fissure', go(pg, "inPontT(Math.floor(L.x/TS),Math.floor(L.y/TS))&&L.x<(WORLD.pont.x0+3)*TS"), go(pg, "[L.x/TS,L.y/TS]"))
+    pg.wait_for_timeout(500); go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/a1b_grand_pont.png'); go(pg, "paused=false")
+    check('Scènes : sur le grand pont, la caméra montre le pont dès le bord gauche', abs(go(pg, "camX-vw/2/scale-(pontRect().X0-12)")) < 2)
+    go(pg, "(()=>{L.x=(WORLD.pont.x1+2.2)*TS;touch.jx=1;touch.jy=0})()"); pg.wait_for_timeout(500); go(pg, "touch.jx=0")
+    check('Scènes : au bout du grand pont, on entre à Tarkin', go(pg, "!inPontT(Math.floor(L.x/TS),Math.floor(L.y/TS))&&L.x>(WORLD.bridge.x1+2)*TS&&Math.abs(L.y/TS-PL.pont[1])<3"), go(pg, "[L.x/TS,L.y/TS]"))
     # Tarkin et la forteresse
     door = go(pg, "(()=>{const b=WORLD.builds.find(b=>b.act==='dun:everwatch');return[b.door.x,b.door.y]})()")
     tele(pg, door[0], door[1]); pg.wait_for_timeout(300)
