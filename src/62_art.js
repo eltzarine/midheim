@@ -3,7 +3,14 @@
 const _shc=new Map();
 function shade(hex,k){const key=hex+k;let c=_shc.get(key);if(c)return c;const n=parseInt(hex.slice(1),16);let r=n>>16,g=(n>>8)&255,b=n&255;
   if(k>0){r+=(255-r)*k;g+=(255-g)*k;b+=(255-b)*k}else{r*=1+k;g*=1+k;b*=1+k}c='rgb('+(r|0)+','+(g|0)+','+(b|0)+')';if(_shc.size>4000)_shc.clear();_shc.set(key,c);return c}
-function dshadow(g,x,y,rx,ry,a){g.fillStyle='rgba(40,20,10,'+(a||.28)+')';g.beginPath();g.ellipse(x+rx*.25,y,rx,ry,0,0,6.28);g.fill()}
+/* Ombres au soleil : dehors, elles tournent et s'allongent avec l'heure (soleil à l'est le matin, à l'ouest le soir),
+   pâlissent sous les nuages et deviennent de faibles ombres de lune la nuit. Les morceaux de sol mis en cache gardent l'ombre neutre. */
+const SUN={on:false,k:0,s:1,a:1};
+function sunTick(isW){SUN.on=!!isW;if(!isW)return;const h=Sky.hour,day=h>=6&&h<20.5;
+  if(day){const k=clamp((h-13)/7,-1,1);SUN.k=k;SUN.s=1+Math.abs(k)*.8;SUN.a=(1-Sky.cloud*.65)*(1-Math.max(0,Math.abs(k)-.85)*2)}
+  else{SUN.k=.35;SUN.s=1.15;SUN.a=.45*(Sky.moon===0?1.2:.8)*(1-Sky.cloud*.7)}}
+function sunSh(g,rx,base){if(g!==ctx||!SUN.on)return{ox:rx*base,rx,a:1};return{ox:rx*SUN.k*.9,rx:rx*SUN.s,a:SUN.a}}
+function dshadow(g,x,y,rx,ry,a){const s=sunSh(g,rx,.25);g.fillStyle='rgba(40,20,10,'+(a||.28)*s.a+')';g.beginPath();g.ellipse(x+s.ox,y,s.rx,ry,0,0,6.28);g.fill()}
 function poly(g,pts,col){g.fillStyle=col;g.beginPath();g.moveTo(pts[0],pts[1]);for(let i=2;i<pts.length;i+=2)g.lineTo(pts[i],pts[i+1]);g.closePath();g.fill()}
 // prisme vu de 3/4 : empreinte au sol (x,y,w,h), hauteur z
 function prism(g,x,y,w,h,z,col,o){o=o||{};const top=o.top||shade(col,.18),front=o.front||col,side=o.side||shade(col,-.28);

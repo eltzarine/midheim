@@ -318,7 +318,7 @@ function pvNear(cx,cy,r){return pvFoes().filter(e=>Math.hypot(pvX(e)-cx,pvY(e)-c
    est passé en niveaux de gris (mélange « saturation » avec du gris, puis découpe à la forme d'origine) et recopié.
    Rien ne dépend du filtre du canevas (ignoré par Safari sur iPhone). */
 let PV_C=null,PV_C2=null;
-function pvGray(fn){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
+function pvGray(fn){const w=ctx.canvas.width,h=ctx.canvas.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
   for(const c of[PV_C,PV_C2])if(c.width!==w||c.height!==h){c.width=w;c.height=h}
   const g=PV_C.getContext('2d'),g2=PV_C2.getContext('2d'),real=ctx,m=real.getTransform(),a0=real.globalAlpha;
   g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);g.imageSmoothingEnabled=real.imageSmoothingEnabled;
@@ -329,7 +329,7 @@ function pvGray(fn){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createE
   g.globalCompositeOperation='destination-in';g.drawImage(PV_C2,0,0);g.globalCompositeOperation='source-over';   // on ne garde que la forme
   real.save();real.setTransform(1,0,0,1,0,0);real.globalAlpha=1;real.drawImage(PV_C,0,0);real.restore()}
 /* contour seul : la silhouette de ce que dessine fn, décalée tout autour, moins la silhouette elle-même ; trait gris clair */
-function pvOutline(fn,al){const w=cv.width,h=cv.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
+function pvOutline(fn,al){const w=ctx.canvas.width,h=ctx.canvas.height;if(!PV_C){PV_C=document.createElement('canvas');PV_C2=document.createElement('canvas')}
   for(const c of[PV_C,PV_C2])if(c.width!==w||c.height!==h){c.width=w;c.height=h}
   const g=PV_C.getContext('2d'),g2=PV_C2.getContext('2d'),real=ctx,m=real.getTransform(),k=Math.max(1.5,Math.min(3,Math.hypot(m.a,m.b)*.7));
   g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-over';g.globalAlpha=1;g.clearRect(0,0,w,h);g.imageSmoothingEnabled=real.imageSmoothingEnabled;
