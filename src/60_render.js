@@ -71,17 +71,23 @@ let bannerT=null;function showBanner(t,sub){const b=$('#banner');b.textContent=t
 let loadT=null;function showLoading(t,sub){const b=$('#loadBox');$('#loadTitle').textContent=t||'Midheim';$('#loadSub').textContent=sub||'';b.hidden=false;b.style.opacity=1;clearTimeout(loadT);loadT=setTimeout(()=>{b.style.opacity=0;loadT=setTimeout(()=>{b.hidden=true},260)},650)}
 
 /* ================= Caméra ================= */
-const cv=$('#cv');let ctx=cv.getContext('2d');   // let : l'aperçu gris dessine un instant sur un calque (pvGray)
+const cv=$('#cv'),fctx=cv.getContext('2d');let ctx=fctx;   // let : le monde se dessine sur le petit canevas pc, l'aperçu gris sur un calque (pvGray)
+/* Rendu « pixel parfait » (façon Sea of Stars) : le monde est dessiné dans un petit canevas pc où 1 pixel = 1 pixel du monde,
+   puis agrandi d'un facteur ENTIER PX, sans lissage. Tous les pixels du dessin ont donc la même taille à l'écran, nette et carrée.
+   Les textes (noms, dégâts, bulles) sont écrits ensuite en pleine résolution, pour rester lisibles. */
+const pc=document.createElement('canvas'),pctx=pc.getContext('2d');
 const lc=document.createElement('canvas'),lx=lc.getContext('2d');
-let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0;
-/* caméra : CAM_TILES cases sur le côté court de l'écran ; au combat elle recule à CAM_TILES_TB cases, pour voir que le mode change */
-const CAM_TILES=13,CAM_TILES_TB=16;
-function resize(){dpr=Math.min(2,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);lc.width=Math.max(1,Math.round(vw*dpr/2));lc.height=Math.max(1,Math.round(vh*dpr/2));
-  baseScale=clamp(Math.min(vw/(TS*CAM_TILES),vh/(TS*CAM_TILES)),.6,1.6);scale=baseScale*camZ}
+let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0,PX=1,rs=1,camTx=0,camTy=0;
+/* caméra : environ CAM_TILES cases sur le côté court de l'écran (facteur entier le plus proche). Plus de zoom au combat :
+   changer d'échelle ferait varier la taille des pixels. */
+const CAM_TILES=13;
+function resize(){dpr=Math.min(3,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);
+  PX=Math.max(1,Math.round(Math.min(cv.width,cv.height)/(TS*CAM_TILES)));pc.width=lc.width=Math.max(1,Math.ceil(cv.width/PX));pc.height=lc.height=Math.max(1,Math.ceil(cv.height/PX));
+  rs=dpr/PX;baseScale=PX/dpr;scale=baseScale;camZ=1}
 addEventListener('resize',resize);
 /* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
    On remesure après coup et à chaque image si la taille réelle du canevas a changé. */
-function fitCanvas(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,r=Math.min(2,window.devicePixelRatio||1);
+function fitCanvas(){const w=cv.clientWidth||innerWidth,h=cv.clientHeight||innerHeight,r=Math.min(3,window.devicePixelRatio||1);
   if(w!==vw||h!==vh||r!==dpr)resize()}
 function settleResize(){resize();for(const t of[60,200,450,900])setTimeout(()=>{fitCanvas();if(typeof Cine!=='undefined'&&Cine.on)Cine.size()},t)}
 addEventListener('orientationchange',settleResize);
@@ -106,7 +112,7 @@ function wT(x,y){const m=WORLD;if(x<0||y<0||x>=m.W||y>=m.H)return 0;return m.t[y
 function chunkOf(cx,cy){const k=cx+','+cy,M=WORLD.chunks;let c=M.get(k);if(c){M.delete(k);M.set(k,c);return c}c=renderChunk(cx,cy);M.set(k,c);if(M.size>42)M.delete(M.keys().next().value);return c}
 function drawWorldGround(x0,y0,x1,y1){const c0=Math.max(0,Math.floor(x0/(CHK*TS))),c1=Math.min(Math.ceil(WORLD.W/CHK)-1,Math.floor(x1/(CHK*TS)));
   const r0=Math.max(0,Math.floor(y0/(CHK*TS))),r1=Math.min(Math.ceil(WORLD.H/CHK)-1,Math.floor((y1+CPAD)/(CHK*TS)));
-  ctx.imageSmoothingEnabled=false;for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=chunkOf(cx,cy);ctx.drawImage(c,cx*CHK*TS,cy*CHK*TS-CPAD,c.width+1,c.height+1)}ctx.imageSmoothingEnabled=true}
+  ctx.imageSmoothingEnabled=false;for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=chunkOf(cx,cy);ctx.drawImage(c,cx*CHK*TS,cy*CHK*TS-CPAD)}ctx.imageSmoothingEnabled=true}
 /* ================= Objets du monde : arbres, rochers, bâtiments, personnages ================= */
 function drawBuildingBase(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,roof=b.roof||'#7a3a2a';const dx=(b.door.x+.5)*TS;
   g.fillStyle='rgba(0,0,0,.28)';g.fillRect(x+6,y+h-4,w,10);
@@ -182,16 +188,15 @@ function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
 
 /* ================= Rendu principal ================= */
 function render(dt){
-  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=(G&&G.m&&G.m.st)?({rempart:'#8fa44c',salle:'#1c1820',col:'#9b5a36',nain:'#2a221c',bois:'#2f5a28',tresor:'#33281e',sentier:'#dfe6ea',sceaux:'#14111b',prison:'#14111b'}[G.m.style]||'#0b161b'):'#0b161b';ctx.fillRect(0,0,cv.width,cv.height);
-  if(!G||!G.m)return;const m=G.m,isW=m.kind==='world';
+  ctx=fctx;ctx.setTransform(1,0,0,1,0,0);const BG=(G&&G.m&&G.m.st)?({rempart:'#8fa44c',salle:'#1c1820',col:'#9b5a36',nain:'#2a221c',bois:'#2f5a28',tresor:'#33281e',sentier:'#dfe6ea',sceaux:'#14111b',prison:'#14111b'}[G.m.style]||'#0b161b'):'#0b161b';ctx.fillStyle=BG;ctx.fillRect(0,0,cv.width,cv.height);
+  if(!G||!G.m)return;ctx=pctx;sunTick(G.m.kind==='world');ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle=BG;ctx.fillRect(0,0,pc.width,pc.height);const m=G.m,isW=m.kind==='world';
   const k=1-Math.pow(.0005,dt);
   for(let i=0;i<G.players.length;i++){const p=G.players[i];if(i===myIdx)continue;if(Math.hypot(p.x-p.rx,p.y-p.ry)>120){p.rx=p.x;p.ry=p.y}else{p.rx+=(p.x-p.rx)*k;p.ry+=(p.y-p.ry)*k}}
   for(const e of G.enemies){if(e.rx==null){e.rx=e.x;e.ry=e.y}if(Math.hypot(e.x-e.rx,e.y-e.ry)>100){e.rx=e.x;e.ry=e.y}else{e.rx+=(e.x-e.rx)*k;e.ry+=(e.y-e.ry)*k}}
   for(const c of G.crates){c.rx+=(c.x-c.rx)*Math.min(1,dt*14);c.ry+=(c.y-c.ry)*Math.min(1,dt*14)}
-  {const zt=!Scene.on&&typeof tbMe==='function'&&tbMe()?CAM_TILES/CAM_TILES_TB:1;camZ+=(zt-camZ)*Math.min(1,dt*3);if(Math.abs(zt-camZ)<.002)camZ=zt;scale=baseScale*camZ}
   const fy=focusY();const hw=vw/2/scale,hh=vh/scale;camX=Scene.on?Scene.cam.x:camBound(L.x,hw);camY=Scene.on?Scene.cam.y:L.y;
   shake=Math.max(0,shake-dt*30);const sh=shake?(Math.random()-.5)*shake:0;
-  const S=scale*dpr;ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);
+  camTx=Math.round(pc.width/2-camX-sh);camTy=Math.round(pc.height*fy-camY-sh);const cam=()=>ctx.setTransform(1,0,0,1,camTx,camTy);cam();   // calé sur la grille des pixels
   const x0=camX-hw-48,x1=camX+hw+48,y0=camY-hh*fy-64,y1=camY+hh*(1-fy)+48;
   const vis=(x,y)=>x>x0&&x<x1&&y>y0&&y<y1;const T=G.time;
   const boss=G.enemies.find(e=>e.type==='boss');G.bossPal=boss?boss.bv:0;
@@ -262,7 +267,7 @@ function render(dt){
   // lumière : intérieurs sombres, nuit, soir et mauvais temps dehors
   const dark=isW?Math.max(G.night?.8:0,Sky.dark):(m.kind==='house'?.22:(m.st?m.st.dark:.5));
   if(dark>.01){lx.setTransform(1,0,0,1,0,0);if(isW)lx.clearRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='source-over';lx.fillStyle=isW?(G.night?'rgba(8,14,34,'+dark+')':'rgba('+Sky.tint+','+dark+')'):'rgba(6,5,10,'+dark+')';lx.fillRect(0,0,lc.width,lc.height);lx.globalCompositeOperation='destination-out';
-    const ls=S/2,ox=lc.width/2-(camX+sh)*ls,oy=lc.height*fy-(camY+sh)*ls;
+    const ls=1,ox=camTx,oy=camTy;
     const light=(x,y,r,a)=>{const sx=x*ls+ox,sy=y*ls+oy,rr2=r*ls;if(sx<-rr2||sy<-rr2||sx>lc.width+rr2||sy>lc.height+rr2)return;const g=lx.createRadialGradient(sx,sy,0,sx,sy,rr2);g.addColorStop(0,'rgba(0,0,0,'+a+')');g.addColorStop(.6,'rgba(0,0,0,'+a*.55+')');g.addColorStop(1,'rgba(0,0,0,0)');lx.fillStyle=g;lx.fillRect(sx-rr2,sy-rr2,rr2*2,rr2*2)};
     {const dk=isW&&!G.night?clamp(Sky.dark/.6,0,1):0;G.players.forEach((p,i)=>{const w=wpos(i);light(w.x,w.y,(i===myIdx?320:260)*(1-.55*dk),1-.12*dk)})}
     if(!isW)for(const t of m.torches)light((t.x+.5)*TS,t.y*TS+20,150+Math.sin(T*9+t.x)*8,.85);
@@ -273,9 +278,12 @@ function render(dt){
     for(const p of G.projs)if(p.k===1||p.k===2)light(p.x,p.y,70,.8);
     for(const z of G.zones)if(!z.smoke)light(z.x,z.y,z.r,.5);for(const f of G.fires)light(f.x,f.y,f.r+40,.8);
     if(m.kind==='dun'&&G.stairsOpen)light(m.stairs.x,m.stairs.y,110,.8);
-    lx.globalCompositeOperation='source-over';ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=true;ctx.drawImage(lc,0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S);if(isW)vitrineGlow(x0,y0,x1,y1)}
-  else{ctx.setTransform(1,0,0,1,0,0);const gr=ctx.createRadialGradient(cv.width/2,cv.height*fy,Math.min(cv.width,cv.height)*.35,cv.width/2,cv.height*fy,Math.max(cv.width,cv.height)*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,20,26,.35)');ctx.fillStyle=gr;ctx.fillRect(0,0,cv.width,cv.height);ctx.setTransform(S,0,0,S,cv.width/2-(camX+sh)*S,cv.height*fy-(camY+sh)*S)}
+    lx.globalCompositeOperation='source-over';ctx.setTransform(1,0,0,1,0,0);ctx.imageSmoothingEnabled=false;ctx.drawImage(lc,0,0);cam();if(isW)vitrineGlow(x0,y0,x1,y1)}
+  else{ctx.setTransform(1,0,0,1,0,0);const W=pc.width,H=pc.height,gr=ctx.createRadialGradient(W/2,H*fy,Math.min(W,H)*.35,W/2,H*fy,Math.max(W,H)*.75);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(10,20,26,.35)');ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);cam()}
   if(isW)Sky.drawScreen(Math.min(.05,dt||.016));
+  // le monde est prêt : agrandi d'un facteur entier, sans lissage ; la suite (textes, flèches) s'écrit en pleine résolution
+  fctx.setTransform(1,0,0,1,0,0);fctx.imageSmoothingEnabled=false;fctx.drawImage(pc,0,0,pc.width*PX,pc.height*PX);fctx.imageSmoothingEnabled=true;
+  ctx=fctx;ctx.setTransform(PX,0,0,PX,camTx*PX,camTy*PX);
   // textes
   ctx.textAlign='center';ctx.textBaseline='middle';
   const label=(t,x,y,col,size)=>{ctx.font='700 '+(size||12)+'px "Alegreya Sans",system-ui,sans-serif';ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillText(t,x+1,y+1);ctx.fillStyle=col||'#efe6cf';ctx.fillText(t,x,y)};

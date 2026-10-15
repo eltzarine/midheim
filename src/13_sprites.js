@@ -54,10 +54,12 @@ const SPR={im:{},_t:new Map(),_o:new Map(),
     if(st==='walk')return L[((Math.floor(v/m.stride*L.length)%L.length)+L.length)%L.length];
     return L.length>1?L[Math.floor(t*(m.idleFps||4))%L.length]:L[0]},
   /* dessine une case, pieds en (x,y) */
-  draw(g,src,m,i,f,flip,x,y){const sc=m.wh/m.h,cs=m.cs,col=m.axis==='row'?f:i,row=m.axis==='row'?i:f,w=cs*sc;
-    const sm=m.smooth!=null?m.smooth:(g.getTransform?g.getTransform().a*sc<1.5:false);g.imageSmoothingEnabled=!!sm;if(sm&&'imageSmoothingQuality'in g)g.imageSmoothingQuality='high';
+  /* pixel parfait : l'échelle est arrondie à un entier (×1, ×2…) ou à une fraction simple (½, ⅓) ; jamais 0,92 ou 2,25,
+     qui donneraient des pixels de tailles inégales. Une planche HD s'affiche donc à sa taille dessinée : 1 px du dessin = 1 px du monde. */
+  draw(g,src,m,i,f,flip,x,y){const r0=m.wh/m.h,sc=r0>=1?Math.round(r0):1/Math.round(1/r0),cs=m.cs,col=m.axis==='row'?f:i,row=m.axis==='row'?i:f,w=cs*sc;
+    const sm=m.smooth!=null?m.smooth:(g.getTransform?g.getTransform().a*sc<1:false);   // lissage seulement si l'image est réduiteg.imageSmoothingEnabled=!!sm;if(sm&&'imageSmoothingQuality'in g)g.imageSmoothingQuality='high';
     const left=flip?-w/2:x-w/2,top=Math.round(y-m.foot*sc);
-    if(flip){g.save();g.translate(x,0);g.scale(-1,1)}
+    if(flip){g.save();g.translate(Math.round(x),0);g.scale(-1,1)}
     g.drawImage(src,col*cs,row*cs,cs,cs,flip?left:Math.round(left),top,w,w);
     if(flip)g.restore();g.imageSmoothingEnabled=false}};
 SPR.load();
@@ -80,7 +82,7 @@ function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const hs=he
   if(!SPR.ok(hs.key))return false;const m=SPR.meta(hs.key);
   const hue=m.tint===false?null:RAR_HUE[L2.ar],sheet=SPR.tint(hs.key,hue,hs.head);
   g.save();g.imageSmoothingEnabled=false;
-  g.fillStyle='rgba(20,12,30,.35)';g.beginPath();g.ellipse(x,y+13,10*m.wh/36,3.5*m.wh/36,0,0,6.28);g.fill();
+  {const sh=sunSh(g,10*m.wh/36,0);g.fillStyle='rgba(20,12,30,'+.35*sh.a+')';g.beginPath();g.ellipse(x+sh.ox,y+13,sh.rx,3.5*m.wh/36,0,0,6.28);g.fill()}
   if(o.down){const pk=SPR.pick(m,Math.PI/2);g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.draw(g,sheet,m,pk.i,SPR.frame(m,'idle',0,0),pk.flip,0,8);g.restore();return true}
   const sw=typeof _hsw!=='undefined'&&_hsw;const ba=moving&&!sw&&o.mf!=null?o.mf:aim;   // en marche, le corps regarde où l'on va ; l'arme garde la visée
   const pk=SPR.pick(m,ba),back=pk.d==='N'||pk.d==='NE'||pk.d==='NW';

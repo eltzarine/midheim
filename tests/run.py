@@ -390,7 +390,7 @@ with sync_playwright() as pw:
     go(pg, "L.x+=3.2*TS"); pg.wait_for_timeout(300)
     check('Tour par tour : entrer dans la zone lance le combat ; le guerrier (vitesse 12) joue avant les orcs (9)', go(pg, "!!G.cb&&G.cb.ph==='h'&&G.cb.who===0&&G.cb.in[0]&&G.cb.q.length===4&&G.cb.q[0]===-1"), go(pg, "G.cb&&G.cb.q"))
     check('Tour par tour : colonne de l’ordre des tours (vignettes carrées, héros qui joue en or), ligne du tour et bouton Fin du tour dans la barre', pg.is_visible('#tbCol') and pg.is_visible('#tbInfo') and go(pg, "document.querySelectorAll('#tbOrd .to').length") == 4 and go(pg, "document.querySelector('#tbOrd .to.cur.h.me')!==null") and go(pg, "(()=>{const t=$('#tbOrd .to');return t.offsetWidth===52&&t.offsetHeight===52})()") and pg.is_visible('#bEnd') and go(pg, "$('#bEnd').parentNode.id==='hbar'"))
-    check('Tour par tour : la carte, la quête et le menu du bas disparaissent ; la caméra recule', pg.is_hidden('#mini') and pg.is_hidden('#objTxt') and pg.is_hidden('#mbar') and go(pg, "(()=>{for(let i=0;i<60;i++)render(.05);return camZ<.82&&scale<baseScale})()"))
+    check('Tour par tour : la carte, la quête et le menu du bas disparaissent ; la caméra garde son échelle (pixels nets)', pg.is_hidden('#mini') and pg.is_hidden('#objTxt') and pg.is_hidden('#mbar') and go(pg, "(()=>{for(let i=0;i<60;i++)render(.05);return camZ===1&&scale===baseScale&&Number.isInteger(PX)&&pc.width===Math.ceil(cv.width/PX)})()"))
     check('Tour par tour : le guerrier a 3 points d’action, Foncer est dans la barre', go(pg, "G.cb.ap[0]===3&&tbAP()===3") and pg.is_visible('#hbar .hb[data-k=dash]'))
     go(pg, "G.enemies.forEach((e,k)=>{const q=freeNear(L.x+40,L.y+(k-1)*34,0,TS);e.x=e.rx=q.x;e.y=e.ry=q.y})")  # les orcs au contact
     hp = go(pg, "G.enemies.map(e=>e.hp).reduce((a,b)=>a+b,0)")
@@ -469,7 +469,7 @@ with sync_playwright() as pw:
     check('Hors combat sans cible : Sac, Quêtes, Talents, Potion en bas, pas de barre d’attaques', pg.is_hidden('#hbar') and pg.is_visible('#mbar #pPot') and pg.is_visible('#mini') and pg.is_visible('#objTxt'))
     # ennemis stratégiques : Chef qui marque, Marionnette qui protège l'Adepte, cri de l'Orc, puis moral à la mort du Chef
     go(pg, """(()=>{G.enemies=[];G.cb=null;G.bones=[];const at=(t,dx,dy,el)=>{const q=freeNear(L.x+dx*TS,L.y+dy*TS,0,.6*TS);const e=spawnEnemy(t,q.x,q.y,!!el,false,undefined,1);e.hp=e.mhp=600;e.act=true;e.hx=q.x;e.hy=q.y;return e};   // groupe déjà en alerte (un obstacle pourrait couper la réaction en chaîne)
-      G.players[0].ivT=999;window.__tac={chef:at('orc',3,0,1).id,adepte:at('archer',6,0).id,mur:at('slime',5,0).id,orc:at('orc',3,1.5).id,orc2:at('orc',3,-1.5).id}})()""")
+      G.players[0].ivT=999;window.__tac={chef:at('orc',3,0,1).id,adepte:(a=>{a.hp=570;return a.id})(at('archer',6,0)),mur:at('slime',5,0).id,orc:at('orc',3,1.5).id,orc2:at('orc',3,-1.5).id}})()""")
     go(pg, "(()=>{const e=G.enemies[0];L.x=e.x-2*TS;L.y=e.y})()")
     seen = {'mk': False, 'guard': False, 'cry': False}
     for _ in range(120):
