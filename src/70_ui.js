@@ -373,6 +373,7 @@ const nameIn=$('#name');let nameT=0;nameIn.addEventListener('input',()=>{myName=
     ['Le salon de jeu',1,()=>within(initNet(),6000)],
   ]);
   Splash.hide();
+  setInterval(()=>{if(mode==='menu')renderLobby()},5000);   // retire de la liste les parties restées sans nouvelles
   setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>(hostBg?PAUSE_WAIT:12000))endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
   /* verrouillage ou passage à une autre appli : sur iPhone, la fermeture de la page n'est pas toujours signalée

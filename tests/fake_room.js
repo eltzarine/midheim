@@ -1,4 +1,6 @@
 // les tests jouent toujours à midi, par beau temps (l'horloge du jeu suit l'heure réelle)
+// les tests jouent à deux dans le même navigateur : on autorise les parties du même appareil
+window.__ddMulti = 1;
 window.__skyHour = 12; window.__skyWeather = 'beau'; window.__skyFreeze = true;
 // Salon simulé : relie les onglets du même navigateur via BroadcastChannel,
 // avec la même forme d'API que claude.use("room") (presence / onPeers / onConnection).
