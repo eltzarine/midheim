@@ -28,8 +28,8 @@ function buildLanterne(hid,exitTo,libre){const W=PRO_W,H=PRO_H,t=new Uint8Array(
   const furn=[],solidAt=(x,y)=>{t[y*W+x]=6};
   // mur du fond
   furn.push({k:'hjem',x:2,y:0},{k:'cartes',x:4,y:0},{k:'lampe',x:7,y:0},{k:'radio',x:9,y:0},{k:'compteur',x:12,y:0});
-  // comptoir de Ragna, tronc du Foyer, dynamo, tonneaux
-  furn.push({k:'comptoir',x:10,y:2},{k:'tronc',x:10,y:2},{k:'dynamo',x:13,y:2});for(const x of[10,11,12,13])solidAt(x,2);
+  // comptoir de Ragna, dynamo, tonneaux
+  furn.push({k:'comptoir',x:10,y:2},{k:'dynamo',x:13,y:2});for(const x of[10,11,12,13])solidAt(x,2);
   furn.push({k:'tonneau',x:13,y:5},{k:'tonneau',x:13,y:6});solidAt(13,5);solidAt(13,6);
   // poêle à tourbe et table d'Arne
   furn.push({k:'poele',x:1,y:2});solidAt(1,2);
@@ -46,7 +46,6 @@ function buildLanterne(hid,exitTo,libre){const W=PRO_W,H=PRO_H,t=new Uint8Array(
     {...P(5.3,4.2),r:36,kind:'talk',act:'pro:arne',label:'Parler à Arne'},{...P(4.5,1.2),r:34,kind:'talk',act:'pro:cartes',label:'Lire les cartes'},
     {...P(2.5,1.2),r:30,kind:'talk',act:'pro:hjem',label:'Regarder l’affiche'},{...P(7.5,1.2),r:30,kind:'talk',act:'pro:lampe',label:'Examiner la lampe'},
     {...P(9.5,1.2),r:28,kind:'talk',act:'pro:radio',label:'Écouter la radio'},{...P(12.5,1.2),r:28,kind:'talk',act:'pro:compteur',label:'Regarder le compteur'},
-    {...P(10.4,3.3),r:26,kind:'talk',act:'pro:tronc',label:'Le tronc du Foyer'},
     {x:(PRO_DOOR+.5)*TS,y:(H-1+.2)*TS,r:30,kind:'door',act:'exit',label:'Sortir'}];
   if(libre){m.libre=true;t[(H-1)*W+PRO_DOOR]=0;m.inter[0]={...P(11.5,3.3),r:44,kind:'talk',act:'shop:auberge',label:'Parler à Ragna',town:String(hid).split('_')[0]}}
   return m}
@@ -153,7 +152,6 @@ function proTalk(k){const b=proBits(G.pr),me=proMe(),nar=(nom,t,o)=>Vig.say('nar
     nar('Le mur des nouvelles',t,{onDone:()=>showDialog(me,PRO_NOM[me],me==='sigrid'?'Même écriture sur toutes les cartes. Et les mêmes mots. Ce ne sont pas les enfants qui écrivent.':'Regarde l’écriture. C’est la même partout.')});return}
   if(k==='radio'){proClue('radio','la radio de Riket demande de « penser au tronc du Foyer ».');nar('La radio de Riket','« Riket vous rappelle : extinction à vingt-deux heures. Rejoignez le Foyer : soins gratuits et aide aux plus démunis. Pensez au tronc du Foyer. »');return}
   if(k==='hjem'){nar('L’affiche du Foyer','« Chaque enfant mérite un foyer. » Une maison dessinée, un cœur rouge dedans. L’affiche est neuve. C’est la seule chose neuve de la salle.');return}
-  if(k==='tronc'){nar('Le tronc du Foyer','Un tronc en laiton poli, sur le comptoir. Il tinte quand on le touche : il est plein.');return}
   if(k==='compteur'){nar('Le compteur à jetons','Un chiffre vert : 1:40. Ensuite, le noir.');return}
   if(k==='lampe'){if(me==='sigrid'){Pro.lampOn=G.time+1.2;showDialog('sigrid','Sigrid','L’éclat mort a frémi quand j’ai approché mon gant. Une seconde. Puis plus rien.')}
     else nar('La lampe d’avant','Une vieille lampe, d’avant les quotas. L’éclat de pierre, dedans, est gris et mort.');return}}
@@ -170,7 +168,6 @@ const PRO_FURN={
     g.fillStyle='#1a120d';g.fillRect(x+12,y+19,8,2)},
   radio(g,x,y,T){g.fillStyle='#1a120d';g.fillRect(x+4,y+12,24,16);g.fillStyle='#6b4a2e';g.fillRect(x+5,y+13,22,14);g.fillStyle='#2a1d13';g.fillRect(x+7,y+16,9,9);g.fillStyle='#c9a36a';g.fillRect(x+19,y+16,2,8);
     g.fillStyle=Math.sin(T*3)>0?'#ffb347':'#7a4a1a';g.fillRect(x+23,y+16,2,2);g.fillStyle='#1a120d';g.fillRect(x+15,y+6,1,6)},
-  tronc(g,x,y){g.fillStyle='#1a120d';g.fillRect(x+3,y+1,12,13);g.fillStyle='#c9a24a';g.fillRect(x+4,y+2,10,11);g.fillStyle='#e8c87a';g.fillRect(x+4,y+2,10,2);g.fillStyle='#1a120d';g.fillRect(x+6,y+5,6,1)},
   dynamo(g,x,y,T){g.fillStyle='#1a120d';g.fillRect(x+6,y+8,20,18);g.fillStyle='#8b8f86';g.fillRect(x+7,y+9,18,16);g.fillStyle='#5b5f57';g.fillRect(x+11,y+13,10,8);
     const a=T*2.4,cx=x+16,cy=y+17;g.fillStyle='#1a120d';g.fillRect(Math.round(cx+Math.cos(a)*9)-2,Math.round(cy+Math.sin(a)*9)-2,4,4)},
   poele(g,x,y,T){g.fillStyle='#1a120d';g.fillRect(x+1,y+2,30,28);g.fillStyle='#3b3a38';g.fillRect(x+2,y+3,28,26);g.fillStyle='#232220';g.fillRect(x+7,y+11,18,12);
