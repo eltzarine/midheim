@@ -11,45 +11,35 @@ const Vig={on:false,full:'',shown:0,t:0,near:null,done:null,vT:-1,
   next(){if(!this.on)return;if(this.shown<this.full.length){this.shown=this.full.length;$('#vigT').textContent=this.full;return}this.close()},
   close(silent){if(!this.on)return;this.on=false;$('#vig').hidden=true;Voice.stop();const d=this.done;this.done=null;if(d)d()}};
 
-/* ================= Mises en scène dans le jeu (intro, donjons, fins de chapitre) ================= */
-const Scene={on:false,q:[],steps:[],i:0,wait:null,time:0,cam:{x:0,y:0},tw:null,actors:[],fxl:[],cb:null,audio:false,def:null,pend:null,
+/* ================= Mises en scène dans le jeu (prologue, donjons, fins de chapitre) ================= */
+const Scene={on:false,q:[],steps:[],i:0,wait:null,time:0,cam:{x:0,y:0},tw:null,actors:[],fxl:[],cb:null,def:null,
   play(def,cb){if(this.on){this.q.push([def,cb]);return}if(!G||!G.m){cb&&cb();return}
-    this.on=true;this.def=def;this.steps=def.steps;this.i=0;this.wait=null;this.time=0;this.cb=cb;this.actors=(def.actors||[]).map(a=>Object.assign({},a));this.fxl=[];this.audio=false;this.pend=null;this.tw=null;
+    this.on=true;this.def=def;this.steps=def.steps;this.i=0;this.wait=null;this.time=0;this.cb=cb;this.actors=(def.actors||[]).map(a=>Object.assign({},a));this.fxl=[];this.tw=null;
     this.cam={x:def.cam?def.cam[0]:L.x,y:def.cam?def.cam[1]:L.y};
-    document.body.classList.add('scene');$('#scn').hidden=false;this.cap('');$('#scnTitle').classList.remove('on');
+    document.body.classList.add('scene');$('#scn').hidden=false;$('#scnTitle').classList.remove('on');
     if(Vig.on&&!Vig.cine)Vig.close(true);if(mode==='solo')paused=true;Snd.init();keys.clear();touch.jx=touch.jy=0;touch.atk=false;
     if(def.fadeIn){const f=$('#scnFade');f.classList.add('on','now');requestAnimationFrame(()=>{f.classList.remove('now');setTimeout(()=>f.classList.remove('on'),60)})}
     this.run()},
   run(){while(this.on&&!this.wait&&this.i<this.steps.length)this.exec(this.steps[this.i++]);if(this.on&&!this.wait&&this.i>=this.steps.length)this.end()},
   exec(s){
-    if(s.cut){this.wait={k:'t',until:this.time+.42};this.pend={to:{x:s.cut[0],y:s.cut[1]},at:this.time+.3};$('#scnFade').classList.add('on')}
     if(s.cam){if(s.dur)this.tw={fx:this.cam.x,fy:this.cam.y,tx:s.cam[0],ty:s.cam[1],t:0,d:s.dur};else{this.cam={x:s.cam[0],y:s.cam[1]};this.tw=null}}
-    if(s.add)for(const a of[].concat(s.add))this.actors.push(Object.assign({},a));
     if(s.del){const ds=[].concat(s.del);this.actors=this.actors.filter(a=>!ds.includes(a.id))}
     if(s.move){const a=this.actors.find(a=>a.id===s.move);if(a)a.mv={fx:a.x,fy:a.y,tx:s.to[0],ty:s.to[1],t:0,d:s.dur||1}}
     if(s.fx)this.fxl.push(Object.assign({t:0},s.fx));
-    if(s.cap!=null)this.cap(s.cap);
     if(s.title){const e=$('#scnTitle');e.textContent='';e.append(document.createTextNode(s.title[0]));if(s.title[1])e.append(el('small',null,s.title[1]));e.classList.add('on');setTimeout(()=>e.classList.remove('on'),s.titleDur||5000)}
-    if(s.audio){this.audio=Voice.clip(s.audio,()=>{this.audio=false})}
     if(s.call)s.call(this);
     if(s.wait)this.wait={k:'t',until:this.time+s.wait};
-    if(s.beat!=null&&this.audio)this.wait={k:'beat',at:s.beat};
-    if(s.audioEnd&&this.audio)this.wait={k:'aend'};
     if(s.line){const l=s.line;this.wait={k:'line'};const my=this.wait;Vig.say(l.who,l.name,l.text,{cine:true,clip:l.clip,onDone:()=>{if(this.wait===my){this.wait=null;this.run()}}})}},
-  cap(t){const c=$('#scnCap');c.classList.remove('on');if(!t){c.textContent='';return}setTimeout(()=>{if(!this.on)return;c.textContent=t;c.classList.add('on')},200)},
   tick(dt){if(!this.on)return;this.time+=dt;
-    if(this.pend&&this.time>=this.pend.at){this.cam={...this.pend.to};this.tw=null;this.pend=null;setTimeout(()=>$('#scnFade').classList.remove('on'),60)}
     if(this.tw){const w=this.tw;w.t+=dt;const k=Math.min(1,w.t/w.d),e=k*k*(3-2*k);this.cam.x=w.fx+(w.tx-w.fx)*e;this.cam.y=w.fy+(w.ty-w.fy)*e;if(k>=1)this.tw=null}
     for(const a of this.actors)if(a.mv){const m=a.mv;m.t+=dt;const k=Math.min(1,m.t/m.d);a.x=m.fx+(m.tx-m.fx)*k;a.y=m.fy+(m.ty-m.fy)*k;a.moving=k<1;if(Math.abs(m.tx-m.fx)>1)a.aim=m.tx>m.fx?0:Math.PI;if(k>=1){a.mv=null;a.moving=false}}
     for(const f of this.fxl)f.t+=dt;this.fxl=this.fxl.filter(f=>f.t<(f.d||3));
     if(G&&G.players[myIdx]){L.ivT=Math.max(L.ivT,.3);if(mode!=='guest'&&G.players[0])G.players[0].ivT=Math.max(G.players[0].ivT||0,.3)}
     keys.clear();touch.jx=touch.jy=0;touch.atk=false;mouse.down=false;
     const w=this.wait;if(!w)return;
-    if(w.k==='t'&&this.time>=w.until){this.wait=null;this.run()}
-    else if(w.k==='beat'){const a=Voice.audio;if(!this.audio||!a||a.currentTime>=w.at){this.wait=null;this.run()}}
-    else if(w.k==='aend'&&!this.audio){this.wait=null;this.run()}},
-  skip(){if(!this.on)return;this.wait=null;this.i=this.steps.length;Vig.close(true);Voice.stop();this.audio=false;this.end()},
-  end(){if(!this.on)return;this.on=false;Vig.close(true);document.body.classList.remove('scene');$('#scn').hidden=true;$('#scnFade').classList.remove('on');this.cap('');$('#scnTitle').classList.remove('on');this.actors=[];this.fxl=[];
+    if(w.k==='t'&&this.time>=w.until){this.wait=null;this.run()}},
+  skip(){if(!this.on)return;this.wait=null;this.i=this.steps.length;Vig.close(true);Voice.stop();this.end()},
+  end(){if(!this.on)return;this.on=false;Vig.close(true);document.body.classList.remove('scene');$('#scn').hidden=true;$('#scnFade').classList.remove('on');$('#scnTitle').classList.remove('on');this.actors=[];this.fxl=[];
     if(mode==='solo')paused=!$('#pause').hidden||!$('#talents').hidden||!$('#bagBox').hidden||!$('#questBox').hidden;const cb=this.cb;this.cb=null;if(cb)cb();
     if(!this.on&&this.q.length){const[d,c]=this.q.shift();setTimeout(()=>this.play(d,c),120)}},
   // ---- dessin des acteurs et effets (appelé par render, dans le repère du monde) ----
@@ -62,8 +52,6 @@ const Scene={on:false,q:[],steps:[],i:0,wait:null,time:0,cam:{x:0,y:0},tw:null,a
     if(a.name){g.textAlign='center';g.textBaseline='middle';g.font='700 12px "Alegreya Sans",system-ui,sans-serif';const ny=a.y-(a.k==='npc'&&a.who==='virganth'?64:a.k==='boss'?52:40);g.fillStyle='rgba(0,0,0,.75)';g.fillText(a.name,a.x+1,ny+1);g.fillStyle='#ffe9c2';g.fillText(a.name,a.x,ny)}},
   drawFx(T){const g=ctx;for(const f of this.fxl){const k=f.t/(f.d||3);
     if(f.k==='flash'){g.globalAlpha=Math.max(0,1-k);g.strokeStyle=f.c;g.lineWidth=6;g.beginPath();g.arc(f.x,f.y,20+k*240,0,6.28);g.stroke();g.fillStyle=f.c;g.globalAlpha=Math.max(0,.35-k);g.beginPath();g.arc(f.x,f.y,30+k*120,0,6.28);g.fill();g.globalAlpha=1}
-    else if(f.k==='pulse'){for(let r=0;r<3;r++){const kk=((f.t*.6+r/3)%1);g.globalAlpha=(1-kk)*.8;g.strokeStyle=f.c;g.lineWidth=4;g.beginPath();g.ellipse(f.x,f.y,20+kk*130,10+kk*65,0,0,6.28);g.stroke()}g.globalAlpha=1;
-      const gr=g.createRadialGradient(f.x,f.y,0,f.x,f.y,120);gr.addColorStop(0,f.c+'66');gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(f.x-120,f.y-120,240,240)}
     else if(f.k==='stones'){for(let i=0;i<4;i++){const ti=f.t-i*1.4;if(ti<0)continue;const c=STONES[i][1],a=i/4*6.283+f.t*.6,r=42-Math.max(0,f.t-6.5)*30;const x=f.x+Math.cos(a)*Math.max(0,r),y=f.y-70+Math.sin(a)*Math.max(0,r)*.5-Math.min(1,ti)*20;
         g.save();g.shadowColor=c;g.shadowBlur=18;g.fillStyle=c;g.translate(x,y);g.rotate(.785+f.t);g.fillRect(-6,-6,12,12);g.restore()}
       if(f.t>6.8){g.globalAlpha=Math.min(1,(f.t-6.8)*2);const gr=g.createRadialGradient(f.x,f.y-70,0,f.x,f.y-70,46);gr.addColorStop(0,'rgba(255,240,200,.9)');gr.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=gr;g.fillRect(f.x-50,f.y-120,100,100);g.globalAlpha=1}}
@@ -121,29 +109,6 @@ function maybeDunScene(){const m=G&&G.m;if(!m||m.kind!=='dun')return;
   if(m.did==='eastwatch'){hero.fl=hero.fl||[];if(!hero.fl.includes('ew_start')){hero.fl.push('ew_start');doSave(false);toast('Nouvelle quête : Le feu d’Eastwatch.')}}
   if(window.__noStory)return;const key='sc_'+m.did+m.idx;if(!DSCENE[m.did+m.idx]||(hero.fl||[]).includes(key))return;
   hero.fl.push(key);setTimeout(()=>{if(G&&G.m===m){const s=DSCENE[m.did+m.idx].custom?ewOpenScene(m):dunScene(m);if(s)Scene.play(s)}},700)}
-// introduction : les héros réunis autour du feu, au bout des Wild Realms
-function introScene(){const camp=spx('start'),seal=placePx('prison')||spx('montsoublies'),honor=spx('honor'),pont=spx('pont');
-  const fx0=camp.x+TS*2,fy0=camp.y-TS*3;const ftx=Math.floor(fx0/TS),fty=Math.floor(fy0/TS);const fire={id:'feu',k:'obj',o:{k:'feu',x:ftx,y:fty,w:1,h:1,s:.4},x:(ftx+.5)*TS,y:(fty+1)*TS};
-  const cx=(ftx+.5)*TS,cy=(fty+.5)*TS+6;const mine=hero.cls;const pos=[[-50,-8],[50,-8],[-30,36],[30,36]];const looks=[3+36,1+9,2+6+36,4];
-  const heroes=CLS_IDS.map((c,i)=>({id:'h'+c,k:'hero',cls:c,lk:c===mine?lookOf(hero.eq):looks[i],name:c===mine?myName:CLS[c].nom,x:cx+pos[i][0],y:cy+pos[i][1],aim:Math.atan2(-pos[i][1],-pos[i][0])}));
-  const rein={id:'rein',k:'hero',cls:'voleur',lk:1,name:'Reinald',x:cx+84,y:cy+10,aim:Math.PI};
-  const sold=[0,1,2,3].map(i=>({id:'s'+i,k:'enemy',type:'orc',n:i+1,x:honor.x-160+i*30,y:honor.y+60+(i%2)*26}));
-  const adepts=[0,1,2].map(i=>({id:'a'+i,k:'enemy',type:'archer',n:i+5,x:seal.x-140+i*70,y:seal.y+190+(i%2)*20}));
-  const clip=!!(VOICE_CLIPS.intro&&Voice.on);const TT=CINE_TIMES;
-  const seg=(i,setup)=>clip?[{beat:TT[i]},...setup,{cap:CINE_SCENES[i].t}]:[...setup,{line:{who:'narrateur',name:'La narratrice',text:CINE_SCENES[i].t}}];
-  const steps=[];if(clip)steps.push({audio:'intro'});
-  steps.push(...seg(0,[{cam:[seal.x-200,seal.y-160]},{cam:[seal.x+80,seal.y-40],dur:10}]));
-  steps.push(...seg(1,[{cut:[honor.x-80,honor.y]},{add:sold},...sold.map(s=>({move:s.id,to:[s.x+260,s.y],dur:11})),{fx:{k:'pulse',x:honor.x,y:honor.y,c:'#ff7a3a',d:12}},{cam:[honor.x+60,honor.y],dur:11}]));
-  steps.push(...seg(2,[{cut:[pont.x-120,pont.y]},{del:sold.map(s=>s.id)},{fx:{k:'flash',x:pont.x-40,y:pont.y,c:'#ffe6a0',d:2.5}},{cam:[pont.x+40,pont.y],dur:10}]));
-  steps.push(...seg(3,[{cut:[seal.x,seal.y+40]},{fx:{k:'pulse',x:seal.x,y:seal.y,c:'#b98cff',d:24}}]));
-  steps.push(...seg(4,[{add:adepts},...adepts.map(a=>({move:a.id,to:[seal.x-30+(+a.id[1])*30,seal.y+60],dur:6}))]));
-  steps.push(...seg(5,[{cut:[cx,cy-20]},{del:adepts.map(a=>a.id)},{fx:{k:'stones',x:cx,y:cy,d:9}}]));
-  steps.push(...seg(6,[{add:{id:'vir',k:'npc',who:'virganth',name:'Virganth',x:cx,y:cy-330}},{move:'vir',to:[cx,cy-120],dur:3.2},{title:['Les Pierres de Midheim','An 147 AM']}]));
-  if(clip)steps.push({audioEnd:true});steps.push({cap:''},{wait:.6});
-  // Reinald, puis la prophétie de Virganth
-  const r0=storyLines('reinald0');steps.push(r0[0],r0[1]||{wait:0},{move:'rein',to:[cx-420,cy+30],dur:6},r0[2]||{wait:0});
-  steps.push(...storyLines('ch0'),{del:'rein'});
-  return{cam:[seal.x-200,seal.y-160],fadeIn:true,actors:[fire,...heroes,rein],steps,hideP:true,hideNpc:['virganth'],music:'cine'}}
 
 /* ----- La tour d'Eastwatch : arrivée avec le sergent Brann, puis le feu rallumé ----- */
 function ewOpenScene(m){const me=wpos(myIdx),t=m.stairs,cx=me.x,cy=me.y;

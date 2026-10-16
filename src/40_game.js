@@ -19,7 +19,8 @@ function zoneFromDesc(zd){const a=String(zd||'').slice(0,120).split(':');const n
   else a[0]='w';
   if(a[0]==='w'){if(!WORLD)buildWorld();return WORLD}
   if(a[0]==='d'){const m=genDungeon2(a[1],+a[2],+a[3],+a[4]);m.kind='dun';m.did=a[1];m.idx=+a[2];m.lv=+a[4];m.mapCv=renderDun(m);{const s=m.start,tx=Math.floor(s.x/TS),ty=Math.floor(s.y/TS);const dy=m.t[(ty+1)*m.W+tx]===0?TS:0;m.leave={x:s.x,y:s.y+dy};m.inter=[{x:s.x,y:s.y+dy,r:26,kind:'door',act:'leave',label:'Quitter le donjon'}]}return m}
-  if(a[0]==='h'){const m=a[1]==='lanterne'?buildLanterne(a[2],{x:+a[3],y:+a[4]}):buildHouse(a[1],a[2],{x:+a[3],y:+a[4]});m.mapCv=renderMap(m);return m}
+  if(a[0]==='h'){const ex={x:+a[3],y:+a[4]};   // l'auberge de Tarkin, c'est la Lanterne froide (libre une fois le prologue passé)
+    const m=a[1]==='lanterne'?buildLanterne(a[2],ex):a[1]==='auberge'&&a[2]==='tarkin_auberge'?buildLanterne(a[2],ex,true):buildHouse(a[1],a[2],ex);m.mapCv=renderMap(m);return m}
   return WORLD}
 function zoneName(m){if(!m)return'';if(m.kind==='world'){const r=regionAt(Math.floor(L.x/TS),Math.floor(L.y/TS));return r.nom}
   if(m.kind==='dun'){const s=DUNGEONS[m.did];return s.fl[m.idx]||s.nom}
@@ -266,11 +267,11 @@ function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){host
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
   if(act==='revive'){tbRevive(pi);return}
-  if(act==='exit'){if(m.kind==='house'&&(m.hk!=='lanterne'||(proBits(G.pr)&2)))hostEnter('w',m.exitTo);return}
+  if(act==='exit'){if(m.kind==='house'&&(m.hk!=='lanterne'||m.libre||(proBits(G.pr)&2)))hostEnter('w',m.exitTo);return}
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
   if(act==='leave'){if(m.kind==='dun'&&near('leave')){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}
-  if(act==='rest'){if(m.kind!=='house'||m.hk!=='auberge')return;G.players.forEach(q=>{if(q.down){q.down=false;q.rev=0}q.hp=q.mhp});msg('Vous vous reposez à l’auberge. Le groupe est en pleine forme.');return}
+  if(act==='rest'){if(m.kind!=='house'||(m.hk!=='auberge'&&!m.libre))return;G.players.forEach(q=>{if(q.down){q.down=false;q.rev=0}q.hp=q.mhp});msg('Vous vous reposez à l’auberge. Le groupe est en pleine forme.');return}
   const it=near(act);if(!it)return;
   if(act.startsWith('dun:')){const id=act.slice(4),spec=DUNGEONS[id];if(G.q<spec.need){msg(lockText(id),'lk'+id,3);return}
     if(G.players.length>1&&!G.players.every(q=>!q.down&&Math.hypot(q.x-it.x,q.y-it.y)<160)){msg('Attendez-vous devant l’entrée : les deux héros doivent y être.','wait',4);return}
@@ -566,6 +567,7 @@ function talkTo(k){const q=G.q;
   if(k==='virganth'){const d=q===0?DIALOG.virganth0:DIALOG.virganth1;showDialog('virganth',d[0],d[1]);return}
   if(k==='grinmir'){if(q===3){queueStoryKey('ch2');if(!hero.story.includes('ch2'))return}const d=q>3?DIALOG.grinmir1:DIALOG.grinmir0;showDialog('grinmir',d[0],d[1]);return}
   if(k==='garde'){showDialog('garde',DIALOG.garde[0],DIALOG.garde[1]);return}
+  if(k==='chevalier'){showDialog('garde',DIALOG.chevalier[0],DIALOG.chevalier[1]);return}
   if(k==='brann'){const st=ewState();showDialog('garde','Le sergent Brann',st===2?'Le feu brûle chaque nuit, et les voiles noires ne sont jamais revenues. Eastwatch vous doit une fière chandelle.':st===1?'Le feu d’alarme est éteint depuis trois nuits. Le capitaine Osric est monté avec ses hommes, et aucun n’est redescendu. Montez, je vous en prie : la porte est ouverte.':'Rien à signaler sur la côte. Le feu d’alarme veille, et moi avec.');return}
   if(k==='nains'){showDialog('grinmir',DIALOG.nains[0],DIALOG.nains[1]);return}
   if(k==='abhorash'){showDialog('abhorash',DIALOG.abhorash[0],DIALOG.abhorash[1]);return}}

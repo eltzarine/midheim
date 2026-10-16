@@ -200,8 +200,6 @@ body:not(.touch) #touch{display:none}
 #scn .lb{position:absolute;left:0;right:0;height:11vh;background:#000;transition:transform .6s ease}
 #scn .lb.top{top:0}#scn .lb.bot{bottom:0}
 #scnSkip{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:calc(11vh + 10px);pointer-events:auto;opacity:.85}
-#scnCap{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(11vh + 14px);width:min(90vw,720px);margin:0;text-align:center;font-style:italic;font-size:clamp(16px,1.4vw + 10px,22px);line-height:1.45;color:#fbf3df;text-shadow:0 2px 8px #000,0 0 3px #000;opacity:0;transition:opacity .8s}
-#scnCap.on{opacity:1}
 #scnTitle{position:absolute;left:50%;top:22%;transform:translateX(-50%);text-align:center;font-family:var(--f-title);font-size:clamp(30px,6vw,60px);color:#f6e2b0;text-shadow:0 3px 0 #2a1608,0 0 22px rgba(255,190,90,.7);opacity:0;transition:opacity 1s;width:94vw}
 #scnTitle small{display:block;font-family:var(--f-label);font-size:clamp(13px,1.6vw,18px);letter-spacing:.12em;color:#e8d6a8;margin-top:6px}
 #scnTitle.on{opacity:1}
@@ -735,7 +733,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
   </div>
 </div>
 <div id="vig" hidden role="status" aria-live="polite"><canvas id="vigP" width="96" height="96"></canvas><div class="vt"><b id="vigN"></b><p id="vigT"></p></div></div>
-<div id="scn" hidden><div class="lb top"></div><div class="lb bot"></div><p id="scnCap"></p><div id="scnTitle"></div><button class="btn sm" id="scnSkip">Passer ▸▸</button></div>
+<div id="scn" hidden><div class="lb top"></div><div class="lb bot"></div><div id="scnTitle"></div><button class="btn sm" id="scnSkip">Passer ▸▸</button></div>
 <div id="scnFade"></div>
 <div class="over" id="questBox" hidden><div class="dlg qdlg"><div class="row sp"><h2>Journal de quêtes</h2><button class="btn sm" id="qClose">Fermer</button></div><p class="muted" style="margin:0">Touche une quête pour la suivre : la flèche dorée et la mini-carte t’y guident.</p><div id="questList"></div></div></div>
 <div class="over" id="loadBox" hidden><div class="ld"><div class="rune"></div><h2 id="loadTitle">Midheim</h2><p id="loadSub">Chargement</p></div></div>
