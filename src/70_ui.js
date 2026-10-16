@@ -254,13 +254,13 @@ async function loadAll(){const got={};for(const c of CLS_IDS)got[c]=await Store.
   if(mode==='menu'){hero=heroes[selCls];ST=derive(hero);renderMenu()}}
 function renderMenu(){const box=$('#classes');box.textContent='';
   for(const c of CLS_IDS){const C=CLS[c],h=heroes[c];const b=el('button','cls');b.style.setProperty('--c',C.col);b.setAttribute('aria-pressed',c===selCls);
-    const pc=el('canvas');pc.width=56;pc.height=56;drawPlayerTo(pc.getContext('2d'),{cls:c,lk:h&&h.eq?lookOf(h.eq):0},28,32);
+    const pc=el('canvas');pc.width=56;pc.height=56;drawNPC(pc.getContext('2d'),HEROS[c].sib,28,30,0,1.3);
     const lv=h?(h.lvl>1||h.q>0?'Niveau '+h.lvl+' · '+stonesQ(h.q)+'/4 pierres':'Nouveau héros'):'…';
-    b.append(pc,el('b',null,C.nom),el('span','lv',lv),el('small',null,C.desc));b.onclick=()=>{selCls=c;Store.lsSet('dd_cls',c);hero=heroes[c]||newHero(c);ST=derive(hero);renderMenu();pres({c,l:hero.lvl})};box.append(b)}
+    b.append(pc,el('b',null,HEROS[c].nom),el('span','role',HEROS[c].role),el('span','lv',lv),el('small',null,C.desc));b.onclick=()=>{selCls=c;Store.lsSet('dd_cls',c);hero=heroes[c]||newHero(c);ST=derive(hero);syncName();renderMenu();pres({c,l:hero.lvl,n:myName})};box.append(b)}
   if(!hero)return;
   const fresh=hero.q===0&&!hero.pos;$('#bSolo').textContent=fresh?'Commencer l’aventure':'Continuer l’aventure';
   const pos=hero.pos||PL.start;const where=townAt(pos[0],pos[1])||regionAt(pos[0],pos[1]);
-  const rs=$('#resumeTxt');rs.textContent='';rs.append(el('b',null,CLS[hero.cls].nom+' niveau '+hero.lvl),document.createTextNode(' · '+where.nom+' · '+hero.gold+' or · '+hero.pot+' potions. Objectif : '+OBJ[Math.min(hero.q,6)].t));
+  const rs=$('#resumeTxt');rs.textContent='';rs.append(el('b',null,heroNom(hero.cls)+' · '+HEROS[hero.cls].role+' niveau '+hero.lvl),document.createTextNode(' · '+where.nom+' · '+hero.gold+' or · '+hero.pot+' potions. Objectif : '+OBJ[Math.min(hero.q,6)].t));
   // carte du menu
   const mk=$('#menuMarks');mk.textContent='';for(const k of hero.wp){const w=WAYPOINTS[k];if(!w)continue;const[x,y]=pctOf(w.pt[0],w.pt[1]);const m=mark(mk,'wp',x,y);m.textContent='◆';m.style.pointerEvents='none'}
   const o=OBJ[Math.min(hero.q,6)];if(o.at){const p=placePx(o.at);if(p){const[x,y]=pctOf(p.x/TS-.5,p.y/TS-.5);mark(mk,'obj',x,y)}}
@@ -346,7 +346,10 @@ $('#bChron').onclick=()=>{Snd.init();openChron()};$('#chronClose').onclick=()=>{
 $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$('#stSkip').onclick=()=>{storyQ.forEach(k=>{if(!hero.story.includes(k))hero.story.push(k)});storyQ=[];doSave(true);closeStory()};
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});
 addEventListener('keydown',e=>{if($('#storyBox').hidden)return;if(e.code==='Enter'||e.code==='Space'||e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();keys.clear();$('#stNext').click()}},{capture:true});
-const nameIn=$('#name');let nameT=0;nameIn.addEventListener('input',()=>{myName=clean(nameIn.value)||'Héros';Store.lsSet('dd_name',myName);
+const nameIn=$('#name');let nameT=0;
+/* sans nom saisi, le joueur porte le nom du héros choisi (Bjorn, Sigrid, Kári ou Liv) */
+function syncName(){const v=clean(nameIn.value);myName=v||heroNom(selCls);nameIn.placeholder=heroNom(selCls)}
+nameIn.addEventListener('input',()=>{syncName();Store.lsSet('dd_name',clean(nameIn.value)||'');
   // envoi groupé : le nom part une fois la saisie finie, pas à chaque lettre
   clearTimeout(nameT);nameT=setTimeout(()=>pres({n:myName}),600)});
 
@@ -358,8 +361,8 @@ const nameIn=$('#name');let nameT=0;nameIn.addEventListener('input',()=>{myName=
 
 /* ================= Démarrage ================= */
 (async function boot(){
-  myName=clean(Store.lsGet('dd_name'))||'Héros';nameIn.value=myName==='Héros'?'':myName;nameIn.placeholder='Héros';
-  const c=Store.lsGet('dd_cls');if(CLS_IDS.includes(c))selCls=c;
+  {const n=clean(Store.lsGet('dd_name'));nameIn.value=n&&n!=='Héros'?n:''}
+  const c=Store.lsGet('dd_cls');if(CLS_IDS.includes(c))selCls=c;syncName();
   $('#mapImg2').src=$('#mapImg').src;Voice.init();Pwa.init();Iab.init();
   await Splash.run([
     ['Les polices de Midheim',1,()=>Loader.fonts()],

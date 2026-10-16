@@ -56,8 +56,8 @@ function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
   const now=Date.now();
   const hs=peers.filter(p=>!p.sameTab&&p.presence&&p.presence.r==='h'&&!(p.presence.dv===DEV_ID&&!window.__ddMulti)&&!(p.updatedAt>0&&now-p.updatedAt>HOST_STALE));
   if(!hs.length){box.append(el('p','muted','Personne ne joue pour l’instant. Lance l’aventure : tant qu’il reste une place, un 2ᵉ joueur pourra te rejoindre.'));return}
-  for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
-    const c=CLS_IDS.includes(pr.c)?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
+  for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||(CLS_IDS.includes(pr.c)?heroNom(pr.c):'Héros'));
+    const c=CLS_IDS.includes(pr.c)?HEROS[pr.c].nom+' · '+HEROS[pr.c].role:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
     const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer,away=!!pr.bg;bt.textContent=full?'Complète':away?'En pause':'Rejoindre';bt.disabled=full||away;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
 const PAUSE_WAIT=90000;
 function hostCheckGuest(){
