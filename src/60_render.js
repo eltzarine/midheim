@@ -236,7 +236,7 @@ function render(dt){
     for(const bd of m.builds){if(bd.x*TS>x1+64||(bd.x+bd.w)*TS<x0-64||bd.y*TS>y1+64||(bd.y+bd.h)*TS<y0-90)continue;Z.push([(bd.y+bd.h)*TS-2,()=>drawBuilding(bd,T)])}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(vis(n.x,n.y))Z.push([n.y+6,()=>drawNPC(ctx,n.who,n.x,n.y,T)])}
     if(G.q>=3&&!G.abhOn){const a2=m.arena;if(vis(a2.x,a2.y))Z.push([a2.y+6,()=>drawNPC(ctx,'abhorash',a2.x,a2.y-8,T)])}}
-  else{for(const n of m.npcs||[])Z.push([n.y+6,()=>drawNPC(ctx,n.who,n.x,n.y,T)]);for(const f of m.furn||[])Z.push([(f.y+1)*TS-2,()=>drawFurn(f)]);
+  else{for(const n of m.npcs||[]){if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;Z.push([n.y+6,()=>drawNPC(ctx,n.who,n.x,n.y,T)])}for(const f of m.furn||[])Z.push([(f.y+1)*TS-2,()=>drawFurn(f)]);
     if(m.objs)for(const o of m.objs){const ox=(o.x+o.w/2)*TS,oy=(o.y+o.h)*TS;if(ox>x0-90&&ox<x1+90&&oy>y0-20&&oy<y1+110)Z.push([oy-2,()=>drawDObj(o,T)])}
     if(m.marks)m.marks.forEach((mk,i)=>{const mx=(mk.x+.5)*TS,my=(mk.y+.5)*TS;if(vis(mx,my))Z.push([my+10,()=>drawMark(mk,i,T)])})}
   Z.sort((a,b)=>a[0]-b[0]);for(const z of Z)z[1]();
@@ -299,7 +299,7 @@ function render(dt){
     const dx=(bd.door.x+.5)*TS,dy=bd.kind==='tour'?bd.door.y*TS-78:bd.y*TS-(bd.kind==='keep'||bd.kind==='palais'?78:bd.h*TS*.75+16);if(Math.hypot(dx-L.x,dy-L.y)<300)label(bd.label,dx,dy,'#ffe6a8',12)}
     for(const n of m.npcs){if(n.id==='virganth2'&&G.q<3)continue;if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;if(Math.hypot(n.x-L.x,n.y-L.y)<220)label(NPC_NAMES[n.who]||'',n.x,n.y-(n.who==='virganth'?62:34),'#cfe8ff',11)}
     for(const k2 in TOWNS){const p=PL[k2];const tx=(p[0]+.5)*TS,ty=(p[1]-11)*TS;if(Math.hypot(tx-L.x,ty-L.y)<520){ctx.font='400 22px "Uncial Antiqua",Georgia,serif';ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillText(TOWNS[k2].nom,tx+1.5,ty+1.5);ctx.fillStyle='#efe6cf';ctx.fillText(TOWNS[k2].nom,tx,ty)}}}
-  else for(const n of m.npcs||[])label(NPC_NAMES[n.who]||'',n.x,n.y-34,'#cfe8ff',11);
+  else for(const n of m.npcs||[]){if(Scene.on&&Scene.def.hideNpc&&Scene.def.hideNpc.includes(n.id))continue;label(NPC_NAMES[n.who]||'',n.x,n.y-34,'#cfe8ff',11)}
   for(const q of parts){if(q.k!=='txt')continue;ctx.globalAlpha=clamp(q.life/q.max*1.5,0,1);ctx.font='700 '+Math.round(q.size*(1+Math.max(0,q.life/q.max-.72)*2.2))+'px "Alegreya Sans",system-ui,sans-serif';ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillText(q.txt,q.x+1,q.y+1);ctx.fillStyle=q.col;ctx.fillText(q.txt,q.x,q.y)}
   ctx.globalAlpha=1;
   for(const b of bubbles){let x,y;if(b.who==='p'){if(!G.players[b.o])continue;const w=wpos(b.o);x=w.x;y=w.y-46}else{const e=G.enemies.find(e=>e.id===b.o);if(e){b.x=e.rx??e.x;b.y=e.ry??e.y}x=b.x;y=b.y-(e?e.r:14)-14}
