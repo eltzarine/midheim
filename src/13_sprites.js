@@ -75,12 +75,14 @@ const HERO_HEAD={mage:11,soigneur:9};
 const HERO_WPN={guerrier:['Sword','Axe','Hammer'],mage:['Stick',null,'Book'],voleur:['Sai','Ninjaku','Katana'],soigneur:['Club','MagicWand','Stick']};
 const RAR_HUE=[null,215,280,42,172];
 /* héros en pixel art ; false si les images ne sont pas encore prêtes */
-/* planche du héros : haute définition si assets/hd/<classe>.png existe, sinon le pack */
+/* planche du héros : haute définition si assets/hd/<classe>.png existe, sinon le frère ou la sœur de la classe
+   (Bjorn, Sigrid, Kári, Liv), le même personnage que dans le prologue et sur l'accueil */
 function heroSheet(cls,L2){if(SPR.ok('h_'+cls))return{key:'h_'+cls,head:(SPR.meta('h_'+cls).head|0)};
-  const name=(HERO_SPR[cls]||HERO_SPR.guerrier)[L2.ab]||'Knight';return{key:'c_'+name,head:HERO_HEAD[cls]||0}}
+  const sib=PRO_SIB[cls],name=sib&&NPC_SPR[sib];if(name&&SPR.ok('c_'+name)){const hu=NPC_HUE[sib]||[null,0];return{key:'c_'+name,head:hu[1],base:hu[0]}}
+  const old=(HERO_SPR[cls]||HERO_SPR.guerrier)[L2.ab]||'Knight';return{key:'c_'+old,head:HERO_HEAD[cls]||0}}
 function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const hs=heroSheet(cls,L2);
   if(!SPR.ok(hs.key))return false;const m=SPR.meta(hs.key);
-  const hue=m.tint===false?null:RAR_HUE[L2.ar],sheet=SPR.tint(hs.key,hue,hs.head);
+  const hue=m.tint===false?null:(RAR_HUE[L2.ar]??hs.base??null),sheet=SPR.tint(hs.key,hue,hs.head);
   g.save();g.imageSmoothingEnabled=false;
   {const sh=sunSh(g,10*m.wh/36,0);g.fillStyle='rgba(20,12,30,'+.35*sh.a+')';g.beginPath();g.ellipse(x+sh.ox,y+13,sh.rx,3.5*m.wh/36,0,0,6.28);g.fill()}
   if(o.down){const pk=SPR.pick(m,Math.PI/2);g.translate(x,y+6);g.rotate(Math.PI/2);g.globalAlpha*=.8;SPR.draw(g,sheet,m,pk.i,SPR.frame(m,'idle',0,0),pk.flip,0,8);g.restore();return true}
