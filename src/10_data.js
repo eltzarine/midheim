@@ -14,8 +14,8 @@ const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=
 const CLS_IDS=['guerrier','mage','voleur','soigneur'];
 const CLS={
   guerrier:{nom:'Guerrier',col:'#e0644c',hp:150,hpL:16,mp:70,mpr:6,spd:150,dmg:16,crit:.05,arm:.18,atkCd:.42,atkMp:0,atk:'Épée',desc:'Tient la ligne de front. Charge, tourbillon et cri de guerre pour protéger son allié.'},
-  mage:{nom:'Magicien',col:'#6f9cf0',hp:88,hpL:9,mp:130,mpr:9,spd:146,dmg:15,crit:.07,arm:0,atkCd:.5,atkMp:4,atk:'Boule de feu',desc:'Fragile mais dévastateur à distance. Givre, transfert et pluie de flammes.'},
-  voleur:{nom:'Voleur',col:'#86cc70',hp:104,hpL:11,mp:80,mpr:8,spd:178,dmg:10,crit:.22,arm:.05,atkCd:.27,atkMp:0,atk:'Dagues',desc:'Rapide et critique. Seul à crocheter les coffres violets.'},
+  mage:{nom:'Magicien',col:'#6f9cf0',hp:88,hpL:9,mp:130,mpr:9,spd:146,dmg:15,crit:.07,arm:0,atkCd:.5,atkMp:4,atk:'Boule de feu',desc:'Fragile mais dévastatrice à distance. Givre, transfert et pluie de flammes.'},
+  voleur:{nom:'Voleur',col:'#86cc70',hp:104,hpL:11,mp:80,mpr:8,spd:178,dmg:10,crit:.22,arm:.05,atkCd:.27,atkMp:0,atk:'Dagues',desc:'Rapide et critique. Seule à crocheter les coffres violets.'},
   soigneur:{nom:'Soigneur',col:'#f0d36a',hp:115,hpL:12,mp:120,mpr:8,spd:150,dmg:9,crit:.05,arm:.1,atkCd:.45,atkMp:0,atk:'Orbe sacré',desc:'Soigne, protège et relève son allié. Son ultime ressuscite.'},
 };
 /* ================= Compétences et arbre de talents =================
@@ -181,6 +181,10 @@ const ENCH={
 const enchOf=(slot,id)=>(ENCH[slot]||[]).find(e=>e.id===id);
 const enchCost=it=>({g:60+it.l*20,s:3+it.r*2});
 
+/* la fratrie : chaque classe est jouée par un frère ou une sœur (voir le prologue) */
+const HEROS={guerrier:{nom:'Bjorn',role:'Guerrier',sib:'bjorn'},mage:{nom:'Sigrid',role:'Magicienne',sib:'sigrid'},
+  voleur:{nom:'Kári',role:'Voleuse',sib:'kari'},soigneur:{nom:'Liv',role:'Soigneuse',sib:'liv'}};
+function heroNom(c){return(HEROS[c]||HEROS.guerrier).nom}
 /* ================= Héros et caractéristiques ================= */
 /* v3 : arbre de talents et niveau 10 au plus ; les héros des versions précédentes repartent de zéro */
 const HERO_V=4;   // 4 : remise à zéro du 15/10 (prologue de 2999)
