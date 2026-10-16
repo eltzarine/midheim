@@ -55,7 +55,7 @@ function proSeat(){const used=new Set();G.players.forEach((p,i)=>{const s=proSib
   p.x=p.rx=q.x;p.y=p.ry=q.y;if(i===myIdx){L.x=q.x;L.y=q.y}})}
 // chacun reprend sa place à table quand Maren entre
 function proSeatMe(){const s=PRO_SEAT[proMe()];L.x=s[0]*TS;L.y=s[1]*TS;if(mode!=='guest'){const p=G.players[myIdx];if(p){p.x=p.rx=L.x;p.y=p.ry=L.y}}}
-// départ d'un nouveau héros : vrai si le prologue commence (sinon l'ancienne introduction joue)
+// départ d'un nouveau héros : vrai si le prologue commence
 function proStart(){if(window.__noStory||!hero||hero.q!==0||(hero.fl||[]).includes('pro_done')||hero.story.includes('prologue'))return false;proEnter();return true}
 
 /* ---------- hôte : quand Maren entre, quand Nils arrive ---------- */
@@ -83,12 +83,13 @@ function proLocal(){if(!G||!G.m){Pro.hk='';return}const m=G.m;
   if((bits&2)&&!(Pro.bits&2)){Pro.bits|=2;Scene.play(proNilsScene(),()=>proNils())}}
 // Nils reste près de la porte une fois la nouvelle annoncée
 function proNils(){const m=G.m;if(!m||m.hk!=='lanterne'||m.npcs.some(n=>n.id==='nils'))return;const x=5.6*TS,y=8.8*TS;m.npcs.push({id:'nils',who:'nils',x,y});m.inter.push({x,y:y+TS*.6,r:32,kind:'talk',act:'pro:nils',label:'Parler à Nils'})}
-// sortie de la Lanterne après Nils : le prologue est fait. L'ancienne introduction (l'an 147) ne se joue plus :
-// ses étapes sont seulement notées comme vues, pour que la suite de l'histoire ne la redemande pas.
-function proDone(){Pro.was=0;if(!hero)return;hero.fl=hero.fl||[];if(!hero.fl.includes('pro_done'))hero.fl.push('pro_done');
-  for(const k of PRO_OLD)if(!hero.story.includes(k))hero.story.push(k);doSave(true);
-  toast('Prologue terminé. La scène chez la mère arrive bientôt.')}
+// l'ancienne introduction (l'an 147) ne se joue plus : ses étapes sont seulement notées comme vues,
+// pour que la suite de l'histoire ne la redemande pas
 const PRO_OLD=['prologue','reinald0','ch0'];
+function proSkipOld(){if(!hero)return;hero.story=hero.story||[];for(const k of PRO_OLD)if(!hero.story.includes(k))hero.story.push(k);doSave(true)}
+// sortie de la Lanterne après Nils : le prologue est fait
+function proDone(){Pro.was=0;if(!hero)return;hero.fl=hero.fl||[];if(!hero.fl.includes('pro_done'))hero.fl.push('pro_done');proSkipOld();
+  toast('Prologue terminé. La scène chez la mère arrive bientôt.')}
 function proObj(){const b=proBits(G.pr);if(b&2)return'Rentrer chez la mère · rue des Chaudronniers';if(b&1)return'Sœur Maren est à votre table';
   const n=PRO_CLUES.filter(k=>(hero.fl||[]).includes('pi_'+k)).length;return'Écoute la salle · indices '+n+'/3'}
 function proName(){if(!G||!G.m||G.m.hk!=='lanterne')return'';return'La Lanterne froide'}

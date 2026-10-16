@@ -93,7 +93,9 @@ def main():
         for k in ('wh', 'stride', 'weapon', 'tint', 'idleFps', 'smooth', 'head'):
             if k in keep:
                 meta[k] = keep[k]
-    json.dump(meta, open(old, 'w'), indent=1)
+    with open(old, 'w') as f:
+        json.dump(meta, f, indent=2)
+        f.write('\n')
     print('ok', cls, '%dx%d' % sheet.size, 'case', cs, 'course', nrun, 'attaque', natk, atk_dirs)
 
 

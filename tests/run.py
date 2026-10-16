@@ -66,7 +66,7 @@ with sync_playwright() as pw:
     # ---- prologue de 2999 : un nouveau héros commence à la Lanterne froide ----
     check('Prologue : un nouveau héros commence à la Lanterne froide, à Tarkin', go(pg, "G.m.hk==='lanterne'&&zoneName(G.m)==='La Lanterne froide'") and go(pg, "Scene.on"))
     pg.wait_for_timeout(1800)
-    check('Prologue : titre du chapitre et narratrice', 'Lanterne froide' in pg.inner_text('#scnTitle') and 'rationnement' in (pg.inner_text('#vig') + pg.inner_text('#scnCap')))
+    check('Prologue : titre du chapitre et narratrice', 'Lanterne froide' in pg.inner_text('#scnTitle') and 'rationnement' in pg.inner_text('#vig'))
     pg.screenshot(path=f'{OUT}/p1_lanterne_arrivee.png')
     skip(pg)
     me = go(pg, "proMe()")
