@@ -187,7 +187,7 @@ const HEROS={guerrier:{nom:'Bjorn',role:'Guerrier',sib:'bjorn'},mage:{nom:'Sigri
 function heroNom(c){return(HEROS[c]||HEROS.guerrier).nom}
 /* ================= Héros et caractéristiques ================= */
 /* v3 : arbre de talents et niveau 10 au plus ; les héros des versions précédentes repartent de zéro */
-const HERO_V=4;   // 4 : remise à zéro du 15/10 (prologue de 2999)
+const HERO_V=5;   // 5 : remise à zéro du 16/10 (sauvegarde à l’ordinateur de Tarkin)
 function newHero(cls){return{v:HERO_V,cls,lvl:1,xp:0,pts:0,tr:[],gold:30,pot:3,sh:0,q:0,fl:[],wp:['start'],pos:null,story:[],sq:{},sqd:[],track:'main',bag:[],eq:{arme:starter(cls,'arme'),armure:starter(cls,'armure'),talisman:null},ts:0}}
 function fixItem(it,cls){if(!it||typeof it!=='object'||!SLOTS.includes(it.s))return null;if(typeof it.rq==='string'&&RELICS[it.rq]){const r=makeRelic(it.rq,cls,it.l|0);if(r.s!==it.s)return null;r.u=clamp(it.u|0,0,5);return r}const o=genItem(it.id|0,it.l|0,it.r|0,cls,it.s);o.u=clamp(it.u|0,0,5);o.e=it.e&&enchOf(it.s,it.e)?it.e:null;if(typeof it.n==='string'&&it.n.length<60)o.n=it.n;return o}
 function fixHero(h,cls){const n=newHero(cls);if(!h||typeof h!=='object'||h.v!==HERO_V)return n;const o=Object.assign(n,h);o.cls=cls;o.v=HERO_V;delete o.tal;

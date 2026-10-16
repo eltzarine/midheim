@@ -14,6 +14,10 @@ const PRO_W=15,PRO_H=11,PRO_DOOR=7;
 // la valeur reçue de l'autre joueur est bornée : seul le bit du prologue passe
 function proBits(v){v=Math.trunc(+v);return Number.isFinite(v)?v&1:0}
 function proSibOf(cls){return PRO_SIB[cls]||'kari'}
+/* dans les dialogues, le frère ou la sœur joué(e) porte le nom du joueur : « Du calme, Bjorn » devient « Du calme, Léo » */
+function proJoues(){const j={};const ps=typeof G!=='undefined'&&G&&G.players||[];for(const p of ps){const s=PRO_SIB[p.cls],n=clean(p.name);if(s&&n&&!j[s])j[s]=n}return j}
+function persoNoms(t){t=String(t==null?'':t);const j=proJoues();
+  for(const s in j){const n=PRO_NOM[s];if(!n||j[s]===n)continue;t=t.replace(new RegExp('(^|[^\\p{L}])'+n+'(?![\\p{L}])','gu'),(m,a)=>a+j[s])}return t}
 // quelqu'un joue Bjorn : tout le monde le suit dehors
 function proBjornJoue(){return!!(G&&G.players.some(p=>p.cls==='guerrier'))}
 
