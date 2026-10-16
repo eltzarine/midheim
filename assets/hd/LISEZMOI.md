@@ -3,10 +3,12 @@
 Une planche par personnage, `<nom>.png`, avec sa fiche `<nom>.json`.
 Une planche nommée comme une classe (`guerrier`, `mage`, `voleur`, `soigneur`) remplace le personnage du pack Ninja Adventure pour cette classe.
 
+`chevalier` (le chevalier en armure) n'est plus un héros : c'est le chevalier de verre, un PNJ du grand pont, dessiné en silhouette transparente.
+
 ## Depuis PixelLab
 
 ```
-python3 tools/import_pixellab.py guerrier <export_debout> [<export_combat>]
+python3 tools/import_pixellab.py chevalier <export_debout> [<export_combat>]
 python3 tools/build.py
 ```
 

@@ -106,6 +106,19 @@ function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const hs=he
   if(!back)weapon();
   if(L2.ar>=3&&Math.random()<.12&&typeof parts!=='undefined'&&parts.length<500)parts.push({k:'sp',x:x+(Math.random()-.5)*20,y:y-8+(Math.random()-.5)*20,vx:0,vy:-18,life:.6,max:.6,col:RAR[L2.ar].col});
   g.restore();return true}
+/* chevalier de verre (PNJ du grand pont) : la planche haute définition du chevalier, en verre comme le héros fantôme de l'aperçu :
+   contour clair et voile gris très léger. La planche « verre » est calculée une seule fois, puis dessinée comme une planche normale. */
+let _glass=null;
+function glassSheet(im){if(_glass)return _glass;const c=document.createElement('canvas'),w=c.width=im.width,h=c.height=im.height,g=c.getContext('2d');g.drawImage(im,0,0);
+  const d=g.getImageData(0,0,w,h),p=d.data,on=new Uint8Array(w*h);for(let i=0;i<w*h;i++)on[i]=p[i*4+3]>10?1:0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){const i=y*w+x,o=i*4;
+    if(on[i]){const v=Math.round(p[o]*.3+p[o+1]*.59+p[o+2]*.11);p[o]=p[o+1]=p[o+2]=v;p[o+3]=36;continue}
+    let edge=0;for(let dy=-1;dy<=1&&!edge;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h&&on[Y*w+X]){edge=1;break}}
+    if(edge){p[o]=p[o+1]=p[o+2]=238;p[o+3]=230}}
+  g.putImageData(d,0,0);return _glass=c}
+function drawGlassKnight(g,x,y,T){const k='h_chevalier';if(!SPR.ok(k))return false;const m=SPR.meta(k),pk=SPR.pick(m,Math.atan2(L.y-y,L.x-x));   // il regarde le héros
+  {const sh=sunSh(g,10*m.wh/36,0);g.fillStyle='rgba(20,12,30,'+.18*sh.a+')';g.beginPath();g.ellipse(x+sh.ox,y+13,sh.rx,3.5*m.wh/36,0,0,6.28);g.fill()}
+  g.save();g.globalAlpha*=.85+.15*Math.sin(T*1.3);SPR.draw(g,glassSheet(SPR.im[k]),m,pk.i,SPR.frame(m,'idle',0,T),pk.flip,x,y+14-Math.round(Math.sin(T*1.6)*1.5));g.restore();return true}
 /* ennemis : type -> personnage du pack */
 const ENEMY_SPR={slime:'Skeleton',bat:'Vampire',archer:'Tengu',orc:'GreenPig'};
 function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.type==='orc'&&G.m&&G.m.soldat)name='RobotGrey';

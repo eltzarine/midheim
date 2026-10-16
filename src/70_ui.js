@@ -275,12 +275,12 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logNa
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();
-  if(hero.q===0&&!proStart()){if(!window.__noStory&&!hero.story.includes('prologue')){Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}else['prologue','reinald0','ch0'].forEach(queueStoryKey)}
+  if(hero.q===0&&!proStart())proSkipOld()   // un nouveau héros commence par la Lanterne froide
   // toute partie est ouverte : tant qu'il reste une place, un 2e joueur peut la rejoindre depuis le menu
   if(room)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)})}
 function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
 function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
-function pickTheme(){if(Cine.on)return'cine';if(Scene.on&&Scene.def&&Scene.def.music)return Scene.def.music;if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
+function pickTheme(){if(Cine.on)return'cine';if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
   if(G.m.kind==='house')return'town';
   if(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS)))return'ville';if(G.m.kind!=='world')return'dungeon';
   // dehors : la musique suit le moment de la journée
