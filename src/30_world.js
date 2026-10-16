@@ -113,6 +113,8 @@ function buildWorld(){
   const npc=(id,who,tx,ty,act,label)=>{for(let r=0;r<6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=tx+dx,y=ty+dy;if(inb(x,y)&&!sol[idx(x,y)]&&passT(t[idx(x,y)])){const n={id,who,x:(x+.5)*TS,y:(y+.5)*TS};npcs.push(n);inter.push({x:n.x,y:n.y,r:40,kind:'talk',act,label,npc:n});return n}}};
   npc('virganth','virganth',PL.start[0]+1,PL.start[1]-4,'talk:virganth','Virganth');
   npc('garde','garde',PL.pont[0]-4,PL.pont[1]+2,'talk:garde','Garde du Conseil');   // à gauche du pont
+  // l'ordinateur de Tarkin, sur la place, près de la Lanterne froide : check-up, soins et sauvegarde
+  {const o=npc('ordi','ordi',67,110,'save','Ordinateur · soigner et enregistrer');if(o){const i=idx(Math.floor(o.x/TS),Math.floor(o.y/TS));sol[i]=1;occ[i]=1;const it=inter.find(v=>v.npc===o);if(it)it.r=48}}
   // le chevalier de verre : sur le grand pont, côté plaine, avant la bande qui barre le passage
   {const n={id:'chevalier',who:'chevalier',x:(GPONT.x0+5+.5)*TS,y:(GPONT.y0+1+.5)*TS};npcs.push(n);inter.push({x:n.x,y:n.y,r:40,kind:'talk',act:'talk:chevalier',label:'Le chevalier de verre',npc:n})}
   if(kz)npc('grinmir','grinmir',kz.door.x+3,kz.door.y,'talk:grinmir','Grinmir Thunderhammer');

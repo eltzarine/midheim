@@ -1,5 +1,5 @@
 /* ================= Portraits supplémentaires ================= */
-function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron'].includes(who)||PRO_NOM[who]){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
+function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron','ordi'].includes(who)||PRO_NOM[who]){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
     const gr=g.createRadialGradient(c.width/2,c.height*.4,6,c.width/2,c.height/2,c.width*.7);gr.addColorStop(0,'#3a5a62');gr.addColorStop(1,'#0c1418');g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);
     drawNPC(g,who,c.width/2,c.height*.68,0,c.width/30);return}
   drawPortraitBase(c,who)}
@@ -269,8 +269,10 @@ function renderMenu(){const box=$('#classes');box.textContent='';
 
 /* ================= Écrans ================= */
 function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
-  $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
-function toMenu(){Log.ev('jeu','retour au menu depuis',mode);document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
+  $('#pauseNote').textContent=(mode==='solo'?'Le jeu est en pause. ':'Le jeu continue pendant ce menu : ton coéquipier joue encore. ')+'Pour enregistrer, utilise l’ordinateur de Tarkin.'}
+function toMenu(){Log.ev('jeu','retour au menu depuis',mode);
+  // ce qui n'a pas été enregistré à l'ordinateur est perdu : on recharge la dernière sauvegarde
+  for(const k of CLS_IDS)heroes[k]=fixHero(Store.lsGet('dd_hero_'+k),k);hero=heroes[selCls];ST=derive(hero);quitAsk=false;document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
 function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logName(myName),hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
@@ -278,8 +280,10 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logNa
   if(hero.q===0&&!proStart())proSkipOld()   // un nouveau héros commence par la Lanterne froide
   // toute partie est ouverte : tant qu'il reste une place, un 2e joueur peut la rejoindre depuis le menu
   if(room)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)})}
-function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
-function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
+let quitAsk=false;
+function askQuit(){if(!quitAsk&&mode!=='joining'&&unsaved()){quitAsk=true;$('#bQuit').textContent='Quitter sans enregistrer ? Toucher encore';return}quitGame()}
+function quitGame(){if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
+function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;quitAsk=false;$('#bQuit').textContent='Quitter';$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
 function pickTheme(){if(Cine.on)return'cine';if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
   if(G.m.kind==='house')return'town';
   if(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS)))return'ville';if(G.m.kind!=='world')return'dungeon';
@@ -336,7 +340,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#objTxt').addEventListener('click',e=>{if(e.target&&e.target.tagName==='B'&&inGame())openQuests()});$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
 holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});holdable($('#cMe'),()=>{},on=>{if(L)L.meBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
-$('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
+$('#bQuit').onclick=askQuit;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);
 addEventListener('pointerdown',()=>Snd.init(),{capture:true});addEventListener('keydown',()=>Snd.init(),{capture:true});
@@ -381,5 +385,5 @@ nameIn.addEventListener('input',()=>{syncName();Store.lsSet('dd_name',clean(name
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
   /* verrouillage ou passage à une autre appli : sur iPhone, la fermeture de la page n'est pas toujours signalée
      (appli balayée, onglet tué en arrière-plan) ; on sauvegarde donc dès que le jeu passe en arrière-plan */
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&hero){doSave(true);Log.ev('jeu','sauvegarde (arrière-plan)',mode)}});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&hero){doSave(true);Log.ev('jeu','arrière-plan (rien n’est enregistré)',mode)}});
 })();
