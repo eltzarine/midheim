@@ -15,7 +15,9 @@ const PRO_CLUES=['cartes','pierres','radio'];
 function proBits(v){v=Math.trunc(+v);return Number.isFinite(v)?v&3:0}
 function proSibOf(cls){return PRO_SIB[cls]||'kari'}
 
-function buildLanterne(hid,exitTo){const W=PRO_W,H=PRO_H,t=new Uint8Array(W*H).fill(1);for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)t[y*W+x]=0;
+/* libre : l'auberge de Tarkin une fois le prologue passé (on y revient) : même salle, porte ouverte, sans scènes ;
+   Ragna tient l'auberge (repos et boutique). */
+function buildLanterne(hid,exitTo,libre){const W=PRO_W,H=PRO_H,t=new Uint8Array(W*H).fill(1);for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)t[y*W+x]=0;
   t[(H-1)*W+PRO_DOOR]=6;   // porte fermée tant que Nils n'est pas venu
   const furn=[],solidAt=(x,y)=>{t[y*W+x]=6};
   // mur du fond
@@ -40,6 +42,7 @@ function buildLanterne(hid,exitTo){const W=PRO_W,H=PRO_H,t=new Uint8Array(W*H).f
     {...P(9.5,1.2),r:28,kind:'talk',act:'pro:radio',label:'Écouter la radio'},{...P(12.5,1.2),r:28,kind:'talk',act:'pro:compteur',label:'Regarder le compteur'},
     {...P(10.4,3.3),r:26,kind:'talk',act:'pro:tronc',label:'Le tronc de Hjem'},
     {x:(PRO_DOOR+.5)*TS,y:(H-1+.2)*TS,r:30,kind:'door',act:'exit',label:'Sortir'}];
+  if(libre){m.libre=true;t[(H-1)*W+PRO_DOOR]=0;m.inter[0]={...P(11.5,3.3),r:44,kind:'talk',act:'shop:auberge',label:'Parler à Ragna',town:String(hid).split('_')[0]}}
   m.base={npcs:m.npcs.slice(),inter:m.inter.slice()};
   return m}
 
@@ -56,7 +59,7 @@ function proSeatMe(){const s=PRO_SEAT[proMe()];L.x=s[0]*TS;L.y=s[1]*TS;if(mode!=
 function proStart(){if(window.__noStory||!hero||hero.q!==0||(hero.fl||[]).includes('pro_done')||hero.story.includes('prologue'))return false;proEnter();return true}
 
 /* ---------- hôte : quand Maren entre, quand Nils arrive ---------- */
-function proTick(){const m=G.m;if(!m||m.hk!=='lanterne')return;G.pr=proBits(G.pr);
+function proTick(){const m=G.m;if(!m||m.hk!=='lanterne'||m.libre)return;G.pr=proBits(G.pr);
   if(!(G.pr&1)){const dx=(PRO_DOOR+.5)*TS,dy=(PRO_H-1)*TS;const nearDoor=G.players.some(p=>!p.down&&p.y>dy-1.6*TS&&Math.abs(p.x-dx)<3*TS);
     const clues=PRO_CLUES.filter(k=>(hero.fl||[]).includes('pi_'+k)).length;
     if(nearDoor||clues>=3||G.time-(G.proT0||0)>100){G.pr|=1;G.proMarenAt=G.time}}
@@ -67,6 +70,7 @@ const Pro={ep:-1,bits:0,hk:'',was:0,talk:{}};
 function proLocal(){if(!G||!G.m){Pro.hk='';return}const m=G.m;
   if(Pro.hk==='lanterne'&&m.hk!=='lanterne'&&m.kind==='world'&&(Pro.was&2))proDone();
   Pro.hk=m.hk||m.kind;if(m.hk!=='lanterne')return;
+  if(m.libre){Pro.was=0;Pro.ep=G.ep;m.t[(PRO_H-1)*m.W+PRO_DOOR]=0;return}
   const bits=proBits(G.pr);Pro.was=bits;
   m.t[(PRO_H-1)*m.W+PRO_DOOR]=bits&2?0:6;
   // les frères et sœurs que personne ne joue restent à table
@@ -79,10 +83,12 @@ function proLocal(){if(!G||!G.m){Pro.hk='';return}const m=G.m;
   if((bits&2)&&!(Pro.bits&2)){Pro.bits|=2;Scene.play(proNilsScene(),()=>proNils())}}
 // Nils reste près de la porte une fois la nouvelle annoncée
 function proNils(){const m=G.m;if(!m||m.hk!=='lanterne'||m.npcs.some(n=>n.id==='nils'))return;const x=5.6*TS,y=8.8*TS;m.npcs.push({id:'nils',who:'nils',x,y});m.inter.push({x,y:y+TS*.6,r:32,kind:'talk',act:'pro:nils',label:'Parler à Nils'})}
-// sortie de la Lanterne après Nils : le prologue est fait, l'histoire de l'an 147 reprend
-function proDone(){Pro.was=0;if(!hero)return;hero.fl=hero.fl||[];if(!hero.fl.includes('pro_done')){hero.fl.push('pro_done');doSave(true)}
-  toast('Prologue terminé. La scène chez la mère arrive bientôt.');
-  if(!window.__noStory&&!hero.story.includes('prologue'))Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}
+// sortie de la Lanterne après Nils : le prologue est fait. L'ancienne introduction (l'an 147) ne se joue plus :
+// ses étapes sont seulement notées comme vues, pour que la suite de l'histoire ne la redemande pas.
+function proDone(){Pro.was=0;if(!hero)return;hero.fl=hero.fl||[];if(!hero.fl.includes('pro_done'))hero.fl.push('pro_done');
+  for(const k of PRO_OLD)if(!hero.story.includes(k))hero.story.push(k);doSave(true);
+  toast('Prologue terminé. La scène chez la mère arrive bientôt.')}
+const PRO_OLD=['prologue','reinald0','ch0'];
 function proObj(){const b=proBits(G.pr);if(b&2)return'Rentrer chez la mère · rue des Chaudronniers';if(b&1)return'Sœur Maren est à votre table';
   const n=PRO_CLUES.filter(k=>(hero.fl||[]).includes('pi_'+k)).length;return'Écoute la salle · indices '+n+'/3'}
 function proName(){if(!G||!G.m||G.m.hk!=='lanterne')return'';return'La Lanterne froide'}

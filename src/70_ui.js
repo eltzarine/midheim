@@ -275,7 +275,7 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logNa
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
   const pos=hero.pos?worldFree(hero.pos[0],hero.pos[1]):WORLD.start;hostEnter('w',pos,{heal:true});showGame();
-  if(hero.q===0&&!proStart()){if(!window.__noStory&&!hero.story.includes('prologue')){Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}else['prologue','reinald0','ch0'].forEach(queueStoryKey)}
+  if(hero.q===0&&!proStart()){if(!window.__noStory&&!hero.story.includes('prologue')&&!(hero.fl||[]).includes('pro_done')){Scene.play(introScene(),()=>{for(const k of['prologue','reinald0','ch0'])if(!hero.story.includes(k))hero.story.push(k);doSave(true)})}else['prologue','reinald0','ch0'].forEach(queueStoryKey)}
   // toute partie est ouverte : tant qu'il reste une place, un 2e joueur peut la rejoindre depuis le menu
   if(room)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)})}
 function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}

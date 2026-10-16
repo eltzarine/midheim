@@ -27,7 +27,7 @@ function realPx(x,y){if(!inPontT(Math.floor(x/TS),Math.floor(y/TS)))return{x,y};
 const regionAt=(tx,ty)=>{if(inPontT(tx,ty)){tx=PL.pont[0];ty=PL.pont[1]}let b=REGIONS[0],bd=1e9;for(const r of REGIONS){const d=(r.pt[0]-tx)**2+(r.pt[1]-ty)**2;if(d<bd){bd=d;b=r}}return b};
 /* Villes : bâtiments posés autour du centre lu sur la carte */
 const TOWNS={
-  tarkin:{nom:'Tarkin',walls:9,roof:'#5a3b6e',b:[['keep','La forteresse de l’Everwatch','dun:everwatch'],['auberge','Auberge du Pont','house:auberge'],['marchand','Comptoir du Conseil','house:marchand'],['forge','Forge de Tarkin','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison']]},
+  tarkin:{nom:'Tarkin',walls:9,roof:'#5a3b6e',b:[['keep','La forteresse de l’Everwatch','dun:everwatch'],['auberge','La Lanterne froide','house:auberge'],['marchand','Comptoir du Conseil','house:marchand'],['forge','Forge de Tarkin','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison']]},
   lastfire:{nom:'Last Fire',roof:'#8e3a2a',b:[['auberge','Auberge de Last Fire','house:auberge'],['marchand','Marchand de Last Fire','house:marchand'],['forge','Forge de Last Fire','house:forge'],['puits'],['maison','Maison des talents','house:talents'],['maison']]},
   honor:{nom:'Honor',walls:9,roof:'#2f4f8e',b:[['palais','Palais d’Er Manar','closed:Les gardes impériaux vous refusent l’entrée du palais de l’empereur Er Manar.'],['auberge','Auberge d’Honor','house:auberge'],['marchand','Marché d’Honor','house:marchand'],['forge','Forge d’Honor','house:forge'],['maison','Maison des talents','house:talents'],['maison'],['maison'],['maison']]},
   cibellos:{nom:'Cibellos',roof:'#7a3a2a',b:[['forge','Ateliers de Cibellos','house:forge'],['marchand','Marchand de Cibellos','house:marchand'],['auberge','Auberge de Cibellos','house:auberge'],['maison','Maison des talents','house:talents'],['maison'],['puits']]},
@@ -61,6 +61,7 @@ const stonesQ=q=>(q>=1)+(q>=3)+(q>=4)+(q>=5);
 const DIALOG={
   virganth0:['Virganth, l’Éternel','Allez à Tarkin. L’Everwatch garde la première pierre, dans l’armure de Sinthara.'],
   virganth1:['Virganth, l’Éternel','Le pendentif brille plus fort. Continuez : chaque pierre vous rapproche de la prison.'],
+  chevalier:['Le chevalier de verre','Je garde ce pont depuis plus longtemps que la pierre ne s’en souvient. Passez, si vous le pouvez.'],
   garde:['Garde du Conseil','Tarkin est tenue par le Conseil des espèces non-humaines. Le Pont de Lathandre est le seul passage vers l’Est. Gare aux yeux de l’Everwatch.'],
   grinmir0:['Grinmir Thunderhammer','Le Witangamot est réuni. Revenez quand vous aurez la force d’affronter ce qui arrive.'],
   grinmir1:['Grinmir Thunderhammer','La pierre de Talos est entre de bonnes mains. Ne laissez pas Amarath revenir.'],

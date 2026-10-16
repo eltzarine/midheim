@@ -106,6 +106,14 @@ function drawHeroPix(g,cls,x,y,aim,t,moving,o){const L2=unLook(o.lk);const hs=he
   if(!back)weapon();
   if(L2.ar>=3&&Math.random()<.12&&typeof parts!=='undefined'&&parts.length<500)parts.push({k:'sp',x:x+(Math.random()-.5)*20,y:y-8+(Math.random()-.5)*20,vx:0,vy:-18,life:.6,max:.6,col:RAR[L2.ar].col});
   g.restore();return true}
+/* chevalier de verre (PNJ du grand pont) : la planche haute définition du chevalier, dessinée comme le héros fantôme de l'aperçu,
+   transparent avec seulement ses contours, plus un voile très léger pour qu'on devine l'armure. Il regarde le héros. */
+function drawGlassKnight(g,x,y,T){const k='h_chevalier';if(!SPR.ok(k)||typeof pvOutline!=='function')return false;const m=SPR.meta(k);
+  const a=typeof L!=='undefined'&&L?Math.atan2(L.y-y,L.x-x):Math.PI/2,pk=SPR.pick(m,a),f=SPR.frame(m,'idle',0,T),fy=y+14-Math.round(Math.sin(T*1.6)*1.5);
+  const draw=()=>SPR.draw(ctx,SPR.im[k],m,pk.i,f,pk.flip,x,fy);
+  {const sh=sunSh(g,10*m.wh/36,0);g.fillStyle='rgba(20,12,30,'+.18*sh.a+')';g.beginPath();g.ellipse(x+sh.ox,y+13,sh.rx,3.5*m.wh/36,0,0,6.28);g.fill()}
+  g.save();g.globalAlpha*=.12+.04*Math.sin(T*1.3);pvGray(draw);g.restore();
+  pvOutline(draw,.8+.12*Math.sin(T*1.3));return true}
 /* ennemis : type -> personnage du pack */
 const ENEMY_SPR={slime:'Skeleton',bat:'Vampire',archer:'Tengu',orc:'GreenPig'};
 function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.type==='orc'&&G.m&&G.m.soldat)name='RobotGrey';
