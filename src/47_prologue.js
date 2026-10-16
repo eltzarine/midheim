@@ -150,7 +150,7 @@ function proTalk(k){const b=proBits(G.pr),me=proMe(),nar=(nom,t,o)=>Vig.say('nar
   if(k==='cartes'){proClue('cartes','les cartes des enfants ont toutes la même écriture.');
     const t='« Je vais bien, je mange à ma faim, ne t’inquiète pas. » Une autre carte, d’un autre enfant : « Je vais bien, je mange à ma faim, ne t’inquiète pas. »';
     nar('Le mur des nouvelles',t,{onDone:()=>showDialog(me,PRO_NOM[me],me==='sigrid'?'Même écriture sur toutes les cartes. Et les mêmes mots. Ce ne sont pas les enfants qui écrivent.':'Regarde l’écriture. C’est la même partout.')});return}
-  if(k==='radio'){proClue('radio','la radio de Riket demande de « penser au tronc du Foyer ».');nar('La radio de Riket','« Riket vous rappelle : extinction à vingt-deux heures. Rejoignez le Foyer : soins gratuits et aide aux plus démunis. Pensez au tronc du Foyer. »');return}
+  if(k==='radio'){proClue('radio','la radio de Riket fait la réclame du Foyer.');nar('La radio de Riket','« Riket vous rappelle : extinction à vingt-deux heures. Rejoignez le Foyer : soins gratuits et aide aux plus démunis. »');return}
   if(k==='hjem'){nar('L’affiche du Foyer','« Chaque enfant mérite un foyer. » Une maison dessinée, un cœur rouge dedans. L’affiche est neuve. C’est la seule chose neuve de la salle.');return}
   if(k==='compteur'){nar('Le compteur à jetons','Un chiffre vert : 1:40. Ensuite, le noir.');return}
   if(k==='lampe'){if(me==='sigrid'){Pro.lampOn=G.time+1.2;showDialog('sigrid','Sigrid','L’éclat mort a frémi quand j’ai approché mon gant. Une seconde. Puis plus rien.')}
