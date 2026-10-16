@@ -38,7 +38,7 @@ const Voice={on:true,vs:[],tok:0,audio:null,busy:false,
 };
 const VOICE_LINES=@@LINES@@;
 const STORY_VOICE={ch0:'virganth',ch3:'virganth'};
-function syncVoiceBtn(){for(const id of['#bVoice','#bVoiceMenu']){const b=$(id);if(b)b.textContent='Voix : '+(Voice.on?'activées':'coupées')}}
+function syncVoiceBtn(){const t='Voix : '+(Voice.on?'activées':'coupées');const b=$('#bVoice');if(b)b.textContent=t;syncIco('#bVoiceMenu',t,Voice.on)}
 const GREET={aubergiste:['Bienvenue, voyageur ! Un bon lit et une chope bien fraîche, ça te dit ?','Entre donc te réchauffer. Les routes de Midheim ne pardonnent pas.','Ici, on ne parle pas d’Amarath. On boit, on mange et on dort.'],
   marchand:['Approchez, approchez ! Les meilleures affaires de tout Midheim !','Tout se vend, tout s’achète… même les vieilles bottes.','Ah, un aventurier ! J’ai exactement ce qu’il te faut.'],
   forgeron:['Ha ! Une lame qui a besoin d’amour ? Pose-la sur l’enclume.','Le feu est chaud. Qu’est-ce qu’on forge aujourd’hui ?','Un bon acier, un bon enchantement, et tu reviendras vivant.']};
