@@ -267,7 +267,7 @@ function dunNext(){const m=G.m,spec=DUNGEONS[m.did];if(m.idx<spec.floors-1){host
 /* demandes d'interaction (portes, arène, repos) : l'hôte décide */
 function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=G.m;
   if(act==='revive'){tbRevive(pi);return}
-  if(act==='exit'){if(m.kind==='house'&&(m.hk!=='lanterne'||m.libre||(proBits(G.pr)&2)))hostEnter('w',m.exitTo);return}
+  if(act==='exit'){if(m.kind==='house'&&(m.hk!=='lanterne'||m.libre||(proBits(G.pr)&1)))hostEnter('w',m.exitTo);return}
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
   if(act==='leave'){if(m.kind==='dun'&&near('leave')){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}

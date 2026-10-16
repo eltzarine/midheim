@@ -65,25 +65,24 @@ with sync_playwright() as pw:
     pg.fill('#name', 'César'); pg.click('#bSolo'); pg.wait_for_timeout(900)
     # ---- prologue de 2999 : un nouveau héros commence à la Lanterne froide ----
     check('Prologue : un nouveau héros commence à la Lanterne froide, à Tarkin', go(pg, "G.m.hk==='lanterne'&&zoneName(G.m)==='La Lanterne froide'") and go(pg, "Scene.on"))
+    check('Prologue : la fratrie et Ragna jouent la scène, sans narratrice',
+          sorted(go(pg, "Scene.actors.map(a=>a.id)")) == ['bjorn', 'kari', 'liv', 'ragna', 'sigrid'] and go(pg, "Scene.steps.every(s=>!s.line||s.line.who!=='narrateur')"))
     pg.wait_for_timeout(1800)
-    check('Prologue : titre du chapitre et narratrice', 'Lanterne froide' in pg.inner_text('#scnTitle') and 'rationnement' in pg.inner_text('#vig'))
+    check('Prologue : titre du chapitre', 'Lanterne froide' in pg.inner_text('#scnTitle'))
+    pg.wait_for_timeout(4200)
+    check('Prologue : en entrant, Sigrid parle du chauffage', 'chauffage' in pg.inner_text('#vig'))
     pg.screenshot(path=f'{OUT}/p1_lanterne_arrivee.png')
-    skip(pg)
+    skip(pg); pg.wait_for_timeout(300)
     me = go(pg, "proMe()")
-    check('Prologue : les trois autres à table, la porte fermée, l’objectif « écoute la salle »',
-          sorted(go(pg, "G.m.npcs.filter(n=>PRO_SIBS.includes(n.who)).map(n=>n.who)")) == sorted([s for s in ['kari', 'bjorn', 'sigrid', 'liv'] if s != me])
-          and go(pg, "G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]") == 6 and 'indices 0/3' in pg.inner_text('#objTxt'), me)
-    go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/p2_lanterne_salle.png'); go(pg, "paused=false")
-    go(pg, "proTalk('halvard')"); pg.wait_for_timeout(1600)
-    check('Prologue : parler à Halvard note un indice', go(pg, "hero.fl.includes('pi_pierres')") and 'indices 1/3' in pg.inner_text('#objTxt') and 'pierres' in pg.inner_text('#vig'))
-    go(pg, "Vig.close(true);L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-2)*TS"); pg.wait_for_timeout(900)
-    check('Prologue : en approchant de la porte, Sœur Maren entre (et chacun reprend sa place)', go(pg, "(G.pr&1)&&Scene.on&&Scene.actors.some(a=>a.who==='maren')") and go(pg, "L.y<(PRO_H-2.5)*TS"))
-    pg.wait_for_timeout(2600); pg.screenshot(path=f'{OUT}/p3_lanterne_maren.png')
-    check('Prologue : Maren salue les enfants Haldorsen', 'Haldorsen' in pg.inner_text('#vig'))
-    skip(pg); pg.wait_for_timeout(300); skip(pg)
-    check('Prologue : puis Nils, la porte s’ouvre, objectif « rentrer chez la mère »', go(pg, "G.pr===3&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0&&G.m.npcs.some(n=>n.id==='nils')") and 'Rentrer chez la mère' in pg.inner_text('#objTxt'))
-    go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/p4_lanterne_nils.png'); go(pg, "paused=false")
-    go(pg, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-1.6)*TS;touch.jx=0;touch.jy=1"); pg.wait_for_timeout(1000); go(pg, "touch.jy=0")
+    if me == 'bjorn':
+        pg.wait_for_timeout(1500)
+    else:
+        check('Prologue : la scène finie, la fratrie est partie, la porte s’ouvre, objectif « rattraper Bjorn »',
+              go(pg, "(G.pr&1)&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0&&!G.m.npcs.some(n=>PRO_SIBS.includes(n.who))") and 'Rattraper Bjorn' in pg.inner_text('#objTxt'), me)
+        go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/p2_lanterne_seul.png'); go(pg, "paused=false")
+        go(pg, "proTalk('halvard')"); pg.wait_for_timeout(1600)
+        check('Prologue : les objets et habitants restent cliquables (Halvard)', go(pg, "hero.fl.includes('pi_pierres')") and 'pierres' in pg.inner_text('#vig'))
+        go(pg, "Vig.close(true);L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-1.6)*TS;touch.jx=0;touch.jy=1"); pg.wait_for_timeout(1000); go(pg, "touch.jy=0")
     check('Prologue : on sort à Tarkin, devant l’auberge, prologue noté', go(pg, "G.zd==='w'&&hero.fl.includes('pro_done')&&Math.hypot(L.x/TS-PL.tarkin[0],L.y/TS-PL.tarkin[1])<14"), go(pg, "[G.zd,L.x/TS,L.y/TS]"))
     pg.wait_for_timeout(1200)
     check('Prologue : en sortant, l’ancienne introduction (l’an 147) ne se lance plus', not go(pg, "Scene.on") and go(pg, "Music.want") != 'cine')
@@ -93,7 +92,7 @@ with sync_playwright() as pw:
     check('Auberge de Tarkin : on retrouve la Lanterne froide, porte ouverte, sans scène',
           go(pg, "G.m.hk==='lanterne'&&G.m.libre&&zoneName(G.m)==='La Lanterne froide'&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0&&!Scene.on"))
     check('Auberge de Tarkin : Ragna tient l’auberge, plus de fratrie à table',
-          go(pg, "G.m.inter.some(o=>o.act==='shop:auberge'&&o.label==='Parler à Ragna')&&!G.m.npcs.some(n=>PRO_SIBS.includes(n.who)||n.who==='nils')"))
+          go(pg, "G.m.inter.some(o=>o.act==='shop:auberge'&&o.label==='Parler à Ragna')&&!G.m.npcs.some(n=>PRO_SIBS.includes(n.who))"))
     go(pg, "paused=true"); clearUI(pg); pg.wait_for_timeout(150); pg.screenshot(path=f'{OUT}/p5_lanterne_retour.png'); go(pg, "paused=false")
     go(pg, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-1.6)*TS;touch.jx=0;touch.jy=1"); pg.wait_for_timeout(1000); go(pg, "touch.jy=0")
     check('Auberge de Tarkin : on en ressort dans Tarkin', go(pg, "G.zd==='w'&&Math.hypot(L.x/TS-PL.tarkin[0],L.y/TS-PL.tarkin[1])<14&&!Scene.on"))
@@ -590,25 +589,20 @@ with sync_playwright() as pw:
     ctx = br.new_context(viewport={'width': 844, 'height': 390}, is_mobile=True, has_touch=True)
     ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE_STORY)
     A = ctx.new_page(); A.errs = []; A.on('pageerror', lambda e: A.errs.append('[hôte] ' + str(e)))
-    A.goto(URL); A.wait_for_timeout(600); A.click('.cls >> nth=0'); A.fill('#name', 'César'); A.click('#bSolo'); A.wait_for_timeout(900); skip(A)
+    A.goto(URL); A.wait_for_timeout(600); A.click('.cls >> nth=2'); A.fill('#name', 'César'); A.click('#bSolo'); A.wait_for_timeout(900); skip(A)
+    check('Prologue à deux : l’hôte (Kári) reste à table après la scène, la porte s’ouvre', go(A, "G.m.hk==='lanterne'&&(G.pr&1)&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0"))
     B = ctx.new_page(); B.errs = []; B.on('pageerror', lambda e: B.errs.append('[frère] ' + str(e)))
-    B.goto(URL); B.wait_for_timeout(800); B.fill('#name', 'Petit frère'); B.click('.cls >> nth=2'); B.wait_for_timeout(300)
+    B.goto(URL); B.wait_for_timeout(800); B.fill('#name', 'Petit frère'); B.click('.cls >> nth=1'); B.wait_for_timeout(300)
     B.wait_for_selector('#hosts button:not([disabled])', timeout=5000); B.click('#hosts button'); B.wait_for_timeout(1000)
     for _ in range(16):
         if go(B, "mode==='guest'&&!!G&&!!G.m"): break
         B.wait_for_timeout(250)
-    B.wait_for_timeout(600); skip(B)
-    check('Prologue à deux : le frère arrive à la Lanterne, Kári et Bjorn joués, Sigrid et Liv à table',
-          go(B, "G.m.hk==='lanterne'") and sorted(go(B, "G.m.npcs.filter(n=>PRO_SIBS.includes(n.who)).map(n=>n.who)")) == ['liv', 'sigrid'] and go(A, "G.players.length") == 2)
-    check('Prologue à deux : chez le frère, la porte est fermée', go(B, "G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]") == 6)
-    go(B, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-2)*TS"); A.wait_for_timeout(1200)
-    check('Prologue à deux : le frère s’approche de la porte, Maren entre chez les deux', go(A, "G.pr&1") and go(B, "(G.pr&1)&&(Scene.on||Scene.q.length>0)"))
-    skip(A); A.wait_for_timeout(600); skip(A); skip(B); B.wait_for_timeout(600); skip(B)
-    for _ in range(20):
-        if go(B, "G.pr===3"): break
-        B.wait_for_timeout(250)
-    skip(B)
-    check('Prologue à deux : Nils arrive, la porte s’ouvre aussi chez le frère', go(B, "G.pr===3&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0") and 'Rentrer chez la mère' in B.inner_text('#objTxt'))
+    B.wait_for_timeout(600)
+    check('Prologue à deux : le frère arrive à la Lanterne, la scène se joue chez lui, Kári et Sigrid sous leurs traits de héros',
+          go(B, "G.m.hk==='lanterne'&&Scene.on") and go(B, "Scene.actors.filter(a=>a.k==='hero').map(a=>a.id).sort().join()") == 'kari,sigrid' and go(A, "G.players.length") == 2)
+    skip(B); B.wait_for_timeout(400)
+    check('Prologue à deux : chez le frère aussi, la porte est ouverte et l’objectif est de rattraper Bjorn',
+          go(B, "(G.pr&1)&&G.m.t[(PRO_H-1)*G.m.W+PRO_DOOR]===0&&!Scene.on") and 'Rattraper Bjorn' in B.inner_text('#objTxt'))
     go(A, "L.x=(PRO_DOOR+.5)*TS;L.y=(PRO_H-1.6)*TS;touch.jx=0;touch.jy=1"); A.wait_for_timeout(1000); go(A, "touch.jy=0")
     for _ in range(12):
         if go(B, "G.zd==='w'"): break

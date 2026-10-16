@@ -58,8 +58,8 @@ if (!fs.existsSync(BUNDLE)) {
 
 
   /* ---------- Prologue de 2999 (la Lanterne froide) ---------- */
-  test('Prologue : « pr » reçu de l’autre joueur est borné aux deux bits (Maren, Nils)', () => {
-    assert.deepEqual([0, 1, 2, 3, 7, 255, -1, 'x', null, 1e40, NaN, '2'].map(T.proBits), [0, 1, 2, 3, 3, 3, 3, 0, 0, 0, 0, 2]);
+  test('Prologue : « pr » reçu de l’autre joueur est borné au bit de fin de scène', () => {
+    assert.deepEqual([0, 1, 2, 3, 7, 255, -1, 'x', null, 1e40, NaN, '2', '1'].map(T.proBits), [0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1]);
   });
   test('Prologue : chaque classe joue son frère ou sa sœur', () => {
     assert.deepEqual(['guerrier', 'voleur', 'mage', 'soigneur', 'inconnu'].map(T.proSibOf), ['bjorn', 'kari', 'sigrid', 'liv', 'kari']);

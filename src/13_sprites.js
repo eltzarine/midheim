@@ -129,7 +129,7 @@ function drawEnemyPix(g,e,x,y,T,lx,ly,elite){let name=ENEMY_SPR[e.type];if(e.typ
   SPR.cell(g,src,col,row,x,fy,PIX);g.restore();return true}
 /* personnages de ville (PNJ nommés et villageois) */
 const NPC_SPR={garde:'GladiatorBlue',brann:'Inspector',grinmir:'Sultan',aubergiste:'Villager2',marchand:'Villager4',forgeron:'OldMan',abhorash:'DemonRed',buveur:'Villager5',barde:'Villager3',conteur:'OldMan3',maitre:'Master',
-  kari:'Woman',bjorn:'Hunter',sigrid:'Villager2',liv:'Villager3',ragna:'OldWoman',maren:'Princess',arne:'Villager5',halvard:'OldMan3',nils:'Child'};
+  kari:'Woman',bjorn:'Hunter',sigrid:'Villager2',liv:'Villager3',ragna:'OldMan2',maren:'Princess',arne:'Villager5',halvard:'OldMan3',nils:'Child'};
 /* fratrie et PNJ du prologue : sprites du pack recolorés (teinte des vêtements, tête intacte) en attendant les dessins */
 const NPC_HUE={kari:[28,8],bjorn:[100,8],sigrid:[218,8],liv:[42,8],maren:[40,6],arne:[205,8]};
 const FOLK_SPR=['Villager','Villager2','Villager3','Villager4','Villager5','Woman','OldWoman','OldMan2','Child','Boy','Noble','Princess','Inspector'];
