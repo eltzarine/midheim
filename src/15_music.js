@@ -237,4 +237,6 @@ const Music={on:true,vol:.7,c:null,ch:null,S:null,theme:null,want:'menu',bar:0,n
     const T=THEMES[this.theme];if(!T||!this.on)return;if(this.next<c.currentTime-1)this.next=c.currentTime+.05;
     while(this.next<c.currentTime+.5){scheduleBar(T,this.bar,this.next,this.S);this.next+=T.beats*60/T.bpm;this.bar++}}
 };
-function syncMusicBtn(){for(const id of['#bMusic','#bMusicMenu'])$(id).textContent='Musique : '+(Music.on?'activée':'coupée')}
+function syncMusicBtn(){const t='Musique : '+(Music.on?'activée':'coupée');const b=$('#bMusic');if(b)b.textContent=t;syncIco('#bMusicMenu',t,Music.on)}
+/* boutons-icônes de l'accueil : le libellé passe dans aria-label, l'icône reste */
+function syncIco(id,t,on){const b=$(id);if(!b)return;b.setAttribute('aria-label',t);b.title=t;b.classList.toggle('off',!on)}

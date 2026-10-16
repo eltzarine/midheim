@@ -603,6 +603,66 @@ body.scene .skytag{display:none}
 .toast,#toasts{pointer-events:none}
 .skytag.danger{border-color:#c8483c}
 .skytag .x4{color:#ff9a8a}
+/* ---- accueil : carte à gauche, fratrie et jeu à droite (pensé pour le téléphone en paysage) ---- */
+.acc{display:grid;gap:16px}
+.acc-carte,.acc-main{display:flex;flex-direction:column;gap:10px;min-width:0;padding:12px;border-radius:14px;background:rgba(12,24,29,.82);border:1px solid #2f4a52;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+.acc .lab{margin:0}
+.etape{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(12,26,31,.6);border:1px solid #2f4a52;color:var(--brass)}
+.etape div{display:flex;flex-direction:column;gap:1px;min-width:0}
+.etape span{font-size:12px;color:var(--dim)}.etape b{font-size:15px;color:var(--parch);line-height:1.25}
+.acc-top{display:flex;align-items:center;gap:10px;min-height:44px}
+#menu .acc-top .macaron{width:36px;height:36px;margin:0;flex:none;filter:drop-shadow(0 2px 0 #5a2e14)}
+.acc-top h1{flex:1;min-width:0;margin:0;font-family:var(--f-title);font-weight:400;font-size:30px;line-height:1;color:var(--parch);text-shadow:0 2px 0 #0a1418}
+.ico{width:44px;height:44px;flex:none;display:grid;place-items:center;padding:0;border-radius:10px;border:2px solid var(--edge);background:var(--sea);color:var(--parch);position:relative}
+.ico.off{color:var(--dim)}.ico.off::after{content:"";position:absolute;width:26px;height:2px;background:var(--blood);transform:rotate(-45deg);border-radius:1px}
+.acc-nom{display:flex;align-items:center;gap:12px}
+.acc-nom label{flex:none}
+.acc-nom input[type=text]{height:42px;padding:0 12px;font-size:17px}
+.acc .classes{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.acc .cls{text-align:center;justify-items:center;gap:2px;padding:6px 4px 8px}
+.acc .cls[aria-pressed=true]{background:color-mix(in srgb,var(--c) 14%,var(--deep))}
+.acc .cls .role{font-size:11px}.acc .cls .lv{font-size:12.5px;color:var(--dim)}
+.acc-jouer{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,210px);gap:10px;align-items:stretch}
+.acc-jouer .big{min-height:52px;font-family:var(--f-label);font-size:18px}
+.acc-jouer .hosts{gap:6px;align-content:center}
+.acc-jouer .hosts>.muted{font-size:12.5px;line-height:1.3;padding:6px 10px;border:1px dashed var(--edge);border-radius:8px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.acc-jouer .host{padding:6px 8px;gap:8px}.acc-jouer .host b{font-size:14px}
+.acc-jouer .host .btn{padding:8px 10px;font-size:14px;min-height:40px}
+.acc .resume{font-size:13px;padding:0;border:0;background:none;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (min-width:640px){.wrap:has(.acc){max-width:900px}.acc{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;align-items:start}}
+@media (max-width:639px){.acc .classes{grid-template-columns:repeat(2,minmax(0,1fr))}.acc-jouer{grid-template-columns:1fr}}
+/* téléphone en paysage : tout l'accueil tient sur un écran */
+@media (orientation:landscape) and (max-height:540px){
+  #menu.screen{padding-block:calc(10px + env(safe-area-inset-top,0px)) calc(10px + env(safe-area-inset-bottom,0px));padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px))}
+  #menu .wrap{gap:10px}
+  .acc{grid-template-columns:minmax(0,38fr) minmax(0,62fr);gap:16px}
+  .acc-carte,.acc-main{gap:7px;padding:8px 10px}
+  .acc-top{min-height:40px}.acc-nom input[type=text]{height:38px}
+  .acc .cls small,#menu .copy{display:none}
+  .acc .cls canvas{width:48px;height:48px}
+  .acc .cls b{font-size:15px}}
+/* ---- « Tourne ton téléphone » : accueil sur téléphone tenu en vertical ---- */
+#tourne{display:none}
+@media (orientation:portrait){
+  html:not(.ingame) body.touch #tourne{position:fixed;inset:0;z-index:150;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;gap:20px;
+    padding:calc(48px + env(safe-area-inset-top,0px)) 32px calc(36px + env(safe-area-inset-bottom,0px));
+    background:radial-gradient(120% 70% at 50% 42%,#264650 0%,#13252c 62%,#0c1a1f 100%);color:var(--parch)}
+  html:not(.ingame) body.touch:has(#menu[hidden]) #tourne{display:none}}
+#tourne .tr-logo{width:56px;height:56px}
+#tourne .tr-logo svg{width:100%;height:auto;display:block}
+#tourne .tr-nom{margin:6px 0 0;font-family:var(--f-title);font-size:30px;line-height:1;text-shadow:0 2px 0 #0a1418}
+#tourne .tr-anim{position:relative;width:240px;height:240px;display:grid;place-items:center}
+#tourne .tr-halo{position:absolute;inset:20px;border-radius:50%;background:radial-gradient(circle,rgba(226,182,94,.38) 0%,rgba(226,182,94,0) 68%);animation:trLueur 3.2s ease-in-out infinite}
+#tourne .tr-fl{position:absolute;inset:0;animation:trFleche 3.2s ease-in-out infinite}
+#tourne .tr-tel{animation:trTourne 3.2s cubic-bezier(.6,0,.3,1) infinite}
+#tourne h2{margin:0 0 12px;font-family:var(--f-label);font-weight:700;font-size:26px;line-height:1.15}
+#tourne p{margin:0;font-size:17px;line-height:1.4;color:#c4d2ce;max-width:300px}
+#tourne .tr-astuce{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:rgba(12,26,31,.6);border:1px solid #2f4a52;text-align:left;max-width:320px;color:var(--brass)}
+#tourne .tr-astuce p{font-size:14px;line-height:1.35;color:var(--dim)}
+@keyframes trTourne{0%,18%{transform:rotate(0)}42%,70%{transform:rotate(-90deg)}92%,100%{transform:rotate(0)}}
+@keyframes trFleche{0%,18%{opacity:0;transform:rotate(-20deg)}30%,60%{opacity:1;transform:rotate(0)}75%,100%{opacity:0;transform:rotate(0)}}
+@keyframes trLueur{0%,100%{opacity:.35}50%{opacity:.7}}
+@media (prefers-reduced-motion:reduce){#tourne .tr-tel,#tourne .tr-fl,#tourne .tr-halo{animation:none}#tourne .tr-tel{transform:rotate(-90deg)}}
 /* macaron du menu */
 #menu .macaron{width:84px;height:84px;margin:0 auto 10px;display:block;filter:drop-shadow(0 4px 0 #5a2e14) drop-shadow(0 8px 16px rgba(0,0,0,.45))}
 #menu .copy{text-align:center;margin:4px 0 0;font-family:var(--f-label);font-size:12px;letter-spacing:.2em;color:#e8d6a8;text-shadow:0 1px 2px #000}
@@ -661,52 +721,43 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
       <p class="muted iab-help">Sinon : touche <b>•••</b> ou <b>⋯</b> en haut ou en bas de l’écran, puis « Ouvrir dans le navigateur » (ou « Ouvrir dans <span class="iab-nav">Safari</span> »).</p>
     </section>
 
-    <header class="mast">
-      <div class="macaron" aria-hidden="true">@@ICON@@</div>
-      <h1>Les Pierres <span>de Midheim</span></h1>
-      <p>An 147 AM. La prison d’Amarath s’affaiblit. Vous portez le pendentif capable de réunir les quatre pierres divines. Traversez Midheim, de Tarkin aux Pics Rouges, avant ses adeptes.</p>
-    </header>
-
-    <section class="panel" style="display:grid;gap:12px">
-      <div class="row sp"><p class="lab" style="margin:0">Carte de Midheim</p><span class="row" style="gap:6px"><button class="btn sm" id="bIntro">Introduction</button><button class="btn sm" id="bChron">Chronique</button></span></div>
-      <div class="mapbox" id="menuMap"><img id="mapImg" alt="Carte de Midheim avec la position du héros et le prochain objectif" src="@@MAP@@"><div id="menuMarks"></div></div>
-      <div class="pendant" id="pendant"></div>
+    <div class="acc">
+    <section class="acc-carte" aria-labelledby="tCarte">
+      <p class="lab" id="tCarte">Carte de Midheim</p>
+      <div class="mapbox" id="menuMap"><img id="mapImg" alt="Carte de Midheim avec la position du héros" src="@@MAP@@"><div id="menuMarks"></div></div>
+      <div class="etape"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg><div><span>Prochaine étape</span><b id="menuEtape"></b></div></div>
     </section>
-
-    <section class="panel">
-      <p class="lab"><label for="name">Ton nom de héros</label></p>
-      <input id="name" type="text" maxlength="14" autocomplete="off" spellcheck="false">
-    </section>
-
-    <section>
-      <p class="lab">Choisis ta classe · chaque classe a son propre héros sauvegardé</p>
-      <div class="classes" id="classes"></div>
-    </section>
-
-    <section class="panel" style="display:grid;gap:12px">
-      <div class="row sp"><p class="lab" style="margin:0">Jouer</p><span class="chip" id="net"><i></i><span>Recherche du salon…</span></span></div>
-      <p class="resume" id="resumeTxt"></p>
-      <div class="row">
+    <section class="acc-main">
+      <header class="acc-top">
+        <div class="macaron" aria-hidden="true">@@ICON@@</div>
+        <h1>Midheim</h1>
+        <span class="chip" id="net"><i></i><span>Recherche du salon…</span></span>
+        <button type="button" class="ico" id="bVoiceMenu" aria-label="Voix : activées" title="Voix : activées"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></button>
+        <button type="button" class="ico" id="bMusicMenu" aria-label="Musique : activée" title="Musique : activée"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
+      </header>
+      <div class="acc-nom"><label class="lab" for="name">Ton nom</label><input id="name" type="text" maxlength="14" autocomplete="off" spellcheck="false"></div>
+      <div><p class="lab">Choisis ton frère ou ta sœur</p><div class="classes" id="classes"></div></div>
+      <div class="acc-jouer">
         <button class="btn main big" id="bSolo">Continuer l’aventure</button>
+        <div class="hosts" id="hosts" aria-label="Rejoindre une partie en cours"></div>
       </div>
-      <div><p class="lab">Rejoindre une partie en cours</p><div class="hosts" id="hosts"></div></div>
+      <p class="resume" id="resumeTxt"></p>
     </section>
-
-    <section class="panel" style="display:grid;gap:10px">
-      <div class="row sp"><p class="lab" style="margin:0">Commandes</p><span class="row" style="gap:6px"><button class="btn sm" id="bVoiceMenu">Voix : activées</button><button class="btn sm" id="bMusicMenu">Musique : activée</button></span></div>
-      <dl class="keys">
-        <dt>Téléphone</dt><dd>Touche la moitié gauche pour faire apparaître le joystick. À droite : attaque, trois compétences, l’ultime (doré) et la potion. Le bouton « Entrer » ou « Parler » apparaît près des portes et des personnages.</dd>
-        <dt>ZQSD · flèches</dt><dd>Se déplacer</dd>
-        <dt>Clic · J</dt><dd>Attaquer (la souris vise)</dd>
-        <dt>1 · 2 · 3 · R</dt><dd>Compétences et ultime (Espace = compétence 1)</dd>
-        <dt>F</dt><dd>Entrer, parler, ouvrir</dd>
-        <dt>E · I · M · T</dt><dd>Potion · sac · carte · talents</dd>
-      </dl>
-    </section>
+    </div>
     <p class="copy">© XVI2026</p>
   </div>
 </div>
 
+<div id="tourne" role="dialog" aria-modal="true" aria-labelledby="trTitre">
+  <div><div class="tr-logo" aria-hidden="true">@@ICON@@</div><p class="tr-nom">Midheim</p></div>
+  <div class="tr-anim" aria-hidden="true">
+    <div class="tr-halo"></div>
+    <svg class="tr-fl" width="240" height="240" viewBox="0 0 240 240"><path d="M58 70 A 78 78 0 0 0 52 160" fill="none" stroke="#e2b65e" stroke-width="4" stroke-linecap="round"/><path d="M40 150 L52 164 L66 152" fill="none" stroke="#e2b65e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="tr-tel" width="104" height="184" viewBox="0 0 104 184"><rect x="3" y="3" width="98" height="178" rx="18" fill="#1d3640" stroke="#b98544" stroke-width="5"/><rect x="13" y="20" width="78" height="144" rx="6" fill="#0c1a1f"/><rect x="38" y="10" width="28" height="4" rx="2" fill="#4b6a70"/><rect x="30" y="84" width="10" height="16" rx="2" fill="#8fb357"/><rect x="47" y="84" width="10" height="16" rx="2" fill="#8ec5e8"/><rect x="64" y="84" width="10" height="16" rx="2" fill="#f0c95a"/></svg>
+  </div>
+  <div><h2 id="trTitre">Tourne ton téléphone</h2><p>Midheim se joue à l’horizontale. L’accueil s’ouvre dès que ton écran pivote.</p></div>
+  <div class="tr-astuce"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><p>Rien ne bouge ? Coupe le verrouillage de rotation dans le centre de contrôle.</p></div>
+</div>
 <div class="over story" id="storyBox" hidden>
   <div class="dlg" role="dialog" aria-labelledby="stTitle">
     <header><canvas id="stPortrait" width="168" height="168" aria-hidden="true"></canvas><div><div class="who" id="stWho"></div><h3 id="stTitle"></h3></div></header>

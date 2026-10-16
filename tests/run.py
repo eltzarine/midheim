@@ -11,10 +11,13 @@ URL = 'file://' + IDX
 res = []
 def check(n, ok, info=''):
     res.append((n, bool(ok))); print(('PASS ' if ok else 'FAIL ') + n + (' — ' + str(info) if info != '' else ''), flush=True)
+# l'écran « Tourne ton téléphone » couvre l'accueil sur un téléphone tenu en vertical ;
+# les tests qui jouent en vertical le masquent (un test dédié le vérifie plus bas)
+SANS_TOURNE = "document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='#tourne{display:none!important}';document.head.append(s)});"
 def page(br, story=False, w=390, h=844, tag='', persist=None):
     ctx = persist or br.new_context(viewport={'width': w, 'height': h}, device_scale_factor=2, is_mobile=True, has_touch=True)
     if not persist:
-        ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE_STORY if story else FAKE)
+        ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE_STORY if story else FAKE); ctx.add_init_script(SANS_TOURNE)
     p = ctx.new_page(); p.errs = []
     p.on('pageerror', lambda e: p.errs.append(f'[{tag}] {e}'))
     return ctx, p
@@ -529,9 +532,27 @@ with sync_playwright() as pw:
     check('Aucune erreur JavaScript (tour par tour)', not pg.errs, pg.errs[:4])
     ctx.close()
 
-    # ================= À deux =================
+    # ================= Accueil : « Tourne ton téléphone » en vertical, accueil en paysage =================
     ctx = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
     ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE)
+    pg = ctx.new_page(); pg.errs = []; pg.on('pageerror', lambda e: pg.errs.append('[tourne] ' + str(e)))
+    pg.goto(URL); pg.wait_for_selector('#splash', state='detached', timeout=30000); pg.wait_for_timeout(300)
+    check('Accueil vertical : écran « Tourne ton téléphone »', pg.is_visible('#tourne'))
+    pg.set_viewport_size({'width': 844, 'height': 390}); pg.wait_for_timeout(300)
+    check('Accueil paysage : l’écran disparaît, l’accueil tient sur un écran', pg.is_hidden('#tourne') and pg.is_visible('#bSolo') and pg.is_visible('#mapImg')
+          and go(pg, "(()=>{const r=document.querySelector('#bSolo').getBoundingClientRect();return r.bottom<=innerHeight})()"))
+    check('Accueil : plus de pendentif, d’introduction ni de chronique', not pg.query_selector('#pendant') and not pg.query_selector('#bIntro') and not pg.query_selector('#bChron') and 'Lanterne froide' in pg.inner_text('#menuEtape'))
+    pg.click('#bVoiceMenu'); pg.wait_for_timeout(100)
+    check('Accueil : le bouton voix garde son icône', pg.query_selector('#bVoiceMenu svg') is not None and 'coupées' in pg.get_attribute('#bVoiceMenu', 'aria-label'))
+    pg.click('#bVoiceMenu')
+    pg.click('#bSolo'); pg.wait_for_timeout(900); pg.set_viewport_size({'width': 390, 'height': 844}); pg.wait_for_timeout(200)
+    check('En partie, le jeu reste jouable en vertical', pg.is_hidden('#tourne'))
+    check('Aucune erreur JavaScript (accueil)', not pg.errs, pg.errs[:4])
+    ctx.close()
+
+    # ================= À deux =================
+    ctx = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
+    ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.add_init_script(FAKE); ctx.add_init_script(SANS_TOURNE)
     A = ctx.new_page(); A.errs = []; A.on('pageerror', lambda e: A.errs.append('[hôte] ' + str(e)))
     A.goto(URL); A.wait_for_timeout(600); A.fill('#name', 'César'); A.click('#bSolo'); A.wait_for_timeout(800)
     B = ctx.new_page(); B.errs = []; B.on('pageerror', lambda e: B.errs.append('[frère] ' + str(e)))
@@ -631,7 +652,7 @@ with sync_playwright() as pw:
         body = FBA if r.request.url.endswith('firebase-app.js') else FBD
         r.fulfill(status=200, body=body, headers={'Content-Type': 'application/javascript', 'Access-Control-Allow-Origin': '*'})
     ctx = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
-    ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.route('https://www.gstatic.com/firebasejs/**', fb_route); ctx.add_init_script('window.__noStory = true; window.__ddMulti = 1;')
+    ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.route('https://www.gstatic.com/firebasejs/**', fb_route); ctx.add_init_script('window.__noStory = true; window.__ddMulti = 1;'); ctx.add_init_script(SANS_TOURNE)
     A = ctx.new_page(); A.errs = []; A.on('pageerror', lambda e: A.errs.append('[hôte] ' + str(e)))
     A.goto(URL); A.wait_for_selector('#splash', state='detached', timeout=30000); A.wait_for_timeout(800)
     check('Site : connecté au jeu à deux, sans code ni bouton spécial', go(A, "netOn") and not A.query_selector('#bHost') and not A.query_selector('#codeIn'))

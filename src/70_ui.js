@@ -255,17 +255,18 @@ async function loadAll(){const got={};for(const c of CLS_IDS)got[c]=await Store.
 function renderMenu(){const box=$('#classes');box.textContent='';
   for(const c of CLS_IDS){const C=CLS[c],h=heroes[c];const b=el('button','cls');b.style.setProperty('--c',C.col);b.setAttribute('aria-pressed',c===selCls);
     const pc=el('canvas');pc.width=56;pc.height=56;drawNPC(pc.getContext('2d'),HEROS[c].sib,28,30,0,1.3);
-    const lv=h?(h.lvl>1||h.q>0?'Niveau '+h.lvl+' · '+stonesQ(h.q)+'/4 pierres':'Nouveau héros'):'…';
+    const lv=h?(h.lvl>1||h.q>0?'Niveau '+h.lvl:'Nouveau héros'):'…';
     b.append(pc,el('b',null,HEROS[c].nom),el('span','role',HEROS[c].role),el('span','lv',lv),el('small',null,C.desc));b.onclick=()=>{selCls=c;Store.lsSet('dd_cls',c);hero=heroes[c]||newHero(c);ST=derive(hero);syncName();renderMenu();pres({c,l:hero.lvl,n:myName})};box.append(b)}
   if(!hero)return;
   const fresh=hero.q===0&&!hero.pos;$('#bSolo').textContent=fresh?'Commencer l’aventure':'Continuer l’aventure';
   const pos=hero.pos||PL.start;const where=townAt(pos[0],pos[1])||regionAt(pos[0],pos[1]);
-  const rs=$('#resumeTxt');rs.textContent='';rs.append(el('b',null,heroNom(hero.cls)+' · '+HEROS[hero.cls].role+' niveau '+hero.lvl),document.createTextNode(' · '+where.nom+' · '+hero.gold+' or · '+hero.pot+' potions. Objectif : '+OBJ[Math.min(hero.q,6)].t));
+  const rs=$('#resumeTxt');rs.textContent='';rs.append(el('b',null,heroNom(hero.cls)+' · '+HEROS[hero.cls].role+' niveau '+hero.lvl),document.createTextNode(' · '+where.nom+' · '+hero.gold+' or · '+hero.pot+' potions'));
+  $('#menuEtape').textContent=menuEtape(hero);
   // carte du menu
   const mk=$('#menuMarks');mk.textContent='';for(const k of hero.wp){const w=WAYPOINTS[k];if(!w)continue;const[x,y]=pctOf(w.pt[0],w.pt[1]);const m=mark(mk,'wp',x,y);m.textContent='◆';m.style.pointerEvents='none'}
-  const o=OBJ[Math.min(hero.q,6)];if(o.at){const p=placePx(o.at);if(p){const[x,y]=pctOf(p.x/TS-.5,p.y/TS-.5);mark(mk,'obj',x,y)}}
-  {const[x,y]=pctOf(pos[0],pos[1]);mark(mk,'me',x,y,CLS[hero.cls].col)}
-  const pd=$('#pendant');pd.textContent='';const n=stonesQ(hero.q);STONES.forEach((s,i)=>{const d=el('span','gem'+(i<n?' on':''));d.style.setProperty('--c',s[1]);d.append(el('i'),document.createTextNode(s[0].replace('la pierre ','Pierre ')));pd.append(d)})}
+  {const[x,y]=pctOf(pos[0],pos[1]);mark(mk,'me',x,y,CLS[hero.cls].col)}}
+/* accueil : l'étape suivante de la nouvelle histoire (la Lanterne froide, puis la mère) */
+function menuEtape(h){if(!(h.fl||[]).includes('pro_done'))return'La Lanterne froide · bas-quartier de Tarkin';return'Rattraper Bjorn chez la mère · rue des Chaudronniers'}
 
 /* ================= Écrans ================= */
 function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
@@ -342,11 +343,11 @@ $('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
 holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});holdable($('#cMe'),()=>{},on=>{if(L)L.meBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
 $('#bQuit').onclick=askQuit;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
-$('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);
+$('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();
 addEventListener('pointerdown',()=>Snd.init(),{capture:true});addEventListener('keydown',()=>Snd.init(),{capture:true});
 $('#bJoinCancel').onclick=()=>{pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()};
 $('#bSolo').onclick=()=>Pwa.gate(()=>startLocal(false));
-$('#bChron').onclick=()=>{Snd.init();openChron()};$('#chronClose').onclick=()=>{$('#chronBox').hidden=true};
+$('#chronClose').onclick=()=>{$('#chronBox').hidden=true};
 $('#stNext').onclick=()=>{if(storyCtx==='play')nextStory();else closeStory()};$('#stSkip').onclick=()=>{storyQ.forEach(k=>{if(!hero.story.includes(k))hero.story.push(k)});storyQ=[];doSave(true);closeStory()};
 addEventListener('keydown',e=>{if(!Scene.on)return;e.preventDefault();e.stopImmediatePropagation();keys.clear();if(e.code==='Escape')Scene.skip();else if(e.code==='Enter'||e.code==='Space')Vig.next()},{capture:true});
 addEventListener('keydown',e=>{if($('#storyBox').hidden)return;if(e.code==='Enter'||e.code==='Space'||e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();keys.clear();$('#stNext').click()}},{capture:true});
