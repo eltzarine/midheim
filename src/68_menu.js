@@ -11,7 +11,7 @@ const MenuBg={t:0,
     g.imageSmoothingEnabled=true;
     const L2=[];const pos=[[-50,-8],[50,-8],[-30,36],[30,36]];
     CLS_IDS.forEach((k,i)=>{const h=heroes[k];L2.push({y:fy+6+pos[i][1],f:()=>{const x=fx+pos[i][0],y=fy+6+pos[i][1];if(k===selCls){g.strokeStyle='rgba(240,201,90,'+(.6+.3*Math.sin(T*3))+')';g.lineWidth=2;g.beginPath();g.ellipse(x,y+13,16,6,0,0,6.28);g.stroke()}
-      drawHero2(g,k,x,y,Math.atan2(-pos[i][1],-pos[i][0])+Math.sin(T*.6+i)*.25,T+i,false,{lk:h&&h.eq?lookOf(h.eq):0})}})});
+      drawNPC(g,HEROS[k].sib,x,y,T+i)}})});
     L2.push({y:fy+TS*.5,f:()=>drawDObj({k:'feu',x:ftx,y:fty,w:1,h:1,s:.4},T,g)});
     for(const[dx,dy,k]of[[-140,-60,'tonneaux'],[130,-40,'caisses'],[-110,70,'charrette'],[150,60,'foin']])L2.push({y:fy+dy+TS,f:()=>drawDObj({k,x:Math.floor((fx+dx)/TS),y:Math.floor((fy+dy)/TS),w:1,h:1,s:.5},T,g)});
     L2.sort((a,b)=>a.y-b.y);for(const o of L2)o.f();
