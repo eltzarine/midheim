@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1E78bkjzF/A0vNH1uMCNwlpHLJ6BgAruhIFPK6+E8gs=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3r1OEoAdgIMavjIRTXO5KxybqiTq9UdDgLTa6WjaCws=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -872,7 +872,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='c112db45';
+const BUILD='a41081b1';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -4160,6 +4160,10 @@ const FB_CONFIG={apiKey:'AIzaSyDQn6cqulpah1EoR_hz8x5IEskq0ZVO-Rs',authDomain:'mi
 const FB_SDK='https://www.gstatic.com/firebasejs/13.0.0/';
 const FB_ROOM='MIDH'; // une seule salle : chaque partie lancée y est visible tant qu'il reste une place
 let netKind=null,netOn=false,hostBg=false;
+/* identifiant de cet appareil (même navigateur) : une partie lancée dans un autre onglet du même téléphone
+   n'est pas proposée dans « Rejoindre », sinon on se voit soi-même et la connexion attend un onglet endormi */
+const DEV_ID=(()=>{let v=Store.lsGet('dd_dev');if(typeof v!=='string'||!/^[a-z0-9]{6,16}$/.test(v)){v=Math.random().toString(36).slice(2,12)||'dev0000';Store.lsSet('dd_dev',v)}return v})();
+const HOST_STALE=20000; // une partie sans nouvelles depuis 20 s (l'hôte écrit au moins toutes les 3 s) n'est plus proposée
 /* l'appli passe en arrière-plan ou revient : on le signale à l'autre joueur, et au retour on remet les compteurs à zéro
    (sinon, après une pause, l'hôte croit l'invité parti depuis longtemps et le renvoie) */
 document.addEventListener('visibilitychange',()=>{const vis=document.visibilityState==='visible';
@@ -4174,18 +4178,20 @@ async function initNet(){
 function attachRoom(r){room=r;
   room.onPeers(ch=>{peers=ch.peers;const me=peers.find(p=>p.sameTab);if(me)myPeer=me.peer;logPeers();try{onPeersChange()}catch(e){Log.err('net','traitement des joueurs ('+mode+')',e)}},()=>{Log.warn('net','salle fermée');room=null;setNet(false);if(mode==='guest'||mode==='joining')endGuest('Connexion perdue avec l’autre joueur.')});
   room.onConnection(c=>setNet(c),()=>{});
-  if(mode==='solo'&&G&&G.m)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)});
-  else pres({r:'m',n:myName,c:selCls,l:hero?hero.lvl:1,g:null,gp:null,h:null,i:null,st:null})}
+  if(mode==='solo'&&G&&G.m)pres({r:'h',dv:DEV_ID,n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)});
+  else pres({r:'m',dv:DEV_ID,n:myName,c:selCls,l:hero?hero.lvl:1,g:null,gp:null,h:null,i:null,st:null})}
 // salle Firebase : rooms/<CODE>/peers/<id> = { j: présence en JSON, t: horodatage }
 async function fbRoom(code){
   const A=await import(FB_SDK+'firebase-app.js'),D=await import(FB_SDK+'firebase-database.js');
   const app=A.getApps().length?A.getApp():A.initializeApp(FB_CONFIG),db=D.getDatabase(app);
   const id='p'+Math.random().toString(36).slice(2,10),base=D.ref(db,'rooms/'+code+'/peers'),mine=D.child(base,id);
-  const map=new Map(),pcb=[],ccb=[];let me={},live=true;
+  const map=new Map(),at=new Map(),pcb=[],ccb=[];let me={},live=true,skew=0;
   const parse=s=>{const v=s.val();if(!v||typeof v.j!=='string'||v.j.length>16000)return null;try{const o=JSON.parse(v.j);return o&&typeof o==='object'?o:null}catch(e){return null}};
-  const emit=()=>{const list=[...map].map(([peer,presence])=>({peer,presence,sameTab:peer===id}));for(const f of pcb)f({peers:list})};
+  const emit=()=>{const list=[...map].map(([peer,presence])=>({peer,presence,sameTab:peer===id,updatedAt:at.has(peer)?at.get(peer)-skew:0}));for(const f of pcb)f({peers:list})};
   const write=()=>live?D.set(mine,{j:JSON.stringify(me),t:D.serverTimestamp()}):Promise.resolve();
-  D.onChildAdded(base,s=>{map.set(s.key,parse(s));emit()});D.onChildChanged(base,s=>{map.set(s.key,parse(s));emit()});D.onChildRemoved(base,s=>{map.delete(s.key);emit()});
+  const stamp=s=>{const v=s.val(),t=v&&+v.t;if(isFinite(t)&&t>0)at.set(s.key,t);else at.delete(s.key)};
+  D.onChildAdded(base,s=>{map.set(s.key,parse(s));stamp(s);emit()});D.onChildChanged(base,s=>{map.set(s.key,parse(s));stamp(s);emit()});D.onChildRemoved(base,s=>{map.delete(s.key);at.delete(s.key);emit()});
+  D.onValue(D.ref(db,'.info/serverTimeOffset'),s=>{const v=+s.val();skew=isFinite(v)?v:0});
   D.onValue(D.ref(db,'.info/connected'),s=>{const on=!!s.val();if(on){D.onDisconnect(mine).remove();if(Object.keys(me).length)write()}for(const f of ccb)f(on)});
   return{code,
     presence(o){for(const k in o){if(o[k]==null)delete me[k];else me[k]=o[k]}return write()},
@@ -4200,11 +4206,12 @@ function setNet(on){if(netOn!==(!!on&&!!room))Log.ev('net',(!!on&&!!room)?'conne
 function onPeersChange(){if(mode==='menu')renderLobby();if(mode==='host'||mode==='solo')hostCheckGuest();if(mode==='joining'||mode==='guest')guestCheckHost()}
 function renderLobby(){const box=$('#hosts');if(!box)return;box.textContent='';
   if(!room){box.append(el('p','muted',netKind==='fb'?'Pas de connexion internet : tu peux jouer seul.':'Pour jouer à deux, ouvrez tous les deux cette page depuis claude.ai, connectés à vos comptes. Ton frère doit être invité au partage de la page avec le niveau Contributeur.'));return}
-  const hs=peers.filter(p=>!p.sameTab&&p.presence&&p.presence.r==='h');
+  const now=Date.now();
+  const hs=peers.filter(p=>!p.sameTab&&p.presence&&p.presence.r==='h'&&!(p.presence.dv===DEV_ID&&!window.__ddMulti)&&!(p.updatedAt>0&&now-p.updatedAt>HOST_STALE));
   if(!hs.length){box.append(el('p','muted','Personne ne joue pour l’instant. Lance l’aventure : tant qu’il reste une place, un 2ᵉ joueur pourra te rejoindre.'));return}
   for(const h of hs){const pr=h.presence;const row=el('div','host');const d=el('div');const b=el('b',null,clean(pr.n)||'Héros');
     const c=CLS_IDS.includes(pr.c)?CLS[pr.c].nom:'Héros';const s=el('span','muted',c+' · niveau '+(pr.l|0)+(pr.wh?' · '+String(pr.wh).slice(0,40):''));s.style.fontSize='13px';d.append(b,s);
-    const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer;bt.textContent=full?'Complète':'Rejoindre';bt.disabled=full;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
+    const bt=el('button','btn coop');const full=!!pr.gp&&pr.gp!==myPeer,away=!!pr.bg;bt.textContent=full?'Complète':away?'En pause':'Rejoindre';bt.disabled=full||away;bt.onclick=()=>Pwa.gate(()=>joinHost(h.peer,clean(pr.n)));row.append(d,bt);box.append(row)}}
 const PAUSE_WAIT=90000;
 function hostCheckGuest(){
   if(G.guestPeer){const gp=peers.find(p=>p.peer===G.guestPeer);
@@ -6321,6 +6328,7 @@ const nameIn=$('#name');let nameT=0;nameIn.addEventListener('input',()=>{myName=
     ['Le salon de jeu',1,()=>within(initNet(),6000)],
   ]);
   Splash.hide();
+  setInterval(()=>{if(mode==='menu')renderLobby()},5000);   // retire de la liste les parties restées sans nouvelles
   setInterval(()=>{if(mode==='joining'&&performance.now()-joinT>(hostBg?PAUSE_WAIT:12000))endGuest('Pas de réponse de la partie. Vérifie que l’autre joueur est bien en jeu.')},1000);
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
   /* verrouillage ou passage à une autre appli : sur iPhone, la fermeture de la page n'est pas toujours signalée

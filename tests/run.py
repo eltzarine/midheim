@@ -617,7 +617,7 @@ with sync_playwright() as pw:
         body = FBA if r.request.url.endswith('firebase-app.js') else FBD
         r.fulfill(status=200, body=body, headers={'Content-Type': 'application/javascript', 'Access-Control-Allow-Origin': '*'})
     ctx = br.new_context(viewport={'width': 390, 'height': 844}, is_mobile=True, has_touch=True)
-    ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.route('https://www.gstatic.com/firebasejs/**', fb_route); ctx.add_init_script('window.__noStory = true;')
+    ctx.route('**/fonts.g*/**', lambda r: r.abort()); ctx.route('https://www.gstatic.com/firebasejs/**', fb_route); ctx.add_init_script('window.__noStory = true; window.__ddMulti = 1;')
     A = ctx.new_page(); A.errs = []; A.on('pageerror', lambda e: A.errs.append('[hôte] ' + str(e)))
     A.goto(URL); A.wait_for_selector('#splash', state='detached', timeout=30000); A.wait_for_timeout(800)
     check('Site : connecté au jeu à deux, sans code ni bouton spécial', go(A, "netOn") and not A.query_selector('#bHost') and not A.query_selector('#codeIn'))
@@ -633,6 +633,9 @@ with sync_playwright() as pw:
     mp = go(A, "window.__maxPres||0"); check('Site : messages Firebase légers', 0 < mp <= 6000, mp)
     C = ctx.new_page(); C.errs = []; C.goto(URL); C.wait_for_selector('#hosts button', timeout=20000); C.wait_for_timeout(300)  # chargement parfois lent quand la machine est chargée
     check('Site : partie complète pour un 3e joueur', C.is_disabled('#hosts button') and 'Complète' in C.inner_text('#hosts'))
+    go(C, "(()=>{window.__ddMulti=0;renderLobby()})()")
+    check('Site : une partie lancée sur le même appareil n’est pas proposée', 'César' not in C.inner_text('#hosts') and not C.query_selector('#hosts button'))
+    go(C, "(()=>{window.__ddMulti=1;renderLobby()})()")
     B.close(); A.wait_for_timeout(800)
     for _ in range(40):
         if go(A, "G.players.length") == 1: break
