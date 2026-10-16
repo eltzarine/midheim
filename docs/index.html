@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-+IJCC8RpkD3+Ue7Ew0zWE/Ldam6Urzwmbz6HsMbSRBY=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-rQnvW633VObSncGW6uO0Ono22Lq+BifpFFvMFLB3nx0=' 'unsafe-inline' https://www.gstatic.com https://*.firebasedatabase.app https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; media-src 'self' data: blob:; connect-src 'self' https://*.firebasedatabase.app wss://*.firebasedatabase.app https://*.firebaseio.com wss://*.firebaseio.com https://*.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Jeu d’aventure coopératif à deux dans le monde de Midheim.">
 <meta name="theme-color" content="#13252c">
@@ -839,12 +839,12 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
     <div class="over" id="pause" hidden>
       <div class="dlg">
         <h2>Pause</h2>
-        <p class="muted" id="pauseNote">Ta progression est sauvegardée automatiquement.</p>
+        <p class="muted" id="pauseNote">Pour enregistrer, utilise l’ordinateur de Tarkin.</p>
         <button class="btn main" id="bResume">Reprendre</button>
         <button class="btn" id="bSound">Bruitages : activés</button>
         <button class="btn" id="bMusic">Musique : activée</button>
         <button class="btn" id="bVoice">Voix : activées</button>
-        <button class="btn" id="bQuit">Sauvegarder et quitter</button>
+        <button class="btn" id="bQuit">Quitter</button>
       </div>
     </div>
     <div class="over" id="talents" hidden>
@@ -873,7 +873,7 @@ html.has-update #bSolo,html.has-update #hosts .btn.coop{opacity:.5}
    uniquement dans la console Firebase, connecté au compte du projet. Le journal est donc complet
    (prénom, adresse avec ses paramètres). Pour le ménage des journaux de plus de 7 jours, chaque session
    inscrit aussi logidx/<session> = date, sans aucune donnée personnelle : c'est le seul index lisible. */
-const BUILD='2e175c4e';
+const BUILD='a5ed3f2a';
 /* prénom tel quel dans le journal (logs/ n'est lisible que depuis la console Firebase) */
 const logName=n=>String(n||'').trim()||'?';
 /* lit une variable globale déclarée plus loin (let/const) sans erreur avant son initialisation */
@@ -1108,7 +1108,7 @@ const HEROS={guerrier:{nom:'Bjorn',role:'Guerrier',sib:'bjorn'},mage:{nom:'Sigri
 function heroNom(c){return(HEROS[c]||HEROS.guerrier).nom}
 /* ================= Héros et caractéristiques ================= */
 /* v3 : arbre de talents et niveau 10 au plus ; les héros des versions précédentes repartent de zéro */
-const HERO_V=4;   // 4 : remise à zéro du 15/10 (prologue de 2999)
+const HERO_V=5;   // 5 : remise à zéro du 16/10 (sauvegarde à l’ordinateur de Tarkin)
 function newHero(cls){return{v:HERO_V,cls,lvl:1,xp:0,pts:0,tr:[],gold:30,pot:3,sh:0,q:0,fl:[],wp:['start'],pos:null,story:[],sq:{},sqd:[],track:'main',bag:[],eq:{arme:starter(cls,'arme'),armure:starter(cls,'armure'),talisman:null},ts:0}}
 function fixItem(it,cls){if(!it||typeof it!=='object'||!SLOTS.includes(it.s))return null;if(typeof it.rq==='string'&&RELICS[it.rq]){const r=makeRelic(it.rq,cls,it.l|0);if(r.s!==it.s)return null;r.u=clamp(it.u|0,0,5);return r}const o=genItem(it.id|0,it.l|0,it.r|0,cls,it.s);o.u=clamp(it.u|0,0,5);o.e=it.e&&enchOf(it.s,it.e)?it.e:null;if(typeof it.n==='string'&&it.n.length<60)o.n=it.n;return o}
 function fixHero(h,cls){const n=newHero(cls);if(!h||typeof h!=='object'||h.v!==HERO_V)return n;const o=Object.assign(n,h);o.cls=cls;o.v=HERO_V;delete o.tal;
@@ -2220,6 +2220,8 @@ function buildWorld(){
   const npc=(id,who,tx,ty,act,label)=>{for(let r=0;r<6;r++)for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=tx+dx,y=ty+dy;if(inb(x,y)&&!sol[idx(x,y)]&&passT(t[idx(x,y)])){const n={id,who,x:(x+.5)*TS,y:(y+.5)*TS};npcs.push(n);inter.push({x:n.x,y:n.y,r:40,kind:'talk',act,label,npc:n});return n}}};
   npc('virganth','virganth',PL.start[0]+1,PL.start[1]-4,'talk:virganth','Virganth');
   npc('garde','garde',PL.pont[0]-4,PL.pont[1]+2,'talk:garde','Garde du Conseil');   // à gauche du pont
+  // l'ordinateur de Tarkin, sur la place, près de la Lanterne froide : check-up, soins et sauvegarde
+  {const o=npc('ordi','ordi',67,110,'save','Ordinateur · soigner et enregistrer');if(o){const i=idx(Math.floor(o.x/TS),Math.floor(o.y/TS));sol[i]=1;occ[i]=1;const it=inter.find(v=>v.npc===o);if(it)it.r=48}}
   // le chevalier de verre : sur le grand pont, côté plaine, avant la bande qui barre le passage
   {const n={id:'chevalier',who:'chevalier',x:(GPONT.x0+5+.5)*TS,y:(GPONT.y0+1+.5)*TS};npcs.push(n);inter.push({x:n.x,y:n.y,r:40,kind:'talk',act:'talk:chevalier',label:'Le chevalier de verre',npc:n})}
   if(kz)npc('grinmir','grinmir',kz.door.x+3,kz.door.y,'talk:grinmir','Grinmir Thunderhammer');
@@ -2946,6 +2948,7 @@ function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
   if(act==='leave'){if(m.kind==='dun'&&near('leave')){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}
+  if(act==='ordi'){if(!near('save'))return;if(p.down){p.down=false;p.rev=0}p.hp=p.mhp;return}
   if(act==='rest'){if(m.kind!=='house'||(m.hk!=='auberge'&&!m.libre))return;G.players.forEach(q=>{if(q.down){q.down=false;q.rev=0}q.hp=q.mhp});msg('Vous vous reposez à l’auberge. Le groupe est en pleine forme.');return}
   const it=near(act);if(!it)return;
   if(act.startsWith('dun:')){const id=act.slice(4),spec=DUNGEONS[id];if(G.q<spec.need){msg(lockText(id),'lk'+id,3);return}
@@ -3123,7 +3126,16 @@ function onZoneEnter(first){const m=G.m;if(!m)return;G.seen=null;bubbles=[];
   savePos();doSave(true);maybeDunScene()}
 function savePos(){if(!G||!G.m)return;let px=null;if(G.m.kind==='world')px={x:L.x,y:L.y};else if(G.m.kind==='house')px=G.m.exitTo;else if(G.dun)px=G.dun.ret;
   if(px)hero.pos=[Math.floor(px.x/TS),Math.floor(px.y/TS)]}
-function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)return;saveT=now;if(hero){if(G&&G.m)savePos();Store.save(hero)}}
+/* Sauvegarde : seul l'ordinateur de Tarkin enregistre la partie (commitSave). Ailleurs, la progression reste en mémoire
+   (doSave ne fait que noter la position) et elle est perdue si on quitte sans être passé par l'ordinateur. */
+function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)return;saveT=now;if(hero&&G&&G.m)savePos()}
+function commitSave(){if(!hero)return;if(G&&G.m)savePos();Store.save(hero);Log.ev('jeu','partie enregistrée à l’ordinateur',hero.cls,'niv '+hero.lvl)}
+/* progression non enregistrée depuis le dernier passage à l'ordinateur (la position ne compte pas) */
+function unsaved(){if(!hero)return false;const a=Store.lsGet('dd_hero_'+hero.cls);const k=h=>{if(!h)return'';const o=Object.assign({},h);delete o.pos;delete o.ts;return JSON.stringify(o)};return k(a&&a.v===HERO_V?a:null)!==k(hero)}
+/* l'ordinateur : check-up, soins complets et enregistrement */
+function useOrdi(){const p=myP();const hp=p?Math.ceil(p.hp):0,mhp=p?p.mhp:0,mp=Math.round(L.mp),mmp=ST.mmp;
+  requestAct('ordi');L.mp=ST.mmp;commitSave();Snd.play('lvl');
+  Vig.say('ordi','Ordinateur','Check-up de '+(p?p.name:myName)+' : vie '+hp+'/'+mhp+', énergie '+mp+'/'+mmp+(p&&p.down?', à terre':'')+'. Soins appliqués : vie et énergie à 100 %. Partie enregistrée.',{voice:false,near:{x:L.x,y:L.y}})}
 
 /* ================= Contrôle local ================= */
 const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,false,false,false],potQ=false,actQ=false,atkQ=false;
@@ -3228,6 +3240,7 @@ function interactLabel(it){if(!it)return'';const a=it.act;
   if(a.startsWith('house:'))return'Entrer : '+it.label;if(a==='exit')return'Sortir';if(a==='leave')return'Quitter le donjon';if(a.startsWith('shop:'))return it.label;
   if(a==='arena')return G.q>=3?'Défier Abhorash':'Examiner les pierres';if(a.startsWith('talk:')||a.startsWith('closed:'))return'Parler : '+it.label;return it.label}
 function doInteract(it){const a=it.act;
+  if(a==='save'){useOrdi();return}
   if(a==='revive'){requestAct('revive');tbUse('ac',1);return}
   if(a.startsWith('talk:')){talkTo(a.slice(5));return}
   if(a.startsWith('pro:')){proTalk(a.slice(4));return}
@@ -3992,6 +4005,10 @@ const PRO_W=15,PRO_H=11,PRO_DOOR=7;
 // la valeur reçue de l'autre joueur est bornée : seul le bit du prologue passe
 function proBits(v){v=Math.trunc(+v);return Number.isFinite(v)?v&1:0}
 function proSibOf(cls){return PRO_SIB[cls]||'kari'}
+/* dans les dialogues, le frère ou la sœur joué(e) porte le nom du joueur : « Du calme, Bjorn » devient « Du calme, Léo » */
+function proJoues(){const j={};const ps=typeof G!=='undefined'&&G&&G.players||[];for(const p of ps){const s=PRO_SIB[p.cls],n=clean(p.name);if(s&&n&&!j[s])j[s]=n}return j}
+function persoNoms(t){t=String(t==null?'':t);const j=proJoues();
+  for(const s in j){const n=PRO_NOM[s];if(!n||j[s]===n)continue;t=t.replace(new RegExp('(^|[^\\p{L}])'+n+'(?![\\p{L}])','gu'),(m,a)=>a+j[s])}return t}
 // quelqu'un joue Bjorn : tout le monde le suit dehors
 function proBjornJoue(){return!!(G&&G.players.some(p=>p.cls==='guerrier'))}
 
@@ -4455,7 +4472,18 @@ function drawBuildingBase(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,r
   // enseigne
   if(b.act&&(b.kind==='auberge'||b.kind==='marchand'||b.kind==='forge')){const sx=dx+22,sy=y+h-30;g.strokeStyle='#3a2818';g.lineWidth=2;g.beginPath();g.moveTo(sx-6,sy-4);g.lineTo(sx+10,sy-4);g.stroke();g.fillStyle='#efe6cf';g.fillRect(sx-2,sy-2,16,14);g.strokeStyle='#5a3e24';g.strokeRect(sx-2,sy-2,16,14);
     g.fillStyle='#3a2818';if(b.kind==='forge'){g.fillRect(sx+1,sy+2,10,3);g.fillRect(sx+4,sy+5,4,4)}else if(b.kind==='marchand'){g.beginPath();g.arc(sx+6,sy+5,4,0,6.28);g.fill();g.fillStyle='#e2b65e';g.beginPath();g.arc(sx+6,sy+5,2.5,0,6.28);g.fill()}else{g.fillRect(sx+2,sy+6,10,4);g.fillRect(sx+2,sy+2,3,4)}}}
-function drawNPC(g,who,x,y,T,scale){if(who==='chevalier'&&drawGlassKnight(g,x,y,T))return;scale=scale||1;g.save();g.translate(x,y);g.scale(scale,scale);if(who!=='virganth'&&drawNPCPix(g,who,0,0,T)){g.restore();return}const bob=Math.sin(T*2+x)*.8;
+/* l'ordinateur de Tarkin : un vieux terminal sur un socle de pierre, écran vert qui respire */
+function drawOrdi(g,x,y,T,scale){g.save();g.translate(x,y);g.scale(scale||1,scale||1);
+  g.fillStyle='rgba(20,12,30,.32)';g.beginPath();g.ellipse(0,13,15,4.5,0,0,6.28);g.fill();
+  g.fillStyle='#1a120d';g.fillRect(-11,1,22,13);g.fillStyle='#6d6a64';g.fillRect(-10,2,20,11);g.fillStyle='#8c8880';g.fillRect(-10,2,20,3);   // socle
+  g.fillStyle='#1a120d';g.fillRect(-13,-23,26,23);g.fillStyle='#c9bfa6';g.fillRect(-12,-22,24,21);g.fillStyle='#a89e86';g.fillRect(-12,-5,24,4);   // boîtier
+  const pu=.55+.25*Math.sin(T*2.4);g.fillStyle='#0d1a10';g.fillRect(-9,-19,18,13);
+  g.fillStyle='rgba(120,240,140,'+pu+')';g.fillRect(-7,-17,9,2);g.fillRect(-7,-14,12,2);g.fillRect(-7,-11,6,2);if(Math.sin(T*5)>0)g.fillRect(0,-11,3,2);   // lignes et curseur
+  g.fillStyle='#c84a3c';g.fillRect(7,-4,2,2);g.fillStyle=Math.sin(T*3)>0?'#7af07a':'#2d5a2d';g.fillRect(4,-4,2,2);   // voyants
+  g.fillStyle='#1a120d';g.fillRect(-12,0,24,5);g.fillStyle='#b3a990';g.fillRect(-11,1,22,3);g.fillStyle='#8a816c';for(let k=0;k<5;k++)g.fillRect(-10+k*4,2,3,1);   // clavier
+  const gl=g.createRadialGradient(0,-12,2,0,-12,26);gl.addColorStop(0,'rgba(120,240,140,'+.18*pu+')');gl.addColorStop(1,'rgba(120,240,140,0)');g.fillStyle=gl;g.fillRect(-26,-38,52,52);
+  g.restore()}
+function drawNPC(g,who,x,y,T,scale){if(who==='ordi'){drawOrdi(g,x,y,T,scale);return}if(who==='chevalier'&&drawGlassKnight(g,x,y,T))return;scale=scale||1;g.save();g.translate(x,y);g.scale(scale,scale);if(who!=='virganth'&&drawNPCPix(g,who,0,0,T)){g.restore();return}const bob=Math.sin(T*2+x)*.8;
   if(who==='virganth'){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(0,14,40,10,0,0,6.28);g.fill();
     g.fillStyle='#b8862a';g.beginPath();g.ellipse(6,0,30,16,0,0,6.28);g.fill();g.fillStyle='#e2b54a';g.beginPath();g.ellipse(6,-4,26,12,0,0,6.28);g.fill();
     g.fillStyle='#c9952e';g.beginPath();g.moveTo(-6,-10);g.quadraticCurveTo(-20,-40+bob,-42,-30);g.lineTo(-30,-14);g.closePath();g.fill();g.beginPath();g.moveTo(18,-8);g.quadraticCurveTo(40,-44+bob,60,-26);g.lineTo(40,-6);g.closePath();g.fill();
@@ -4480,7 +4508,7 @@ function drawNPC(g,who,x,y,T,scale){if(who==='chevalier'&&drawGlassKnight(g,x,y,
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={chevalier:'Chevalier de verre',kari:'Kári',bjorn:'Bjorn',sigrid:'Sigrid',liv:'Liv',ragna:'Ragna',maren:'Sœur Maren',arne:'Arne',halvard:'Halvard',nils:'Nils',maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={ordi:'Ordinateur',chevalier:'Chevalier de verre',kari:'Kári',bjorn:'Bjorn',sigrid:'Sigrid',liv:'Liv',ragna:'Ragna',maren:'Sœur Maren',arne:'Arne',halvard:'Halvard',nils:'Nils',maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}
@@ -5682,10 +5710,10 @@ addEventListener('resize',()=>{if(Cine.on)Cine.size()});
 /* ---- 66_scene.js ---- */
 /* ================= Vignette de dialogue : non bloquante, on peut continuer à bouger ================= */
 const Vig={on:false,full:'',shown:0,t:0,near:null,done:null,vT:-1,
-  say(who,name,text,o){o=o||{};if(this.on)this.close(true);this.on=true;this.full=String(text);this.shown=0;this.t=0;this.vT=-1;this.near=o.near||null;this.done=o.onDone||null;this.cine=!!o.cine;
+  say(who,name,text,o){o=o||{};if(this.on)this.close(true);this.on=true;const said=String(text);this.full=persoNoms(said);name=persoNoms(name||'');this.shown=0;this.t=0;this.vT=-1;this.near=o.near||null;this.done=o.onDone||null;this.cine=!!o.cine;
     const v=$('#vig');v.hidden=false;v.classList.toggle('cine',this.cine);drawPortrait($('#vigP'),who);$('#vigN').textContent=name||'';$('#vigT').textContent='';
     const fin=()=>{if(this.on&&this.vT<0)this.vT=this.t};
-    if(o.voice===false)fin();else Voice.say([{who:VOX[who]?who:'narrateur',text:this.full,clip:o.clip}],fin)},
+    if(o.voice===false)fin();else Voice.say([{who:VOX[who]?who:'narrateur',text:said,clip:o.clip}],fin)},
   tick(dt){if(!this.on)return;this.t+=dt;if(this.shown<this.full.length){this.shown=Math.min(this.full.length,this.shown+dt*48);$('#vigT').textContent=this.full.slice(0,Math.floor(this.shown))}
     if(this.near&&G&&Math.hypot(this.near.x-L.x,this.near.y-L.y)>280){this.close();return}
     const typed=this.shown>=this.full.length,read=this.full.length*.06+1.6;
@@ -5959,7 +5987,7 @@ const Iab={
 };
 /* ---- 70_ui.js ---- */
 /* ================= Portraits supplémentaires ================= */
-function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron'].includes(who)||PRO_NOM[who]){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
+function drawPortrait(c,who){if(['garde','aubergiste','marchand','forgeron','ordi'].includes(who)||PRO_NOM[who]){const g=c.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,c.width,c.height);
     const gr=g.createRadialGradient(c.width/2,c.height*.4,6,c.width/2,c.height/2,c.width*.7);gr.addColorStop(0,'#3a5a62');gr.addColorStop(1,'#0c1418');g.fillStyle=gr;g.fillRect(0,0,c.width,c.height);
     drawNPC(g,who,c.width/2,c.height*.68,0,c.width/30);return}
   drawPortraitBase(c,who)}
@@ -6229,8 +6257,10 @@ function renderMenu(){const box=$('#classes');box.textContent='';
 
 /* ================= Écrans ================= */
 function showGame(){document.documentElement.classList.add('ingame');$('#menu').hidden=true;$('#menuBg').hidden=true;$('#game').hidden=false;$('#pause').hidden=true;$('#talents').hidden=true;$('#joining').hidden=true;resize();buildSkillUI();
-  $('#pauseNote').textContent=mode==='solo'?'Le jeu est en pause. Ta progression est sauvegardée automatiquement.':'Le jeu continue pendant ce menu : ton coéquipier joue encore.'}
-function toMenu(){Log.ev('jeu','retour au menu depuis',mode);document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
+  $('#pauseNote').textContent=(mode==='solo'?'Le jeu est en pause. ':'Le jeu continue pendant ce menu : ton coéquipier joue encore. ')+'Pour enregistrer, utilise l’ordinateur de Tarkin.'}
+function toMenu(){Log.ev('jeu','retour au menu depuis',mode);
+  // ce qui n'a pas été enregistré à l'ordinateur est perdu : on recharge la dernière sauvegarde
+  for(const k of CLS_IDS)heroes[k]=fixHero(Store.lsGet('dd_hero_'+k),k);hero=heroes[selCls];ST=derive(hero);quitAsk=false;document.documentElement.classList.remove('ingame');Voice.stop();mode='menu';paused=false;G=null;storyQ=[];$('#storyBox').hidden=true;$('#questBox').hidden=true;$('#bagBox').hidden=true;$('#mapBox').hidden=true;storyCtx=null;$('#game').hidden=true;$('#menu').hidden=false;renderMenu();renderLobby()}
 function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logName(myName),hero&&hero.cls,'niv '+(hero&&hero.lvl));Snd.init();bubbles=[];mode=asHost?'host':'solo';myIdx=0;paused=false;G=newWorld();G.coop=asHost;G.q=hero.q;G.fl=new Set(hero.fl);
   if(!WORLD)buildWorld();G.camps=WORLD.camps.map(()=>({state:'idle',t:0}));L=newLocal();resetGains();parts=[];lastFx=-1;lastMsg=-1;UI.newItems=0;
   G.players=[mkPlayer(myName,hero.cls,ST)];G.players[0].lvl=hero.lvl;
@@ -6238,8 +6268,10 @@ function startLocal(asHost){Log.ev('jeu','lancement',asHost?'hôte':'solo',logNa
   if(hero.q===0&&!proStart())proSkipOld()   // un nouveau héros commence par la Lanterne froide
   // toute partie est ouverte : tant qu'il reste une place, un 2e joueur peut la rejoindre depuis le menu
   if(room)pres({r:'h',n:myName,c:hero.cls,l:hero.lvl,gp:null,h:null,i:null,st:null,g:null,wh:zoneName(G.m)})}
-function quitGame(){doSave(true);if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
-function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
+let quitAsk=false;
+function askQuit(){if(!quitAsk&&mode!=='joining'&&unsaved()){quitAsk=true;$('#bQuit').textContent='Quitter sans enregistrer ? Toucher encore';return}quitGame()}
+function quitGame(){if(mode==='host'||mode==='solo')pres({r:'m',g:null,gp:null});if(mode==='guest'||mode==='joining')pres({r:'m',h:null,i:null,st:null});hostPeer=null;toMenu()}
+function togglePause(){if(mode==='joining')return;const p=$('#pause');p.hidden=!p.hidden;quitAsk=false;$('#bQuit').textContent='Quitter';$('#talents').hidden=true;paused=!p.hidden&&mode==='solo'}
 function pickTheme(){if(Cine.on)return'cine';if(mode==='menu'||mode==='joining'||!G||!G.m)return'menu';const b=G.enemies.find(e=>e.type==='boss');if(b&&Math.hypot((b.rx??b.x)-L.x,(b.ry??b.y)-L.y)<12*TS)return'boss';
   if(G.m.kind==='house')return'town';
   if(G.m.kind==='world'&&townAt(Math.floor(L.x/TS),Math.floor(L.y/TS)))return'ville';if(G.m.kind!=='world')return'dungeon';
@@ -6296,7 +6328,7 @@ document.addEventListener('gesturestart',e=>e.preventDefault());
 $('#mini').onclick=()=>openMap();$('#skyTag').onclick=()=>openMap();$('#pMap').onclick=()=>openMap();$('#pBag').onclick=()=>openBag();$('#pQuest').onclick=()=>openQuests();$('#objTxt').addEventListener('click',e=>{if(e.target&&e.target.tagName==='B'&&inGame())openQuests()});$('#qClose').onclick=closeQuests;$('#bagClose').onclick=closeBag;$('#mapClose').onclick=()=>{$('#mapBox').hidden=true;paused=!$('#pause').hidden&&mode==='solo'};
 $('#pMenu').onclick=togglePause;$('#pPot').onclick=()=>{potQ=true};
 holdable($('#tgtBox'),()=>{},on=>{L.tgtBig=on});holdable($('#cMe'),()=>{},on=>{if(L)L.meBig=on});$('#pTal').onclick=()=>toggleTalents();$('#bResume').onclick=togglePause;$('#bTalClose').onclick=()=>toggleTalents();
-$('#bQuit').onclick=quitGame;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
+$('#bQuit').onclick=askQuit;$('#bSound').onclick=()=>{Snd.on=!Snd.on;$('#bSound').textContent='Bruitages : '+(Snd.on?'activés':'coupés')};
 $('#bMusic').onclick=$('#bMusicMenu').onclick=()=>{Snd.init();Music.toggle()};
 $('#bVoice').onclick=$('#bVoiceMenu').onclick=()=>Voice.toggle();$('#cineSkip').onclick=()=>Cine.skip();$('#scnSkip').onclick=()=>Scene.skip();$('#vig').onclick=()=>Vig.next();$('#qdOk').onclick=()=>QDone.close();$('#qdEquip').onclick=()=>QDone.equip();$('#bIntro').onclick=()=>Cine.play(null);
 addEventListener('pointerdown',()=>Snd.init(),{capture:true});addEventListener('keydown',()=>Snd.init(),{capture:true});
@@ -6341,7 +6373,7 @@ nameIn.addEventListener('input',()=>{syncName();Store.lsSet('dd_name',clean(name
   addEventListener('pagehide',()=>{if(hero)doSave(true)});
   /* verrouillage ou passage à une autre appli : sur iPhone, la fermeture de la page n'est pas toujours signalée
      (appli balayée, onglet tué en arrière-plan) ; on sauvegarde donc dès que le jeu passe en arrière-plan */
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&hero){doSave(true);Log.ev('jeu','sauvegarde (arrière-plan)',mode)}});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&hero){doSave(true);Log.ev('jeu','arrière-plan (rien n’est enregistré)',mode)}});
 })();
 </script>
 </body>

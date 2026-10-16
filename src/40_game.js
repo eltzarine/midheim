@@ -271,6 +271,7 @@ function hostRequest(act,pi){const p=G.players[pi];if(!p||p.down)return;const m=
   const near=a=>(m.inter||[]).find(o=>o.act===a&&Math.hypot(o.x-p.x,o.y-p.y)<o.r+50);
   // l'invité peut envoyer n'importe quel texte : chaque demande est vérifiée par l'hôte (lieu, distance)
   if(act==='leave'){if(m.kind==='dun'&&near('leave')){const ret=G.dun&&G.dun.ret||WORLD.start;hostEnter('w',ret);G.dun=null;msg('Vous quittez '+DUNGEONS[m.did].nom+'. Vous pourrez y revenir quand vous voulez.')}return}
+  if(act==='ordi'){if(!near('save'))return;if(p.down){p.down=false;p.rev=0}p.hp=p.mhp;return}
   if(act==='rest'){if(m.kind!=='house'||(m.hk!=='auberge'&&!m.libre))return;G.players.forEach(q=>{if(q.down){q.down=false;q.rev=0}q.hp=q.mhp});msg('Vous vous reposez à l’auberge. Le groupe est en pleine forme.');return}
   const it=near(act);if(!it)return;
   if(act.startsWith('dun:')){const id=act.slice(4),spec=DUNGEONS[id];if(G.q<spec.need){msg(lockText(id),'lk'+id,3);return}
@@ -448,7 +449,16 @@ function onZoneEnter(first){const m=G.m;if(!m)return;G.seen=null;bubbles=[];
   savePos();doSave(true);maybeDunScene()}
 function savePos(){if(!G||!G.m)return;let px=null;if(G.m.kind==='world')px={x:L.x,y:L.y};else if(G.m.kind==='house')px=G.m.exitTo;else if(G.dun)px=G.dun.ret;
   if(px)hero.pos=[Math.floor(px.x/TS),Math.floor(px.y/TS)]}
-function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)return;saveT=now;if(hero){if(G&&G.m)savePos();Store.save(hero)}}
+/* Sauvegarde : seul l'ordinateur de Tarkin enregistre la partie (commitSave). Ailleurs, la progression reste en mémoire
+   (doSave ne fait que noter la position) et elle est perdue si on quitte sans être passé par l'ordinateur. */
+function doSave(force){const now=performance.now();if(!force&&now-saveT<15000)return;saveT=now;if(hero&&G&&G.m)savePos()}
+function commitSave(){if(!hero)return;if(G&&G.m)savePos();Store.save(hero);Log.ev('jeu','partie enregistrée à l’ordinateur',hero.cls,'niv '+hero.lvl)}
+/* progression non enregistrée depuis le dernier passage à l'ordinateur (la position ne compte pas) */
+function unsaved(){if(!hero)return false;const a=Store.lsGet('dd_hero_'+hero.cls);const k=h=>{if(!h)return'';const o=Object.assign({},h);delete o.pos;delete o.ts;return JSON.stringify(o)};return k(a&&a.v===HERO_V?a:null)!==k(hero)}
+/* l'ordinateur : check-up, soins complets et enregistrement */
+function useOrdi(){const p=myP();const hp=p?Math.ceil(p.hp):0,mhp=p?p.mhp:0,mp=Math.round(L.mp),mmp=ST.mmp;
+  requestAct('ordi');L.mp=ST.mmp;commitSave();Snd.play('lvl');
+  Vig.say('ordi','Ordinateur','Check-up de '+(p?p.name:myName)+' : vie '+hp+'/'+mhp+', énergie '+mp+'/'+mmp+(p&&p.down?', à terre':'')+'. Soins appliqués : vie et énergie à 100 %. Partie enregistrée.',{voice:false,near:{x:L.x,y:L.y}})}
 
 /* ================= Contrôle local ================= */
 const keys=new Set();const mouse={x:0,y:0,t:-1e9,down:false};let skQ=[false,false,false,false],potQ=false,actQ=false,atkQ=false;
@@ -553,6 +563,7 @@ function interactLabel(it){if(!it)return'';const a=it.act;
   if(a.startsWith('house:'))return'Entrer : '+it.label;if(a==='exit')return'Sortir';if(a==='leave')return'Quitter le donjon';if(a.startsWith('shop:'))return it.label;
   if(a==='arena')return G.q>=3?'Défier Abhorash':'Examiner les pierres';if(a.startsWith('talk:')||a.startsWith('closed:'))return'Parler : '+it.label;return it.label}
 function doInteract(it){const a=it.act;
+  if(a==='save'){useOrdi();return}
   if(a==='revive'){requestAct('revive');tbUse('ac',1);return}
   if(a.startsWith('talk:')){talkTo(a.slice(5));return}
   if(a.startsWith('pro:')){proTalk(a.slice(4));return}

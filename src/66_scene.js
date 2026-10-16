@@ -1,9 +1,9 @@
 /* ================= Vignette de dialogue : non bloquante, on peut continuer à bouger ================= */
 const Vig={on:false,full:'',shown:0,t:0,near:null,done:null,vT:-1,
-  say(who,name,text,o){o=o||{};if(this.on)this.close(true);this.on=true;this.full=String(text);this.shown=0;this.t=0;this.vT=-1;this.near=o.near||null;this.done=o.onDone||null;this.cine=!!o.cine;
+  say(who,name,text,o){o=o||{};if(this.on)this.close(true);this.on=true;const said=String(text);this.full=persoNoms(said);name=persoNoms(name||'');this.shown=0;this.t=0;this.vT=-1;this.near=o.near||null;this.done=o.onDone||null;this.cine=!!o.cine;
     const v=$('#vig');v.hidden=false;v.classList.toggle('cine',this.cine);drawPortrait($('#vigP'),who);$('#vigN').textContent=name||'';$('#vigT').textContent='';
     const fin=()=>{if(this.on&&this.vT<0)this.vT=this.t};
-    if(o.voice===false)fin();else Voice.say([{who:VOX[who]?who:'narrateur',text:this.full,clip:o.clip}],fin)},
+    if(o.voice===false)fin();else Voice.say([{who:VOX[who]?who:'narrateur',text:said,clip:o.clip}],fin)},
   tick(dt){if(!this.on)return;this.t+=dt;if(this.shown<this.full.length){this.shown=Math.min(this.full.length,this.shown+dt*48);$('#vigT').textContent=this.full.slice(0,Math.floor(this.shown))}
     if(this.near&&G&&Math.hypot(this.near.x-L.x,this.near.y-L.y)>280){this.close();return}
     const typed=this.shown>=this.full.length,read=this.full.length*.06+1.6;

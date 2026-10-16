@@ -149,7 +149,18 @@ function drawBuildingBase(b,T){const g=ctx,x=b.x*TS,y=b.y*TS,w=b.w*TS,h=b.h*TS,r
   // enseigne
   if(b.act&&(b.kind==='auberge'||b.kind==='marchand'||b.kind==='forge')){const sx=dx+22,sy=y+h-30;g.strokeStyle='#3a2818';g.lineWidth=2;g.beginPath();g.moveTo(sx-6,sy-4);g.lineTo(sx+10,sy-4);g.stroke();g.fillStyle='#efe6cf';g.fillRect(sx-2,sy-2,16,14);g.strokeStyle='#5a3e24';g.strokeRect(sx-2,sy-2,16,14);
     g.fillStyle='#3a2818';if(b.kind==='forge'){g.fillRect(sx+1,sy+2,10,3);g.fillRect(sx+4,sy+5,4,4)}else if(b.kind==='marchand'){g.beginPath();g.arc(sx+6,sy+5,4,0,6.28);g.fill();g.fillStyle='#e2b65e';g.beginPath();g.arc(sx+6,sy+5,2.5,0,6.28);g.fill()}else{g.fillRect(sx+2,sy+6,10,4);g.fillRect(sx+2,sy+2,3,4)}}}
-function drawNPC(g,who,x,y,T,scale){if(who==='chevalier'&&drawGlassKnight(g,x,y,T))return;scale=scale||1;g.save();g.translate(x,y);g.scale(scale,scale);if(who!=='virganth'&&drawNPCPix(g,who,0,0,T)){g.restore();return}const bob=Math.sin(T*2+x)*.8;
+/* l'ordinateur de Tarkin : un vieux terminal sur un socle de pierre, écran vert qui respire */
+function drawOrdi(g,x,y,T,scale){g.save();g.translate(x,y);g.scale(scale||1,scale||1);
+  g.fillStyle='rgba(20,12,30,.32)';g.beginPath();g.ellipse(0,13,15,4.5,0,0,6.28);g.fill();
+  g.fillStyle='#1a120d';g.fillRect(-11,1,22,13);g.fillStyle='#6d6a64';g.fillRect(-10,2,20,11);g.fillStyle='#8c8880';g.fillRect(-10,2,20,3);   // socle
+  g.fillStyle='#1a120d';g.fillRect(-13,-23,26,23);g.fillStyle='#c9bfa6';g.fillRect(-12,-22,24,21);g.fillStyle='#a89e86';g.fillRect(-12,-5,24,4);   // boîtier
+  const pu=.55+.25*Math.sin(T*2.4);g.fillStyle='#0d1a10';g.fillRect(-9,-19,18,13);
+  g.fillStyle='rgba(120,240,140,'+pu+')';g.fillRect(-7,-17,9,2);g.fillRect(-7,-14,12,2);g.fillRect(-7,-11,6,2);if(Math.sin(T*5)>0)g.fillRect(0,-11,3,2);   // lignes et curseur
+  g.fillStyle='#c84a3c';g.fillRect(7,-4,2,2);g.fillStyle=Math.sin(T*3)>0?'#7af07a':'#2d5a2d';g.fillRect(4,-4,2,2);   // voyants
+  g.fillStyle='#1a120d';g.fillRect(-12,0,24,5);g.fillStyle='#b3a990';g.fillRect(-11,1,22,3);g.fillStyle='#8a816c';for(let k=0;k<5;k++)g.fillRect(-10+k*4,2,3,1);   // clavier
+  const gl=g.createRadialGradient(0,-12,2,0,-12,26);gl.addColorStop(0,'rgba(120,240,140,'+.18*pu+')');gl.addColorStop(1,'rgba(120,240,140,0)');g.fillStyle=gl;g.fillRect(-26,-38,52,52);
+  g.restore()}
+function drawNPC(g,who,x,y,T,scale){if(who==='ordi'){drawOrdi(g,x,y,T,scale);return}if(who==='chevalier'&&drawGlassKnight(g,x,y,T))return;scale=scale||1;g.save();g.translate(x,y);g.scale(scale,scale);if(who!=='virganth'&&drawNPCPix(g,who,0,0,T)){g.restore();return}const bob=Math.sin(T*2+x)*.8;
   if(who==='virganth'){g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(0,14,40,10,0,0,6.28);g.fill();
     g.fillStyle='#b8862a';g.beginPath();g.ellipse(6,0,30,16,0,0,6.28);g.fill();g.fillStyle='#e2b54a';g.beginPath();g.ellipse(6,-4,26,12,0,0,6.28);g.fill();
     g.fillStyle='#c9952e';g.beginPath();g.moveTo(-6,-10);g.quadraticCurveTo(-20,-40+bob,-42,-30);g.lineTo(-30,-14);g.closePath();g.fill();g.beginPath();g.moveTo(18,-8);g.quadraticCurveTo(40,-44+bob,60,-26);g.lineTo(40,-6);g.closePath();g.fill();
@@ -174,7 +185,7 @@ function drawNPC(g,who,x,y,T,scale){if(who==='chevalier'&&drawGlassKnight(g,x,y,
   if(who==='conteur'){g.fillStyle='#d8d4cc';g.beginPath();g.moveTo(-6,-7+bob);g.quadraticCurveTo(0,10,6,-7+bob);g.closePath();g.fill();g.strokeStyle='#6b4a28';g.lineWidth=2;g.beginPath();g.moveTo(-12,12);g.lineTo(-12,-14);g.stroke()}
   if(who==='abhorash'){g.fillStyle='#8e1a24';g.beginPath();g.arc(0,-12+bob,8,Math.PI,0);g.fill();g.fillStyle='#ff3030';g.fillRect(-3,-11+bob,2,1.5);g.fillRect(2,-11+bob,2,1.5)}
   g.restore()}
-const NPC_NAMES={chevalier:'Chevalier de verre',kari:'Kári',bjorn:'Bjorn',sigrid:'Sigrid',liv:'Liv',ragna:'Ragna',maren:'Sœur Maren',arne:'Arne',halvard:'Halvard',nils:'Nils',maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
+const NPC_NAMES={ordi:'Ordinateur',chevalier:'Chevalier de verre',kari:'Kári',bjorn:'Bjorn',sigrid:'Sigrid',liv:'Liv',ragna:'Ragna',maren:'Sœur Maren',arne:'Arne',halvard:'Halvard',nils:'Nils',maitre:'Maître des talents',buveur:'Habitué',barde:'Barde',conteur:'Vieux conteur',virganth:'Virganth',garde:'Garde du Conseil',brann:'Le sergent Brann',grinmir:'Grinmir Thunderhammer',aubergiste:'Aubergiste',marchand:'Marchand',forgeron:'Forgeron',abhorash:'Abhorash'};
 function drawFurn(f){const g=ctx,px=f.x*TS,py=f.y*TS;
   if(f.k==='lit'){g.fillStyle='#5a3e24';g.fillRect(px+2,py+2,28,28);g.fillStyle='#efe6cf';g.fillRect(px+4,py+4,24,8);g.fillStyle='#8e3a2a';g.fillRect(px+4,py+12,24,16)}
   else if(f.k==='feu'){g.fillStyle='#5a5246';g.fillRect(px-6,py+2,44,28);g.fillStyle='#1a1410';g.fillRect(px+2,py+12,28,18);const fl=Math.sin(G.time*12)*2;g.fillStyle='#e8661e';g.beginPath();g.moveTo(px+8,py+30);g.quadraticCurveTo(px+16,py+8+fl,px+24,py+30);g.fill();g.fillStyle='#ffc04a';g.beginPath();g.moveTo(px+12,py+30);g.quadraticCurveTo(px+16,py+16-fl,px+20,py+30);g.fill()}
