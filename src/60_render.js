@@ -82,7 +82,7 @@ let dpr=1,vw=0,vh=0,scale=1,baseScale=1,camZ=1,camX=0,camY=0,shake=0,PX=1,rs=1,c
    changer d'échelle ferait varier la taille des pixels. */
 const CAM_TILES=13;
 function resize(){dpr=Math.min(3,window.devicePixelRatio||1);vw=cv.clientWidth||innerWidth;vh=cv.clientHeight||innerHeight;cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);
-  PX=Math.max(1,Math.round(Math.min(cv.width,cv.height)/(TS*CAM_TILES)));pc.width=lc.width=Math.max(1,Math.ceil(cv.width/PX));pc.height=lc.height=Math.max(1,Math.ceil(cv.height/PX));
+  PX=Math.max(1,Math.floor(Math.min(cv.width,cv.height)/(TS*CAM_TILES)));pc.width=lc.width=Math.max(1,Math.ceil(cv.width/PX));pc.height=lc.height=Math.max(1,Math.ceil(cv.height/PX));
   rs=dpr/PX;baseScale=PX/dpr;scale=baseScale;camZ=1}
 addEventListener('resize',resize);
 /* Rotation mobile : le navigateur annonce le changement avant d'avoir fini la mise en page.
